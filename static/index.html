@@ -52,6 +52,28 @@
             --radius-xl: 1rem;
         }
 
+        /* Dark Mode Variables */
+        [data-theme="dark"] {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --bg-dark: #0f172a;
+            --bg-dark-secondary: #1e293b;
+            
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-tertiary: #94a3b8;
+            --text-light: #ffffff;
+            
+            --border-color: #334155;
+            --border-light: #475569;
+            
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.4);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -418,6 +440,40 @@
         .btn-secondary:hover {
             background: var(--bg-tertiary);
             border-color: var(--primary-color);
+        }
+
+        /* Theme Toggle Button */
+        .theme-toggle {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.05);
+        }
+
+        .theme-toggle i {
+            transition: all 0.3s ease;
+        }
+
+        [data-theme="dark"] .theme-toggle i.fa-moon {
+            display: none;
+        }
+
+        [data-theme="dark"] .theme-toggle i.fa-sun {
+            display: inline-block;
+        }
+
+        .theme-toggle i.fa-sun {
+            display: none;
+        }
+
+        [data-theme="light"] .theme-toggle i.fa-moon {
+            display: inline-block;
+        }
+
+        [data-theme="light"] .theme-toggle i.fa-sun {
+            display: none;
         }
 
         .btn-success {
@@ -1038,6 +1094,10 @@
                         <i class="fas fa-search search-icon"></i>
                         <input type="text" class="search-input" placeholder="Search items, categories..." id="global-search">
                     </div>
+                    <button class="btn btn-secondary theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+                        <i class="fas fa-moon" id="theme-icon-moon"></i>
+                        <i class="fas fa-sun" id="theme-icon-sun"></i>
+                    </button>
                     <button class="btn btn-secondary" onclick="toggleNotifications()">
                         <i class="fas fa-bell"></i>
                     </button>
@@ -1784,8 +1844,46 @@
             `;
         }
 
+        // Theme Management
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme') || 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            // Update theme icon visibility
+            updateThemeIcon(newTheme);
+        }
+
+        function updateThemeIcon(theme) {
+            const moonIcon = document.getElementById('theme-icon-moon');
+            const sunIcon = document.getElementById('theme-icon-sun');
+            
+            if (theme === 'dark') {
+                moonIcon.style.display = 'none';
+                sunIcon.style.display = 'inline-block';
+            } else {
+                moonIcon.style.display = 'inline-block';
+                sunIcon.style.display = 'none';
+            }
+        }
+
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+            
+            document.documentElement.setAttribute('data-theme', theme);
+            updateThemeIcon(theme);
+        }
+
         // Event listeners
         document.addEventListener('DOMContentLoaded', () => {
+            // Initialize theme
+            initializeTheme();
+            
             // Add click handlers to nav items
             document.querySelectorAll('.nav-item[data-page]').forEach(item => {
                 item.addEventListener('click', (e) => {
