@@ -14,7 +14,7 @@ pub async fn index() -> impl Responder {
 }
 
 #[get("/health")]
-pub async fn api_health() -> impl Responder {
+pub async fn health() -> impl Responder {
     HttpResponse::Ok().json(serde_json::json!({
         "status": "ok",
         "message": "Home Inventory Manager is running",
@@ -23,7 +23,7 @@ pub async fn api_health() -> impl Responder {
 }
 
 // Inventories API endpoints
-#[get("/inventories")]
+#[get("/api/inventories")]
 pub async fn get_inventories(pool: web::Data<Pool>) -> Result<impl Responder> {
     let db_service = DatabaseService::new(pool.get_ref().clone());
     
@@ -48,14 +48,14 @@ pub async fn get_inventories(pool: web::Data<Pool>) -> Result<impl Responder> {
     }
 }
 
-#[post("/inventories")]
+#[post("/api/inventories")]
 pub async fn create_inventory(
     pool: web::Data<Pool>,
     req: web::Json<CreateInventoryRequest>
 ) -> Result<impl Responder> {
     let db_service = DatabaseService::new(pool.get_ref().clone());
     
-    match db_service.create_inventory(req.into_inner()).await {
+    match db_service.create_inventory(&req.name, req.description.as_deref()).await {
         Ok(inventory) => {
             info!("Successfully created inventory: {}", inventory.name);
             Ok(HttpResponse::Created().json(ApiResponse {
@@ -76,7 +76,7 @@ pub async fn create_inventory(
     }
 }
 
-#[get("/inventories/{id}")]
+#[get("/api/inventories/{id}")]
 pub async fn get_inventory(
     pool: web::Data<Pool>,
     path: web::Path<i32>
@@ -112,7 +112,7 @@ pub async fn get_inventory(
     }
 }
 
-#[get("/inventories/{id}/items")]
+#[get("/api/inventories/{id}/items")]
 pub async fn get_inventory_items(
     pool: web::Data<Pool>,
     path: web::Path<i32>
@@ -142,7 +142,7 @@ pub async fn get_inventory_items(
 }
 
 // Items API endpoints
-#[get("/items")]
+#[get("/api/items")]
 pub async fn get_items(pool: web::Data<Pool>) -> Result<impl Responder> {
     let db_service = DatabaseService::new(pool.get_ref().clone());
     
@@ -167,7 +167,7 @@ pub async fn get_items(pool: web::Data<Pool>) -> Result<impl Responder> {
     }
 }
 
-#[get("/items/{id}")]
+#[get("/api/items/{id}")]
 pub async fn get_item(
     pool: web::Data<Pool>,
     path: web::Path<i32>
@@ -203,14 +203,25 @@ pub async fn get_item(
     }
 }
 
-#[post("/items")]
+#[post("/api/items")]
 pub async fn create_item(
     pool: web::Data<Pool>,
     req: web::Json<CreateItemRequest>
 ) -> Result<impl Responder> {
     let db_service = DatabaseService::new(pool.get_ref().clone());
     
-    match db_service.create_item(req.into_inner()).await {
+    match db_service.create_item(
+        &req.name,
+        req.description.as_deref(),
+        req.category.as_deref(),
+        req.location.as_deref(),
+        req.purchase_price,
+        req.purchase_date.as_deref(),
+        req.warranty_expiry.as_deref(),
+        req.notes.as_deref(),
+        req.quantity.unwrap_or(1),
+        req.inventory_id.unwrap_or(1)
+    ).await {
         Ok(item) => {
             info!("Successfully created item: {}", item.name);
             Ok(HttpResponse::Created().json(ApiResponse {
@@ -231,7 +242,7 @@ pub async fn create_item(
     }
 }
 
-#[put("/items/{id}")]
+#[put("/api/items/{id}")]
 pub async fn update_item(
     pool: web::Data<Pool>,
     path: web::Path<i32>,
@@ -242,7 +253,16 @@ pub async fn update_item(
     
     match db_service.update_item(
         item_id,
-        req.into_inner()
+        req.name.as_deref(),
+        req.description.as_deref(),
+        req.category.as_deref(),
+        req.location.as_deref(),
+        req.purchase_price,
+        req.purchase_date.as_deref(),
+        req.warranty_expiry.as_deref(),
+        req.notes.as_deref(),
+        req.quantity,
+        req.inventory_id
     ).await {
         Ok(Some(item)) => {
             info!("Successfully updated item with id: {}", item_id);
@@ -271,7 +291,7 @@ pub async fn update_item(
     }
 }
 
-#[delete("/items/{id}")]
+#[delete("/api/items/{id}")]
 pub async fn delete_item(
     pool: web::Data<Pool>,
     path: web::Path<i32>
@@ -307,7 +327,7 @@ pub async fn delete_item(
     }
 }
 
-#[get("/items/search/{query}")]
+#[get("/api/items/search/{query}")]
 pub async fn search_items(
     pool: web::Data<Pool>,
     path: web::Path<String>
@@ -338,8 +358,9 @@ pub async fn search_items(
 
 // Create scope with all API routes
 pub fn api_scope() -> Scope {
-    web::scope("/api")
-        .service(api_health)
+    web::scope("")
+        .service(index)
+        .service(health)
         // Inventory routes
         .service(get_inventories)
         .service(create_inventory)
@@ -352,9 +373,4 @@ pub fn api_scope() -> Scope {
         .service(update_item)
         .service(delete_item)
         .service(search_items)
-}
-
-// Alias for backward compatibility
-pub fn init_routes() -> Scope {
-    api_scope()
 }
