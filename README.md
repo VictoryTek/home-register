@@ -1,6 +1,6 @@
 <div align="center">
   <img src="logo_full.png" alt="Home Register Logo" width="400">
-  <h1>Home Register</h1>
+  <h1>Home Inventory Management</h1>
 </div>
 
 A modern home inventory management system built with **Rust + Actix-Web + PostgreSQL**.
