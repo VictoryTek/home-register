@@ -1,9 +1,11 @@
 <div align="center">
   <img src="logo_full.png" alt="Home Register Logo" width="400">
-  <h1>🏠 Home Register - Inventory Management System</h1>
+  <h1>Inventory Management System</h1>
 </div>
 
 A modern, web-based home inventory management system built with **Rust + Actix-Web + PostgreSQL**.
+
+I used Homebox for years, then it was no longer maintained. So I thought I would try to create a successor.
 
 ## ✨ Features
 
