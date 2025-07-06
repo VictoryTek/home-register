@@ -1,4 +1,7 @@
-# 🏠 Home Register - Inventory Management System
+<div align="center">
+  <img src="logo_full.png" alt="Home Register Logo" width="400">
+  <h1>🏠 Home Register - Inventory Management System</h1>
+</div>
 
 A modern, web-based home inventory management system built with **Rust + Actix-Web + PostgreSQL**.
 

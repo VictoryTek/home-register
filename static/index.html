@@ -1024,11 +1024,6 @@
                     <i class="fas fa-chart-line"></i>
                     <span>Dashboard</span>
                 </div>
-                <div class="nav-item" data-page="analytics">
-                    <i class="fas fa-analytics"></i>
-                    <span>Analytics</span>
-                    <span class="nav-item-badge">New</span>
-                </div>
             </div>
             
             <div class="nav-section">
@@ -1036,10 +1031,6 @@
                 <div class="nav-item" data-page="inventories">
                     <i class="fas fa-warehouse"></i>
                     <span>All Inventories</span>
-                </div>
-                <div class="nav-item" data-page="items">
-                    <i class="fas fa-boxes"></i>
-                    <span>Items</span>
                 </div>
                 <div class="nav-item" data-page="categories">
                     <i class="fas fa-tags"></i>
@@ -1404,9 +1395,7 @@
             // Update page title and subtitle
             const titles = {
                 dashboard: { title: 'Dashboard', subtitle: 'Welcome back! Here\'s your inventory overview.' },
-                analytics: { title: 'Analytics', subtitle: 'Detailed insights into your inventory trends.' },
                 inventories: { title: 'All Inventories', subtitle: 'Manage your inventory spaces and locations.' },
-                items: { title: 'Items', subtitle: 'Browse and manage all your inventory items.' },
                 categories: { title: 'Categories', subtitle: 'Organize items with custom categories.' },
                 locations: { title: 'Locations', subtitle: 'Manage physical locations and rooms.' },
                 scanner: { title: 'Barcode Scanner', subtitle: 'Scan barcodes to quickly add items.' },
@@ -1429,20 +1418,46 @@
             
             switch (page) {
                 case 'dashboard':
-                    content.innerHTML = document.getElementById('dashboard-content').outerHTML;
-                    loadDashboardData();
-                    break;
+                    // Store the dashboard content if it doesn't exist in a template
+                    if (!window.dashboardTemplate) {
+                        const dashboardElement = document.getElementById('dashboard-content');
+                        if (dashboardElement) {
+                            window.dashboardTemplate = dashboardElement.outerHTML;
+                        }
+                    }
                     
-                case 'items':
-                    loadItemsPage();
+                    // Load dashboard content
+                    if (window.dashboardTemplate) {
+                        content.innerHTML = window.dashboardTemplate;
+                        loadDashboardData();
+                    } else {
+                        // Fallback dashboard content
+                        content.innerHTML = `
+                            <div id="dashboard-content">
+                                <div class="stats-grid">
+                                    <div class="stat-card">
+                                        <div class="stat-header">
+                                            <div class="stat-title">Total Inventories</div>
+                                            <div class="stat-icon">
+                                                <i class="fas fa-warehouse"></i>
+                                            </div>
+                                        </div>
+                                        <div class="stat-value" id="total-inventories">3</div>
+                                        <div class="stat-change positive">
+                                            <i class="fas fa-arrow-up"></i>
+                                            <span>+1 this month</span>
+                                        </div>
+                                    </div>
+                                    <!-- Additional dashboard content will be loaded here -->
+                                </div>
+                            </div>
+                        `;
+                        loadDashboardData();
+                    }
                     break;
                     
                 case 'inventories':
                     loadInventoriesPage();
-                    break;
-                    
-                case 'analytics':
-                    loadAnalyticsPage();
                     break;
                     
                 case 'scanner':
@@ -1474,8 +1489,6 @@
             // Refresh current page data
             if (currentPage === 'dashboard') {
                 loadDashboardData();
-            } else if (currentPage === 'items') {
-                loadItemsPage();
             }
             
             // Show toast notification
@@ -1516,7 +1529,7 @@
         async function fetchItems() {
             try {
                 showSpinner();
-                const response = await fetch('/api/items');
+                const response = await fetch(`/api/inventories/${currentInventoryId}/items`);
                 const data = await response.json();
                 if (data.success) {
                     items = data.data || [];
@@ -1627,8 +1640,7 @@
                 location: document.getElementById('item-location').value,
                 purchase_price: parseFloat(document.getElementById('item-price').value) || 0,
                 quantity: parseInt(document.getElementById('item-quantity').value) || 1,
-                description: document.getElementById('item-description').value.trim(),
-                inventory_id: currentInventoryId
+                description: document.getElementById('item-description').value.trim()
             };
 
             if (!itemData.name) {
@@ -1638,7 +1650,7 @@
 
             try {
                 showSpinner();
-                const response = await fetch('/api/items', {
+                const response = await fetch(`/api/inventories/${currentInventoryId}/items`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1776,23 +1788,6 @@
         }
 
         // Page loaders (placeholder implementations)
-        function loadItemsPage() {
-            const content = document.getElementById('main-content');
-            content.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">
-                        <i class="fas fa-boxes"></i>
-                    </div>
-                    <div class="empty-state-title">Items Page</div>
-                    <div class="empty-state-text">Full items management interface coming soon.</div>
-                    <button class="btn btn-primary" onclick="setActivePage('dashboard')">
-                        <i class="fas fa-arrow-left"></i>
-                        Back to Dashboard
-                    </button>
-                </div>
-            `;
-        }
-
         function loadInventoriesPage() {
             const content = document.getElementById('main-content');
             content.innerHTML = `
@@ -1802,23 +1797,6 @@
                     </div>
                     <div class="empty-state-title">Inventories Management</div>
                     <div class="empty-state-text">Full inventory management interface coming soon.</div>
-                    <button class="btn btn-primary" onclick="setActivePage('dashboard')">
-                        <i class="fas fa-arrow-left"></i>
-                        Back to Dashboard
-                    </button>
-                </div>
-            `;
-        }
-
-        function loadAnalyticsPage() {
-            const content = document.getElementById('main-content');
-            content.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <div class="empty-state-title">Analytics Dashboard</div>
-                    <div class="empty-state-text">Advanced analytics and insights coming soon.</div>
                     <button class="btn btn-primary" onclick="setActivePage('dashboard')">
                         <i class="fas fa-arrow-left"></i>
                         Back to Dashboard
@@ -1883,6 +1861,12 @@
         document.addEventListener('DOMContentLoaded', () => {
             // Initialize theme
             initializeTheme();
+            
+            // Store initial dashboard template
+            const dashboardElement = document.getElementById('dashboard-content');
+            if (dashboardElement) {
+                window.dashboardTemplate = dashboardElement.outerHTML;
+            }
             
             // Add click handlers to nav items
             document.querySelectorAll('.nav-item[data-page]').forEach(item => {

@@ -129,7 +129,7 @@ impl DatabaseService {
         let row = client
             .query_one(
                 "INSERT INTO items (inventory_id, name, description, category, location, purchase_date, purchase_price, warranty_expiry, notes, quantity) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
+             VALUES ($1, $2, $3, $4, $5, CASE WHEN $6 = '' THEN NULL ELSE $6::date END, $7, CASE WHEN $8 = '' THEN NULL ELSE $8::date END, $9, $10) 
              RETURNING id, inventory_id, name, description, category, location, purchase_date::text, purchase_price::float8, warranty_expiry::text, notes, quantity, created_at, updated_at",
                 &[
                     &request.inventory_id.unwrap_or(1),
