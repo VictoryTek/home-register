@@ -5,6 +5,8 @@
 
 A modern home inventory management system built with **Rust + Actix-Web + PostgreSQL**.
 
+I used and enjoyed Homebox for years, but when the project was archived in 2024 I thought I would try to create a successor.
+
 ## ✨ Features
 
 - 📱 Modern web interface
