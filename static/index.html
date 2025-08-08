@@ -4,16 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home Register - Modern Inventory Management</title>
-    <link rel="icon" type="image/png" sizes="397x385" href="/logo_icon.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="/logo_icon.png">
-    <link rel="icon" type="image/png" sizes="96x96" href="/logo_icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/logo_icon.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/logo_icon.png">
-    <link rel="apple-touch-icon" sizes="397x385" href="/logo_icon.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/logo_icon.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="/logo_icon.png">
-    <link rel="apple-touch-icon" sizes="120x120" href="/logo_icon.png">
-    <link rel="shortcut icon" href="/logo_icon.png">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%231A72EE'/%3E%3Cstop offset='100%25' style='stop-color:%234a90f0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='6' fill='url(%23bg)'/%3E%3Cpath d='M8 14h16v12H8z' fill='white' opacity='0.9'/%3E%3Cpath d='M16 6l8 6H8z' fill='white'/%3E%3Crect x='12' y='18' width='2' height='4' fill='%231A72EE'/%3E%3Crect x='18' y='18' width='2' height='4' fill='%231A72EE'/%3E%3Crect x='12' y='22' width='8' height='1' fill='%231A72EE' opacity='0.5'/%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" sizes="180x180" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%231A72EE'/%3E%3Cstop offset='100%25' style='stop-color:%234a90f0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' rx='35' fill='url(%23bg)'/%3E%3Cpath d='M45 80h90v70H45z' fill='white' opacity='0.95'/%3E%3Cpath d='M90 35l45 35H45z' fill='white'/%3E%3Crect x='70' y='100' width='10' height='25' fill='%231A72EE'/%3E%3Crect x='100' y='100' width='10' height='25' fill='%231A72EE'/%3E%3Crect x='70' y='130' width='40' height='5' fill='%231A72EE' opacity='0.4'/%3E%3Crect x='70' y='140' width='30' height='3' fill='%231A72EE' opacity='0.3'/%3E%3C/svg%3E">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -52,6 +44,69 @@
             --radius-xl: 1rem;
         }
 
+        /* Dark theme variables */
+        [data-theme="dark"] {
+            --primary-color: #3b82f6;
+            --primary-dark: #1d4ed8;
+            --primary-light: #60a5fa;
+            --secondary-color: #fbbf24;
+            --success-color: #34d399;
+            --danger-color: #f87171;
+            --warning-color: #fbbf24;
+            --info-color: #60a5fa;
+            
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --bg-dark: #0f172a;
+            --bg-dark-secondary: #1e293b;
+            
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-tertiary: #94a3b8;
+            --text-light: #f8fafc;
+            
+            --border-color: #475569;
+            --border-light: #334155;
+            
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.4);
+        }
+
+        /* Theme toggle button styles */
+        .theme-toggle {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.5rem;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            width: 2.5rem;
+            height: 2.5rem;
+        }
+
+        .theme-toggle:hover {
+            background-color: var(--bg-tertiary);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .theme-toggle:active {
+            transform: scale(0.95);
+        }
+
+        /* Smooth transitions for theme changes */
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -78,22 +133,7 @@
             border-right: 1px solid rgba(255, 255, 255, 0.1);
             z-index: 1000;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
-        }
-
-        .sidebar::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .sidebar::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .sidebar::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 2px;
+            overflow-y: hidden;
         }
 
         .sidebar-header {
@@ -144,10 +184,18 @@
 
         .nav-menu {
             padding: 1.5rem 0;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 120px); /* Account for sidebar header height */
         }
 
         .nav-section {
             margin-bottom: 2.5rem;
+        }
+
+        .nav-section.system-section {
+            margin-top: auto;
+            margin-bottom: 1rem;
         }
 
         .nav-section-title {
@@ -789,12 +837,9 @@
         /* Mobile Responsiveness */
         @media (max-width: 768px) {
             .sidebar {
-                transform: translateX(-100%);
-                width: 280px;
-            }
-
-            .sidebar.open {
-                transform: translateX(0);
+                transform: translateX(0); /* Always show sidebar on mobile */
+                width: 100%;
+                z-index: 1001;
             }
 
             .main-content {
@@ -892,23 +937,6 @@
             </a>
         </div>
         
-        <!-- Inventory Selector -->
-        <div class="inventory-selector">
-            <div class="inventory-selector-title">
-                <span>Current Inventory</span>
-                <button class="btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="showAddInventory()">
-                    <i class="fas fa-plus"></i>
-                </button>
-            </div>
-            <div class="inventory-dropdown">
-                <select class="inventory-select" id="current-inventory" onchange="switchInventory(this.value)">
-                    <option value="1">🏠 Main House</option>
-                    <option value="2">🏠 Garage</option>
-                    <option value="3">🏠 Storage Unit</option>
-                </select>
-            </div>
-        </div>
-        
         <nav class="nav-menu">
             <div class="nav-section">
                 <div class="nav-section-title">Overview</div>
@@ -916,59 +944,30 @@
                     <i class="fas fa-chart-line"></i>
                     <span>Dashboard</span>
                 </div>
-                <div class="nav-item" data-page="analytics">
-                    <i class="fas fa-analytics"></i>
-                    <span>Analytics</span>
-                    <span class="nav-item-badge">New</span>
-                </div>
             </div>
             
             <div class="nav-section">
                 <div class="nav-section-title">Inventory</div>
                 <div class="nav-item" data-page="inventories">
                     <i class="fas fa-warehouse"></i>
-                    <span>All Inventories</span>
-                </div>
-                <div class="nav-item" data-page="items">
-                    <i class="fas fa-boxes"></i>
-                    <span>Items</span>
+                    <span>Inventories</span>
                 </div>
                 <div class="nav-item" data-page="categories">
                     <i class="fas fa-tags"></i>
                     <span>Categories</span>
                 </div>
-                <div class="nav-item" data-page="locations">
-                    <i class="fas fa-map-marker-alt"></i>
-                    <span>Locations</span>
-                </div>
             </div>
 
-            <div class="nav-section">
-                <div class="nav-section-title">Tools</div>
-                <div class="nav-item" data-page="scanner">
-                    <i class="fas fa-qrcode"></i>
-                    <span>Barcode Scanner</span>
-                </div>
-                <div class="nav-item" data-page="import">
-                    <i class="fas fa-file-import"></i>
-                    <span>Import/Export</span>
-                </div>
-                <div class="nav-item" data-page="reports">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Reports</span>
-                </div>
-            </div>
-
-            <div class="nav-section">
+            <div class="nav-section system-section">
                 <div class="nav-section-title">System</div>
                 <div class="nav-item" data-page="settings">
                     <i class="fas fa-cog"></i>
                     <span>Settings</span>
                 </div>
-                <a href="/health" class="nav-item" target="_blank">
-                    <i class="fas fa-heartbeat"></i>
-                    <span>Health Check</span>
-                </a>
+                <div class="nav-item" data-page="reports">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Reports</span>
+                </div>
             </div>
         </nav>
     </aside>
@@ -982,29 +981,30 @@
                     <p class="page-subtitle" id="page-subtitle">Welcome back! Here's your inventory overview.</p>
                 </div>
                 <div class="header-actions">
-                    <div class="search-box">
-                        <i class="fas fa-search search-icon"></i>
-                        <input type="text" class="search-input" placeholder="Search items, categories..." id="global-search">
-                    </div>
-                    <button class="btn btn-secondary" onclick="toggleNotifications()">
-                        <i class="fas fa-bell"></i>
+                    <button class="theme-toggle" onclick="toggleTheme()" id="theme-toggle" title="Toggle dark/light mode">
+                        <i class="fas fa-sun"></i>
                     </button>
                     <button class="btn btn-primary" onclick="showQuickAdd()">
                         <i class="fas fa-plus"></i>
                         Quick Add
                     </button>
-                    <button class="btn btn-secondary mobile-menu-btn" onclick="toggleSidebar()">
-                        <i class="fas fa-bars"></i>
-                    </button>
+                    <div class="search-box">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" class="search-input" placeholder="Search items, categories..." id="global-search">
+                    </div>
                 </div>
             </div>
         </header>
 
         <div class="content" id="main-content">
-            <!-- Dashboard Content -->
-            <div id="dashboard-content">
-                <!-- Enhanced Stats Grid -->
-                <div class="stats-grid">
+            <!-- Dashboard Content will be loaded here -->
+        </div>
+    </main>
+
+    <!-- Dashboard Content Template (hidden) -->
+    <div id="dashboard-content" style="display: none;">
+        <!-- Enhanced Stats Grid -->
+        <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-header">
                             <div class="stat-title">Total Inventories</div>
@@ -1074,9 +1074,6 @@
                                 <button class="btn btn-secondary" onclick="refreshRecentItems()">
                                     <i class="fas fa-sync-alt"></i>
                                 </button>
-                                <button class="btn btn-primary" onclick="setActivePage('items')">
-                                    View All
-                                </button>
                             </div>
                         </div>
                         <div class="card-content">
@@ -1145,16 +1142,6 @@
                         </div>
                     </div>
 
-                    <div class="dashboard-card" style="cursor: pointer;" onclick="setActivePage('scanner')">
-                        <div class="card-content text-center">
-                            <div style="font-size: 3rem; color: var(--secondary-color); margin-bottom: 1rem;">
-                                <i class="fas fa-qrcode"></i>
-                            </div>
-                            <h3 style="margin-bottom: 0.5rem; color: var(--text-primary);">Scan Barcode</h3>
-                            <p style="color: var(--text-secondary);">Use your camera to scan product barcodes</p>
-                        </div>
-                    </div>
-
                     <div class="dashboard-card" style="cursor: pointer;" onclick="setActivePage('reports')">
                         <div class="card-content text-center">
                             <div style="font-size: 3rem; color: var(--success-color); margin-bottom: 1rem;">
@@ -1168,78 +1155,116 @@
             </div>
         </div>
     </main>
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <h1 class="page-title" id="page-title">Dashboard</h1>
-                </div>
-                <div class="header-actions">
-                    <button class="btn btn-secondary" onclick="showQuickAdd()">
-                        <i class="fas fa-plus"></i>
-                        Quick Add
-                    </button>
-                    <button class="btn btn-primary" onclick="showAddInventory()">
+    </div>
+
+    <!-- Hidden dashboard template -->
+    <div id="dashboard-content" style="display: none;">
+        <div class="dashboard-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">Total Inventories</span>
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white;">
                         <i class="fas fa-warehouse"></i>
-                        New Inventory
-                    </button>
+                    </div>
+                </div>
+                <div class="stat-value" id="total-inventories">-</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-arrow-up"></i> Active inventories
                 </div>
             </div>
-        </header>
 
-        <main class="content" id="main-content">
-            <div class="dashboard-grid">
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <span class="stat-title">Total Inventories</span>
-                        <div class="stat-icon" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white;">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">Total Items</span>
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #059669, #047857); color: white;">
+                        <i class="fas fa-box"></i>
+                    </div>
+                </div>
+                <div class="stat-value" id="total-items">-</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-arrow-up"></i> Items tracked
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">Total Value</span>
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #dc2626, #b91c1c); color: white;">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                </div>
+                <div class="stat-value" id="total-value">-</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-arrow-up"></i> Portfolio value
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">System Status</span>
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #7c3aed, #5b21b6); color: white;">
+                        <i class="fas fa-heartbeat"></i>
+                    </div>
+                </div>
+                <div class="stat-value system-status">
+                    <span class="status-indicator online" id="system-status"></span>
+                    <span id="status-text">Online</span>
+                </div>
+                <div class="stat-change neutral">
+                    <i class="fas fa-circle"></i> All systems operational
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-section">
+            <h2 class="section-title">Recent Activity</h2>
+            <div class="activity-feed" id="activity-feed">
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="fas fa-plus" style="color: var(--success-color);"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">Loading recent activities...</div>
+                        <div class="activity-time">Just now</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-section">
+            <h2 class="section-title">Quick Actions</h2>
+            <div class="quick-actions-grid">
+                <div class="dashboard-card" style="cursor: pointer;" onclick="showQuickAdd()">
+                    <div class="card-content text-center">
+                        <div style="font-size: 3rem; color: var(--primary-color); margin-bottom: 1rem;">
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        <h3 style="margin-bottom: 0.5rem; color: var(--text-primary);">Add Item</h3>
+                        <p style="color: var(--text-secondary);">Quickly add a new item to inventory</p>
+                    </div>
+                </div>
+
+                <div class="dashboard-card" style="cursor: pointer;" onclick="showAddInventory()">
+                    <div class="card-content text-center">
+                        <div style="font-size: 3rem; color: var(--warning-color); margin-bottom: 1rem;">
                             <i class="fas fa-warehouse"></i>
                         </div>
-                    </div>
-                    <div class="stat-value" id="total-inventories">-</div>
-                    <div class="stat-change positive">
-                        <i class="fas fa-arrow-up"></i> Active inventories
+                        <h3 style="margin-bottom: 0.5rem; color: var(--text-primary);">New Inventory</h3>
+                        <p style="color: var(--text-secondary);">Create a new inventory collection</p>
                     </div>
                 </div>
 
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <span class="stat-title">Total Items</span>
-                        <div class="stat-icon" style="background: linear-gradient(135deg, #059669, #047857); color: white;">
-                            <i class="fas fa-boxes"></i>
+                <div class="dashboard-card" style="cursor: pointer;" onclick="setActivePage('reports')">
+                    <div class="card-content text-center">
+                        <div style="font-size: 3rem; color: var(--success-color); margin-bottom: 1rem;">
+                            <i class="fas fa-chart-bar"></i>
                         </div>
-                    </div>
-                    <div class="stat-value" id="total-items">-</div>
-                    <div class="stat-change positive">
-                        <i class="fas fa-arrow-up"></i> Across all inventories
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <span class="stat-title">Total Value</span>
-                        <div class="stat-icon" style="background: linear-gradient(135deg, #dc2626, #b91c1c); color: white;">
-                            <i class="fas fa-dollar-sign"></i>
-                        </div>
-                    </div>
-                    <div class="stat-value" id="total-value">-</div>
-                    <div class="stat-change positive">
-                        <i class="fas fa-arrow-up"></i> Total portfolio value
+                        <h3 style="margin-bottom: 0.5rem; color: var(--text-primary);">View Reports</h3>
+                        <p style="color: var(--text-secondary);">Generate detailed inventory reports</p>
                     </div>
                 </div>
             </div>
-
-            <div class="recent-section">
-                <div class="section-header">
-                    <h2 class="section-title">Recent Items</h2>
-                    <div class="btn btn-secondary nav-item" data-page="items">View All</div>
-                </div>
-                <div class="item-list" id="recent-items">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        Loading recent items...
-                    </div>
-                </div>
-            </div>
-        </main>
+        </div>
     </div>
 
     <!-- Modals -->
@@ -1353,6 +1378,39 @@
         let currentInventoryId = 1;
         let currentPage = 'dashboard';
 
+        // Theme management
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            const body = document.body;
+            const themeToggle = document.getElementById('theme-toggle');
+            
+            body.setAttribute('data-theme', savedTheme);
+            updateThemeIcon(savedTheme);
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme') || 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            
+            body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+        }
+
+        function updateThemeIcon(theme) {
+            const themeToggle = document.getElementById('theme-toggle');
+            const icon = themeToggle.querySelector('i');
+            
+            if (theme === 'dark') {
+                icon.className = 'fas fa-moon';
+                themeToggle.title = 'Switch to light mode';
+            } else {
+                icon.className = 'fas fa-sun';
+                themeToggle.title = 'Switch to dark mode';
+            }
+        }
+
         // Page navigation
         function setActivePage(page) {
             // Update nav items
@@ -1365,13 +1423,8 @@
             // Update page title and subtitle
             const titles = {
                 dashboard: { title: 'Dashboard', subtitle: 'Welcome back! Here\'s your inventory overview.' },
-                analytics: { title: 'Analytics', subtitle: 'Detailed insights into your inventory trends.' },
-                inventories: { title: 'All Inventories', subtitle: 'Manage your inventory spaces and locations.' },
-                items: { title: 'Items', subtitle: 'Browse and manage all your inventory items.' },
+                inventories: { title: 'Inventories', subtitle: 'Manage your inventory spaces and locations.' },
                 categories: { title: 'Categories', subtitle: 'Organize items with custom categories.' },
-                locations: { title: 'Locations', subtitle: 'Manage physical locations and rooms.' },
-                scanner: { title: 'Barcode Scanner', subtitle: 'Scan barcodes to quickly add items.' },
-                import: { title: 'Import/Export', subtitle: 'Import data or export your inventory.' },
                 reports: { title: 'Reports', subtitle: 'Generate detailed inventory reports.' },
                 settings: { title: 'Settings', subtitle: 'Configure your inventory system.' }
             };
@@ -1394,20 +1447,8 @@
                     loadDashboardData();
                     break;
                     
-                case 'items':
-                    loadItemsPage();
-                    break;
-                    
                 case 'inventories':
                     loadInventoriesPage();
-                    break;
-                    
-                case 'analytics':
-                    loadAnalyticsPage();
-                    break;
-                    
-                case 'scanner':
-                    loadScannerPage();
                     break;
                     
                 default:
@@ -1435,8 +1476,6 @@
             // Refresh current page data
             if (currentPage === 'dashboard') {
                 loadDashboardData();
-            } else if (currentPage === 'items') {
-                loadItemsPage();
             }
             
             // Show toast notification
@@ -1662,14 +1701,6 @@
         }
 
         // Utility functions
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('open');
-        }
-
-        function toggleNotifications() {
-            showToast('Notifications feature coming soon!', 'info');
-        }
-
         function refreshRecentItems() {
             loadDashboardData();
             showToast('Recent items refreshed', 'success');
@@ -1737,23 +1768,6 @@
         }
 
         // Page loaders (placeholder implementations)
-        function loadItemsPage() {
-            const content = document.getElementById('main-content');
-            content.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">
-                        <i class="fas fa-boxes"></i>
-                    </div>
-                    <div class="empty-state-title">Items Page</div>
-                    <div class="empty-state-text">Full items management interface coming soon.</div>
-                    <button class="btn btn-primary" onclick="setActivePage('dashboard')">
-                        <i class="fas fa-arrow-left"></i>
-                        Back to Dashboard
-                    </button>
-                </div>
-            `;
-        }
-
         function loadInventoriesPage() {
             const content = document.getElementById('main-content');
             content.innerHTML = `
@@ -1771,42 +1785,11 @@
             `;
         }
 
-        function loadAnalyticsPage() {
-            const content = document.getElementById('main-content');
-            content.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <div class="empty-state-title">Analytics Dashboard</div>
-                    <div class="empty-state-text">Advanced analytics and insights coming soon.</div>
-                    <button class="btn btn-primary" onclick="setActivePage('dashboard')">
-                        <i class="fas fa-arrow-left"></i>
-                        Back to Dashboard
-                    </button>
-                </div>
-            `;
-        }
-
-        function loadScannerPage() {
-            const content = document.getElementById('main-content');
-            content.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">
-                        <i class="fas fa-qrcode"></i>
-                    </div>
-                    <div class="empty-state-title">Barcode Scanner</div>
-                    <div class="empty-state-text">Camera-based barcode scanning coming soon.</div>
-                    <button class="btn btn-primary" onclick="setActivePage('dashboard')">
-                        <i class="fas fa-arrow-left"></i>
-                        Back to Dashboard
-                    </button>
-                </div>
-            `;
-        }
-
         // Event listeners
         document.addEventListener('DOMContentLoaded', () => {
+            // Initialize theme
+            initTheme();
+
             // Add click handlers to nav items
             document.querySelectorAll('.nav-item[data-page]').forEach(item => {
                 item.addEventListener('click', (e) => {
