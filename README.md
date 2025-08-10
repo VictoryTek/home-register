@@ -4,6 +4,10 @@
 
 # Home Register
 
+** WORK IN PROGRESS **
+
+Inspired by HomeBox project, which I used for years. Whent I was no longer maintained, I thought I would attempt to build a successor to that project.
+
 A modern, web-based home inventory management system built with **Rust + Actix-Web + PostgreSQL**. Keep track of your belongings with an intuitive interface featuring categories, tags, custom fields, and comprehensive search capabilities.
 
 ## Features
