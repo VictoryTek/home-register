@@ -1133,6 +1133,58 @@
             border-top: 1px solid var(--border-light);
         }
 
+        /* Quantity Control Styles */
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+
+        .quantity-buttons {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            padding: 0.25rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-quantity {
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: var(--bg-primary);
+            color: var(--text-secondary);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-quantity:hover:not(:disabled) {
+            background: var(--primary-color);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .btn-quantity:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .quantity-display {
+            min-width: 30px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
         /* Page Header */
         .page-header {
             background: var(--bg-primary);
@@ -2476,8 +2528,8 @@
                 
                 let categoryItems = [];
                 if (result.success && result.data) {
-                    // Show all items since we're using a simple item structure
-                    categoryItems = result.data;
+                    // Filter items to only show those belonging to the current inventory
+                    categoryItems = result.data.filter(item => item.inventory_id === currentInventoryId);
                     
                     // Merge with extended data from localStorage (custom fields, images, etc.)
                     const extendedItems = JSON.parse(localStorage.getItem('extendedItemData') || '{}');
@@ -2567,7 +2619,18 @@
                                 <div class="item-card-description">${item.description || 'No description'}</div>
                                 <div class="item-card-stats">
                                     <div><strong>Value:</strong> $${(item.value || item.purchase_price || 0).toLocaleString()}</div>
-                                    <div><strong>Quantity:</strong> ${item.quantity || 1}</div>
+                                    <div class="quantity-control">
+                                        <span><strong>Quantity:</strong></span>
+                                        <div class="quantity-buttons">
+                                            <button class="btn-quantity decrease" onclick="updateItemQuantity(${item.id}, ${(item.quantity || 1) - 1})" title="Decrease quantity" ${(item.quantity || 1) <= 1 ? 'disabled' : ''}>
+                                                <i class="fas fa-minus"></i>
+                                            </button>
+                                            <span class="quantity-display">${item.quantity || 1}</span>
+                                            <button class="btn-quantity increase" onclick="updateItemQuantity(${item.id}, ${(item.quantity || 1) + 1})" title="Increase quantity">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
                                     ${item.purchaseLink ? 
                                         `<a href="${item.purchaseLink}" target="_blank" title="View Purchase Link">
                                             <i class="fas fa-external-link-alt"></i> Purchase Link
@@ -3262,7 +3325,7 @@
         }
 
         function updateDashboardStats() {
-            const currentItems = items.filter(item => item.inventory_id === currentInventoryId || !item.inventory_id);
+            const currentItems = items.filter(item => item.inventory_id === currentInventoryId);
             const totalItems = currentItems.length;
             const totalValue = currentItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0);
             const categories = new Set(currentItems.map(item => item.category).filter(Boolean)).size;
@@ -3280,7 +3343,7 @@
             
             if (!recentItemsContainer) return;
             
-            const currentItems = items.filter(item => item.inventory_id === currentInventoryId || !item.inventory_id);
+            const currentItems = items.filter(item => item.inventory_id === currentInventoryId);
             
             if (currentItems.length === 0) {
                 recentItemsContainer.innerHTML = `
@@ -3387,57 +3450,81 @@
                 return;
             }
 
-            // Create inventory object
-            const inventoryData = {
-                id: Date.now(), // Simple ID generation
-                name,
-                category,
-                description,
-                imageUrl: null,
-                itemCount: 0,
-                totalValue: 0,
-                createdAt: new Date().toISOString()
-            };
-
-            // Handle image upload
-            if (imageFile) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    inventoryData.imageUrl = e.target.result;
-                    saveInventory(inventoryData);
+            try {
+                // Create inventory in backend database
+                const inventoryData = {
+                    name,
+                    description: description || `${category} inventory`
                 };
-                reader.readAsDataURL(imageFile);
-            } else {
-                saveInventory(inventoryData);
+
+                const response = await fetch('/api/inventories', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(inventoryData)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showToast('Inventory created successfully!', 'success');
+                    hideAddInventory();
+                    clearInventoryForm();
+                    
+                    // Also save as frontend category for organization
+                    const frontendCategory = {
+                        id: result.data.id, // Use the backend inventory ID
+                        name,
+                        category,
+                        description,
+                        imageUrl: null,
+                        itemCount: 0,
+                        totalValue: 0,
+                        createdAt: new Date().toISOString()
+                    };
+
+                    // Handle image upload for frontend category
+                    if (imageFile) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            frontendCategory.imageUrl = e.target.result;
+                            saveFrontendCategory(frontendCategory);
+                        };
+                        reader.readAsDataURL(imageFile);
+                    } else {
+                        saveFrontendCategory(frontendCategory);
+                    }
+                    
+                    // Refresh the inventories page if we're currently on it
+                    if (currentPage === 'inventories') {
+                        loadInventoriesPage();
+                    }
+                } else {
+                    const errorData = await response.json();
+                    showToast(errorData.error || 'Failed to create inventory', 'error');
+                }
+            } catch (error) {
+                console.error('Error creating inventory:', error);
+                showToast('Failed to create inventory', 'error');
             }
         }
 
-        function saveInventory(inventoryData) {
+        function saveFrontendCategory(categoryData) {
             try {
-                // Get existing inventories from localStorage
-                const existingInventories = JSON.parse(localStorage.getItem('inventories') || '[]');
+                // Get existing categories from localStorage
+                const existingCategories = JSON.parse(localStorage.getItem('categories') || '[]');
                 
-                // Add new inventory
-                existingInventories.push(inventoryData);
+                // Add new category
+                existingCategories.push(categoryData);
                 
                 // Save back to localStorage
-                localStorage.setItem('inventories', JSON.stringify(existingInventories));
+                localStorage.setItem('categories', JSON.stringify(existingCategories));
                 
-                // Update global inventories array
-                inventories = existingInventories;
-                
-                showToast('Inventory created successfully!', 'success');
-                hideAddInventory();
-                clearInventoryForm();
-                
-                // Refresh the inventories page if we're currently on it
-                if (currentPage === 'inventories') {
-                    loadInventoriesPage();
-                }
+                // Update global categories array
+                categories = existingCategories;
                 
             } catch (error) {
-                console.error('Error saving inventory:', error);
-                showToast('Failed to create inventory', 'error');
+                console.error('Error saving frontend category:', error);
             }
         }
 
@@ -3918,7 +4005,7 @@
                 description,
                 purchase_price: value,
                 quantity,
-                inventory_id: 1, // Use the main inventory for now since frontend categories don't map directly to API inventories
+                inventory_id: currentInventoryId, // Use the current inventory being viewed
                 location: '', // Default empty location
                 category: '' // Default empty category
             };
@@ -4108,12 +4195,150 @@
             }
         }
 
+        async function updateItemQuantity(itemId, newQuantity) {
+            console.log(`[QUANTITY] ==> updateItemQuantity called with itemId=${itemId}, newQuantity=${newQuantity}`);
+            
+            if (newQuantity < 1) {
+                console.log('[QUANTITY] Cannot set quantity below 1');
+                return;
+            }
+
+            console.log(`[QUANTITY] Starting quantity update for item ${itemId} to ${newQuantity}`);
+
+            try {
+                // Try a minimal update request first - just quantity
+                const minimalUpdateData = {
+                    quantity: newQuantity
+                };
+
+                console.log('[QUANTITY] Sending minimal update request:', minimalUpdateData);
+                console.log('[QUANTITY] Request URL:', `/api/items/${itemId}`);
+
+                const response = await fetch(`/api/items/${itemId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(minimalUpdateData)
+                });
+
+                console.log(`[QUANTITY] Response received - Status: ${response.status}, OK: ${response.ok}`);
+
+                if (response.ok) {
+                    console.log('[QUANTITY] Quantity updated successfully');
+                    
+                    // Parse the response to get updated item data
+                    let updatedItem = null;
+                    try {
+                        const responseText = await response.text();
+                        console.log('[QUANTITY] Response text:', responseText);
+                        if (responseText) {
+                            const responseData = JSON.parse(responseText);
+                            updatedItem = responseData.data;
+                            console.log('[QUANTITY] Updated item data:', updatedItem);
+                        }
+                    } catch (parseError) {
+                        console.log('[QUANTITY] Could not parse response, but update was successful');
+                    }
+                    
+                    // Update the UI immediately by finding and updating the specific elements
+                    const itemCard = document.querySelector(`[data-item-id="${itemId}"]`);
+                    if (itemCard) {
+                        // Update the quantity display
+                        const quantityDisplay = itemCard.querySelector('.quantity-display');
+                        if (quantityDisplay) {
+                            quantityDisplay.textContent = newQuantity;
+                            console.log('[QUANTITY] Updated quantity display to:', newQuantity);
+                        }
+                        
+                        // Update the decrease button disabled state
+                        const decreaseBtn = itemCard.querySelector('.btn-quantity.decrease');
+                        if (decreaseBtn) {
+                            if (newQuantity <= 1) {
+                                decreaseBtn.disabled = true;
+                                decreaseBtn.setAttribute('disabled', '');
+                            } else {
+                                decreaseBtn.disabled = false;
+                                decreaseBtn.removeAttribute('disabled');
+                            }
+                        }
+                        
+                        // Update the onclick handlers with the new quantity
+                        const increaseBtn = itemCard.querySelector('.btn-quantity.increase');
+                        if (increaseBtn) {
+                            increaseBtn.setAttribute('onclick', `updateItemQuantity(${itemId}, ${newQuantity + 1})`);
+                        }
+                        if (decreaseBtn) {
+                            decreaseBtn.setAttribute('onclick', `updateItemQuantity(${itemId}, ${newQuantity - 1})`);
+                        }
+                        
+                        console.log('[QUANTITY] Updated UI elements for item:', itemId);
+                    } else {
+                        console.warn('[QUANTITY] Could not find item card for itemId:', itemId);
+                    }
+                    
+                    // Update the local currentCategoryItems array
+                    if (window.currentCategoryItems) {
+                        const itemIndex = window.currentCategoryItems.findIndex(item => 
+                            item.id == itemId // Use loose equality to handle type differences
+                        );
+                        if (itemIndex !== -1) {
+                            window.currentCategoryItems[itemIndex].quantity = newQuantity;
+                            console.log(`[QUANTITY] Updated local item array at index ${itemIndex}`);
+                        } else {
+                            console.warn(`[QUANTITY] Could not find item ${itemId} in local array to update`);
+                        }
+                    }
+                    
+                    // Show success toast
+                    showToast(`Quantity updated to ${newQuantity}`, 'success');
+                    
+                } else if (response.status === 404) {
+                    console.log('[QUANTITY] Item not found on server (404)');
+                    showToast('Item not found', 'error');
+                } else {
+                    console.error('[QUANTITY] Update failed with status:', response.status);
+                    
+                    let errorMessage = `Failed to update quantity (${response.status})`;
+                    try {
+                        const errorText = await response.text();
+                        console.error('[QUANTITY] Error response text:', errorText);
+                        if (errorText) {
+                            const errorData = JSON.parse(errorText);
+                            errorMessage = errorData.error || errorMessage;
+                        }
+                    } catch (parseError) {
+                        console.error('[QUANTITY] Could not parse error response');
+                    }
+                    
+                    showToast(errorMessage, 'error');
+                }
+                
+            } catch (networkError) {
+                console.error('[QUANTITY] Network error details:');
+                console.error('- Error message:', networkError.message);
+                console.error('- Error type:', networkError.name);
+                console.error('- Error stack:', networkError.stack);
+                console.error('- Full error object:', networkError);
+                
+                // Check if it's a CORS or network connectivity issue
+                if (networkError.name === 'TypeError' && networkError.message.includes('fetch')) {
+                    console.error('[QUANTITY] This appears to be a fetch/network error');
+                    showToast('Connection error - check if server is running', 'error');
+                } else {
+                    console.error('[QUANTITY] Unknown network error type');
+                    showToast(`Network error while updating quantity: ${networkError.message}`, 'error');
+                }
+            }
+        }
+
         async function deleteItem(categoryId, itemId) {
             if (confirm('Are you sure you want to delete this item?')) {
+                console.log(`[DELETE] Starting delete operation for item ${itemId} in category ${categoryId}`);
+                
                 try {
-                    console.log(`Attempting to delete item ${itemId} from category ${categoryId}`);
-                    
                     // Call the API to delete the item
+                    console.log(`[DELETE] Sending DELETE request to /api/items/${itemId}`);
                     const response = await fetch(`/api/items/${itemId}`, {
                         method: 'DELETE',
                         headers: {
@@ -4121,96 +4346,110 @@
                         }
                     });
 
-                    console.log(`Delete response status: ${response.status}`);
+                    console.log(`[DELETE] Response received - Status: ${response.status}, OK: ${response.ok}`);
 
                     if (response.ok) {
-                        // Item deleted successfully
-                        console.log('Delete successful - response OK');
+                        console.log('[DELETE] Response is OK, processing successful deletion');
                         
-                        // Try to parse JSON response, but don't fail if it's empty or malformed
-                        let result = null;
-                        try {
-                            const text = await response.text();
-                            if (text) {
-                                result = JSON.parse(text);
-                            }
-                        } catch (parseError) {
-                            console.log('Could not parse JSON response, but deletion was successful');
-                        }
-                        
+                        // Show success message immediately
                         showToast('Item deleted successfully!', 'success');
                         
-                        // Clean up frontend state
+                        // Clean up frontend state synchronously first
+                        console.log('[DELETE] Cleaning up frontend state');
                         if (window.currentCategoryItems) {
+                            const initialLength = window.currentCategoryItems.length;
                             window.currentCategoryItems = window.currentCategoryItems.filter(item => item.id !== itemId);
+                            console.log(`[DELETE] Removed item from currentCategoryItems (${initialLength} -> ${window.currentCategoryItems.length})`);
                         }
                         
-                        // Also remove from localStorage extended data
-                        const extendedItems = JSON.parse(localStorage.getItem('extendedItemData') || '{}');
-                        if (extendedItems[itemId]) {
-                            delete extendedItems[itemId];
-                            localStorage.setItem('extendedItemData', JSON.stringify(extendedItems));
+                        // Clean up localStorage
+                        console.log('[DELETE] Cleaning up localStorage');
+                        try {
+                            const extendedItems = JSON.parse(localStorage.getItem('extendedItemData') || '{}');
+                            if (extendedItems[itemId]) {
+                                delete extendedItems[itemId];
+                                localStorage.setItem('extendedItemData', JSON.stringify(extendedItems));
+                                console.log('[DELETE] Removed item from localStorage');
+                            }
+                        } catch (storageError) {
+                            console.error('[DELETE] Error cleaning localStorage:', storageError);
                         }
                         
-                        // Refresh the current category inventory view
-                        const category = categories.find(cat => cat.id === categoryId);
-                        if (category && activePage === 'category-inventory') {
-                            await loadCategoryInventoryPage(category);
+                        // Update the UI immediately by removing the item card directly
+                        console.log('[DELETE] Removing item card from DOM');
+                        const itemCard = document.querySelector(`[data-item-id="${itemId}"]`);
+                        if (itemCard) {
+                            // Add a fade-out animation before removing
+                            itemCard.style.transition = 'opacity 0.3s ease';
+                            itemCard.style.opacity = '0';
+                            
+                            // Remove the element after the animation
+                            setTimeout(() => {
+                                itemCard.remove();
+                                console.log('[DELETE] Item card removed from DOM');
+                            }, 300);
+                        } else {
+                            console.warn('[DELETE] Could not find item card to remove for itemId:', itemId);
                         }
                         
-                        // Update dashboard stats if we're on dashboard
-                        if (activePage === 'dashboard') {
-                            await loadDashboard();
-                        }
+                        console.log('[DELETE] Delete operation completed successfully');
                         
                     } else if (response.status === 404) {
-                        // Item was already deleted (probably in a previous request that didn't update the UI)
-                        console.log('Item was already deleted');
+                        console.log('[DELETE] Item was already deleted (404 response)');
                         showToast('Item has already been deleted', 'info');
                         
-                        // Remove from frontend state anyway
+                        // Clean up state anyway
                         if (window.currentCategoryItems) {
                             window.currentCategoryItems = window.currentCategoryItems.filter(item => item.id !== itemId);
                         }
                         
-                        // Remove from localStorage extended data
-                        const extendedItems = JSON.parse(localStorage.getItem('extendedItemData') || '{}');
-                        if (extendedItems[itemId]) {
-                            delete extendedItems[itemId];
-                            localStorage.setItem('extendedItemData', JSON.stringify(extendedItems));
+                        try {
+                            const extendedItems = JSON.parse(localStorage.getItem('extendedItemData') || '{}');
+                            if (extendedItems[itemId]) {
+                                delete extendedItems[itemId];
+                                localStorage.setItem('extendedItemData', JSON.stringify(extendedItems));
+                            }
+                        } catch (storageError) {
+                            console.error('[DELETE] Error cleaning localStorage for 404:', storageError);
                         }
                         
-                        // Refresh the view to reflect the actual state
-                        const category = categories.find(cat => cat.id === categoryId);
-                        if (category && activePage === 'category-inventory') {
-                            await loadCategoryInventoryPage(category);
-                        }
-                        
-                        if (activePage === 'dashboard') {
-                            await loadDashboard();
+                        // Update UI immediately by removing the item card directly
+                        console.log('[DELETE] Removing item card from DOM (404 case)');
+                        const itemCard = document.querySelector(`[data-item-id="${itemId}"]`);
+                        if (itemCard) {
+                            // Add a fade-out animation before removing
+                            itemCard.style.transition = 'opacity 0.3s ease';
+                            itemCard.style.opacity = '0';
+                            
+                            // Remove the element after the animation
+                            setTimeout(() => {
+                                itemCard.remove();
+                                console.log('[DELETE] Item card removed from DOM (404)');
+                            }, 300);
+                        } else {
+                            console.warn('[DELETE] Could not find item card to remove for itemId (404):', itemId);
                         }
                         
                     } else {
-                        // Other error (500, etc.)
-                        console.error('Delete failed with status:', response.status);
+                        console.log(`[DELETE] Delete failed with status ${response.status}`);
                         
                         let errorMessage = 'Failed to delete item';
                         try {
                             const errorData = await response.json();
                             errorMessage = errorData.error || errorMessage;
+                            console.log('[DELETE] Error response:', errorData);
                         } catch (parseError) {
-                            console.log('Could not parse error response');
+                            console.log('[DELETE] Could not parse error response');
                         }
                         
                         showToast(errorMessage, 'error');
                     }
                 } catch (networkError) {
-                    console.error('Network error during delete operation:', networkError);
+                    console.error('[DELETE] Network error caught:', networkError.message, networkError.stack);
                     
-                    // Only show connection error message if we're sure it's a network issue
                     // Try to verify if the deletion actually succeeded despite the error
+                    console.log('[DELETE] Attempting to verify item status after network error');
                     try {
-                        console.log('Verifying item status after network error...');
                         const checkResponse = await fetch(`/api/items/${itemId}`, {
                             method: 'GET',
                             headers: {
@@ -4218,9 +4457,10 @@
                             }
                         });
                         
+                        console.log(`[DELETE] Verification response status: ${checkResponse.status}`);
+                        
                         if (checkResponse.status === 404) {
-                            // Item doesn't exist, so deletion was probably successful
-                            console.log('Verification confirmed: item was deleted successfully');
+                            console.log('[DELETE] Verification confirmed: item was deleted successfully');
                             showToast('Item was deleted successfully', 'success');
                             
                             // Clean up frontend state
@@ -4228,44 +4468,51 @@
                                 window.currentCategoryItems = window.currentCategoryItems.filter(item => item.id !== itemId);
                             }
                             
-                            const extendedItems = JSON.parse(localStorage.getItem('extendedItemData') || '{}');
-                            if (extendedItems[itemId]) {
-                                delete extendedItems[itemId];
-                                localStorage.setItem('extendedItemData', JSON.stringify(extendedItems));
+                            try {
+                                const extendedItems = JSON.parse(localStorage.getItem('extendedItemData') || '{}');
+                                if (extendedItems[itemId]) {
+                                    delete extendedItems[itemId];
+                                    localStorage.setItem('extendedItemData', JSON.stringify(extendedItems));
+                                }
+                            } catch (storageError) {
+                                console.error('[DELETE] Error cleaning localStorage after verification:', storageError);
                             }
                             
-                            // Refresh the view
-                            const category = categories.find(cat => cat.id === categoryId);
-                            if (category && activePage === 'category-inventory') {
-                                await loadCategoryInventoryPage(category);
-                            }
-                            
-                            if (activePage === 'dashboard') {
-                                await loadDashboard();
+                            // Update UI immediately
+                            try {
+                                const category = categories.find(cat => cat.id === categoryId);
+                                if (category && currentPage === 'category-inventory') {
+                                    displayCategoryItems(category, window.currentCategoryItems || []);
+                                } else if (currentPage === 'dashboard') {
+                                    await loadDashboard();
+                                }
+                            } catch (displayError) {
+                                console.error('[DELETE] Error during verified deletion UI update:', displayError);
                             }
                         } else if (checkResponse.ok) {
-                            // Item still exists, so there was a real network error during deletion
-                            console.log('Verification shows item still exists - real network error');
+                            console.log('[DELETE] Verification shows item still exists - real network error');
                             showToast('Network error occurred while deleting. Please try again.', 'error');
                         } else {
-                            // Can't determine item status
-                            console.log('Cannot verify item status due to server error');
+                            console.log('[DELETE] Cannot verify item status due to server error');
                             showToast('Connection error. Please refresh and try again.', 'warning');
                         }
                     } catch (verifyError) {
-                        // Can't verify, show generic error and refresh to check current state
-                        console.error('Could not verify item status:', verifyError);
+                        console.error('[DELETE] Could not verify item status:', verifyError.message, verifyError.stack);
                         showToast('Connection error. Refreshing to check current state...', 'warning');
                         
-                        // Still try to refresh the view to show current state
+                        // Still try to refresh the view to show current state after a delay
                         setTimeout(async () => {
-                            const category = categories.find(cat => cat.id === categoryId);
-                            if (category && activePage === 'category-inventory') {
-                                await loadCategoryInventoryPage(category);
-                            }
-                            
-                            if (activePage === 'dashboard') {
-                                await loadDashboard();
+                            try {
+                                console.log('[DELETE] Delayed refresh after verification failure');
+                                const category = categories.find(cat => cat.id === categoryId);
+                                if (category && currentPage === 'category-inventory') {
+                                    await loadCategoryInventoryPage(category);
+                                }
+                                if (currentPage === 'dashboard') {
+                                    await loadDashboard();
+                                }
+                            } catch (delayedRefreshError) {
+                                console.error('[DELETE] Error in delayed refresh:', delayedRefreshError);
                             }
                         }, 1000);
                     }

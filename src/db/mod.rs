@@ -217,6 +217,11 @@ impl DatabaseService {
             values.push(purchase_price);
             param_count += 1;
         }
+        if let Some(ref quantity) = request.quantity {
+            fields.push(format!("quantity = ${}", param_count));
+            values.push(quantity);
+            param_count += 1;
+        }
 
         if fields.is_empty() {
             return self.get_item_by_id(id).await;
