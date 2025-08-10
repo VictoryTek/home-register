@@ -1,5 +1,5 @@
 use crate::models::{CreateInventoryRequest, CreateItemRequest, Inventory, Item, UpdateItemRequest};
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use deadpool_postgres::{Config, ManagerConfig, Pool, RecyclingMethod};
 use log::info;
 use std::env;
@@ -126,6 +126,20 @@ impl DatabaseService {
     ) -> Result<Item, Box<dyn std::error::Error>> {
         let client = self.pool.get().await?;
 
+        // Convert date strings to proper format or None
+        let purchase_date: Option<chrono::NaiveDate> = request.purchase_date
+            .as_ref()
+            .filter(|s| !s.is_empty())
+            .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
+            
+        let warranty_expiry: Option<chrono::NaiveDate> = request.warranty_expiry
+            .as_ref()
+            .filter(|s| !s.is_empty())
+            .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
+
+        // Handle price properly - convert to None if not provided
+        let purchase_price_param: Option<f64> = request.purchase_price;
+
         let row = client
             .query_one(
                 "INSERT INTO items (inventory_id, name, description, category, location, purchase_date, purchase_price, warranty_expiry, notes, quantity) 
@@ -137,9 +151,9 @@ impl DatabaseService {
                     &request.description,
                     &request.category,
                     &request.location,
-                    &request.purchase_date,
-                    &request.purchase_price,
-                    &request.warranty_expiry,
+                    &purchase_date,
+                    &purchase_price_param,
+                    &warranty_expiry,
                     &request.notes,
                     &request.quantity,
                 ],
