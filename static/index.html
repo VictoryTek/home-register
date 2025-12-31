@@ -1280,6 +1280,264 @@
             gap: 1.5rem;
             margin-top: 1.5rem;
         }
+        
+        /* Inventories Header */
+        .inventories-header {
+            padding: 2rem;
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            margin: -2rem -2rem 2rem -2rem;
+        }
+        
+        .inventories-header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        
+        /* Enhanced Inventory Card */
+        .inventory-card-header {
+            position: relative;
+            margin: -1.5rem -1.5rem 1rem -1.5rem;
+        }
+        
+        .inventory-card-body {
+            flex: 1;
+        }
+        
+        .inventory-card-description {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+        
+        .inventory-card-location {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin: 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .inventory-card-stats {
+            display: flex;
+            gap: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-light);
+        }
+        
+        .inventory-card-stats .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+        
+        .inventory-card-stats .stat-item i {
+            color: var(--primary-color);
+        }
+        
+        .inventory-card-footer {
+            display: flex;
+            gap: 0.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-light);
+            margin-top: 1rem;
+        }
+        
+        /* Inventory Detail Pages */
+        .inventory-detail {
+            padding: 2rem;
+        }
+        
+        .inventory-detail-header {
+            margin-bottom: 2rem;
+        }
+        
+        .inventory-detail-title-section {
+            margin: 1rem 0;
+        }
+        
+        .inventory-detail-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .inventory-detail-description {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+        
+        .inventory-detail-location {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .inventory-detail-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .inventory-detail-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .stat-card .stat-icon {
+            width: 3rem;
+            height: 3rem;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+        
+        .stat-card .stat-content {
+            flex: 1;
+        }
+        
+        .stat-card .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .stat-card .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .inventory-detail-items {
+            margin-top: 2rem;
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        /* Item Card Styles */
+        .item-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+        
+        .item-card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+        
+        .item-card-category {
+            background: var(--primary-color);
+            color: white;
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--radius-sm);
+            font-weight: 500;
+        }
+        
+        .item-card-body {
+            flex: 1;
+        }
+        
+        .item-card-description {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+        
+        .item-card-details {
+            display: grid;
+            gap: 0.5rem;
+        }
+        
+        .item-card-details .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+        
+        .item-card-details .detail-item i {
+            color: var(--primary-color);
+            width: 1rem;
+        }
+        
+        .item-card-footer {
+            display: flex;
+            gap: 0.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-light);
+            margin-top: 1rem;
+        }
+        
+        .btn-sm {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+        }
+        
+        .btn-ghost {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        .btn-ghost:hover {
+            background: var(--bg-secondary);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        .text-danger {
+            color: var(--danger-color) !important;
+        }
+        
+        .text-danger:hover {
+            color: var(--danger-color) !important;
+            background: rgba(239, 68, 68, 0.1) !important;
+            border-color: var(--danger-color) !important;
+        }
 
         /* Empty State */
         .empty-state {
@@ -1428,25 +1686,9 @@
         <nav class="nav-menu">
             <div class="nav-section">
                 <div class="nav-section-title">Overview</div>
-                <div class="nav-item active" data-page="dashboard">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Dashboard</span>
-                </div>
-            </div>
-            
-            <div class="nav-section">
-                <div class="nav-section-title">Inventory</div>
-                <div class="nav-item" data-page="inventories">
+                <div class="nav-item active" data-page="inventories">
                     <i class="fas fa-warehouse"></i>
                     <span>Inventories</span>
-                </div>
-                <div class="nav-item" data-page="categories">
-                    <i class="fas fa-tags"></i>
-                    <span>Categories</span>
-                </div>
-                <div class="nav-item" data-page="tags">
-                    <i class="fas fa-tag"></i>
-                    <span>Tags</span>
                 </div>
             </div>
 
@@ -1455,10 +1697,6 @@
                 <div class="nav-item" data-page="settings">
                     <i class="fas fa-cog"></i>
                     <span>Settings</span>
-                </div>
-                <div class="nav-item" data-page="reports">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Reports</span>
                 </div>
             </div>
         </nav>
@@ -1469,21 +1707,15 @@
         <header class="header">
             <div class="header-content">
                 <div class="page-title-section">
-                    <h1 class="page-title" id="page-title">Dashboard</h1>
-                    <p class="page-subtitle" id="page-subtitle">Welcome back! Here's your inventory overview.</p>
+                    <h1 class="page-title" id="page-title">
+                        <i class="fas fa-warehouse"></i> Your Inventories
+                    </h1>
+                    <p class="page-subtitle" id="page-subtitle">Manage and organize your inventory collections</p>
                 </div>
                 <div class="header-actions">
                     <button class="theme-toggle" onclick="toggleTheme()" id="theme-toggle" title="Toggle dark/light mode">
                         <i class="fas fa-sun"></i>
                     </button>
-                    <button class="btn btn-primary" onclick="showQuickAdd()">
-                        <i class="fas fa-plus"></i>
-                        Quick Add
-                    </button>
-                    <div class="search-box">
-                        <i class="fas fa-search search-icon"></i>
-                        <input type="text" class="search-input" placeholder="Search items, categories..." id="global-search">
-                    </div>
                 </div>
             </div>
         </header>
@@ -1492,272 +1724,6 @@
             <!-- Dashboard Content will be loaded here -->
         </div>
     </main>
-
-    <!-- Dashboard Content Template (hidden) -->
-    <div id="dashboard-content" style="display: none;">
-        <!-- Enhanced Stats Grid -->
-        <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <div class="stat-title">Total Inventories</div>
-                            <div class="stat-icon">
-                                <i class="fas fa-warehouse"></i>
-                            </div>
-                        </div>
-                        <div class="stat-value" id="total-inventories">3</div>
-                        <div class="stat-change positive">
-                            <i class="fas fa-arrow-up"></i>
-                            <span>+1 this month</span>
-                        </div>
-                    </div>
-
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <div class="stat-title">Total Items</div>
-                            <div class="stat-icon">
-                                <i class="fas fa-boxes"></i>
-                            </div>
-                        </div>
-                        <div class="stat-value" id="total-items">0</div>
-                        <div class="stat-change positive">
-                            <i class="fas fa-arrow-up"></i>
-                            <span>+5 this week</span>
-                        </div>
-                    </div>
-
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <div class="stat-title">Total Value</div>
-                            <div class="stat-icon">
-                                <i class="fas fa-dollar-sign"></i>
-                            </div>
-                        </div>
-                        <div class="stat-value" id="total-value">$0.00</div>
-                        <div class="stat-change positive">
-                            <i class="fas fa-arrow-up"></i>
-                            <span>+$250 this month</span>
-                        </div>
-                    </div>
-
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <div class="stat-title">Categories</div>
-                            <div class="stat-icon">
-                                <i class="fas fa-tags"></i>
-                            </div>
-                        </div>
-                        <div class="stat-value" id="total-categories">8</div>
-                        <div class="stat-change">
-                            <i class="fas fa-minus"></i>
-                            <span>No change</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Enhanced Dashboard Grid -->
-                <div class="dashboard-grid">
-                    <div class="dashboard-card">
-                        <div class="card-header">
-                            <h2 class="card-title">
-                                <i class="fas fa-clock"></i>
-                                Recent Items
-                            </h2>
-                            <div class="card-actions">
-                                <button class="btn btn-secondary" onclick="refreshRecentItems()">
-                                    <i class="fas fa-sync-alt"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-content">
-                            <div class="items-list" id="recent-items">
-                                <div class="empty-state">
-                                    <div class="empty-state-icon">
-                                        <i class="fas fa-box-open"></i>
-                                    </div>
-                                    <div class="empty-state-title">No items yet</div>
-                                    <div class="empty-state-text">Start building your inventory by adding your first item.</div>
-                                    <button class="btn btn-primary" onclick="showQuickAdd()">
-                                        <i class="fas fa-plus"></i>
-                                        Add First Item
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="dashboard-card">
-                        <div class="card-header">
-                            <h2 class="card-title">
-                                <i class="fas fa-chart-pie"></i>
-                                Quick Stats
-                            </h2>
-                        </div>
-                        <div class="card-content">
-                            <div style="display: flex; flex-direction: column; gap: 1rem;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-md);">
-                                    <div>
-                                        <div style="font-weight: 600; color: var(--text-primary);">Electronics</div>
-                                        <div style="font-size: 0.875rem; color: var(--text-secondary);">Most valuable category</div>
-                                    </div>
-                                    <div style="font-weight: 700; color: var(--success-color);">$1,240</div>
-                                </div>
-                                
-                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-md);">
-                                    <div>
-                                        <div style="font-weight: 600; color: var(--text-primary);">Living Room</div>
-                                        <div style="font-size: 0.875rem; color: var(--text-secondary);">Most items</div>
-                                    </div>
-                                    <div style="font-weight: 700; color: var(--primary-color);">24 items</div>
-                                </div>
-                                
-                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-md);">
-                                    <div>
-                                        <div style="font-weight: 600; color: var(--text-primary);">This Month</div>
-                                        <div style="font-size: 0.875rem; color: var(--text-secondary);">Items added</div>
-                                    </div>
-                                    <div style="font-weight: 700; color: var(--info-color);">12 items</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Action Cards -->
-                <div class="stats-grid">
-                    <div class="dashboard-card" style="cursor: pointer;" onclick="showQuickAdd()">
-                        <div class="card-content text-center">
-                            <div style="font-size: 3rem; color: var(--primary-color); margin-bottom: 1rem;">
-                                <i class="fas fa-plus-circle"></i>
-                            </div>
-                            <h3 style="margin-bottom: 0.5rem; color: var(--text-primary);">Add New Item</h3>
-                            <p style="color: var(--text-secondary);">Quickly add items to your inventory</p>
-                        </div>
-                    </div>
-
-                    <div class="dashboard-card" style="cursor: pointer;" onclick="setActivePage('reports')">
-                        <div class="card-content text-center">
-                            <div style="font-size: 3rem; color: var(--success-color); margin-bottom: 1rem;">
-                                <i class="fas fa-chart-bar"></i>
-                            </div>
-                            <h3 style="margin-bottom: 0.5rem; color: var(--text-primary);">View Reports</h3>
-                            <p style="color: var(--text-secondary);">Generate detailed inventory reports</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
-    </div>
-
-    <!-- Hidden dashboard template -->
-    <div id="dashboard-content" style="display: none;">
-        <div class="dashboard-grid">
-            <div class="stat-card">
-                <div class="stat-header">
-                    <span class="stat-title">Total Inventories</span>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white;">
-                        <i class="fas fa-warehouse"></i>
-                    </div>
-                </div>
-                <div class="stat-value" id="total-inventories">-</div>
-                <div class="stat-change positive">
-                    <i class="fas fa-arrow-up"></i> Active inventories
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-header">
-                    <span class="stat-title">Total Items</span>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #059669, #047857); color: white;">
-                        <i class="fas fa-box"></i>
-                    </div>
-                </div>
-                <div class="stat-value" id="total-items">-</div>
-                <div class="stat-change positive">
-                    <i class="fas fa-arrow-up"></i> Items tracked
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-header">
-                    <span class="stat-title">Total Value</span>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #dc2626, #b91c1c); color: white;">
-                        <i class="fas fa-dollar-sign"></i>
-                    </div>
-                </div>
-                <div class="stat-value" id="total-value">-</div>
-                <div class="stat-change positive">
-                    <i class="fas fa-arrow-up"></i> Portfolio value
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-header">
-                    <span class="stat-title">System Status</span>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #7c3aed, #5b21b6); color: white;">
-                        <i class="fas fa-heartbeat"></i>
-                    </div>
-                </div>
-                <div class="stat-value system-status">
-                    <span class="status-indicator online" id="system-status"></span>
-                    <span id="status-text">Online</span>
-                </div>
-                <div class="stat-change neutral">
-                    <i class="fas fa-circle"></i> All systems operational
-                </div>
-            </div>
-        </div>
-
-        <div class="dashboard-section">
-            <h2 class="section-title">Recent Activity</h2>
-            <div class="activity-feed" id="activity-feed">
-                <div class="activity-item">
-                    <div class="activity-icon">
-                        <i class="fas fa-plus" style="color: var(--success-color);"></i>
-                    </div>
-                    <div class="activity-content">
-                        <div class="activity-title">Loading recent activities...</div>
-                        <div class="activity-time">Just now</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="dashboard-section">
-            <h2 class="section-title">Quick Actions</h2>
-            <div class="quick-actions-grid">
-                <div class="dashboard-card" style="cursor: pointer;" onclick="showQuickAdd()">
-                    <div class="card-content text-center">
-                        <div style="font-size: 3rem; color: var(--primary-color); margin-bottom: 1rem;">
-                            <i class="fas fa-plus"></i>
-                        </div>
-                        <h3 style="margin-bottom: 0.5rem; color: var(--text-primary);">Add Item</h3>
-                        <p style="color: var(--text-secondary);">Quickly add a new item to inventory</p>
-                    </div>
-                </div>
-
-                <div class="dashboard-card" style="cursor: pointer;" onclick="showAddInventory()">
-                    <div class="card-content text-center">
-                        <div style="font-size: 3rem; color: var(--warning-color); margin-bottom: 1rem;">
-                            <i class="fas fa-warehouse"></i>
-                        </div>
-                        <h3 style="margin-bottom: 0.5rem; color: var(--text-primary);">New Inventory</h3>
-                        <p style="color: var(--text-secondary);">Create a new inventory collection</p>
-                    </div>
-                </div>
-
-                <div class="dashboard-card" style="cursor: pointer;" onclick="setActivePage('reports')">
-                    <div class="card-content text-center">
-                        <div style="font-size: 3rem; color: var(--success-color); margin-bottom: 1rem;">
-                            <i class="fas fa-chart-bar"></i>
-                        </div>
-                        <h3 style="margin-bottom: 0.5rem; color: var(--text-primary);">View Reports</h3>
-                        <p style="color: var(--text-secondary);">Generate detailed inventory reports</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Modals -->
     <!-- Quick Add Item Modal -->
@@ -2171,7 +2137,6 @@
             
             // Update page title and subtitle
             const titles = {
-                dashboard: { title: 'Dashboard', subtitle: 'Welcome back! Here\'s your inventory overview.' },
                 inventories: { title: 'Inventories', subtitle: 'Manage your inventory spaces and locations.' },
                 categories: { title: 'Categories', subtitle: 'Organize items with custom categories.' },
                 tags: { title: 'Tags', subtitle: 'Create and manage tags for better item organization.' },
@@ -2192,11 +2157,6 @@
             const content = document.getElementById('main-content');
             
             switch (page) {
-                case 'dashboard':
-                    content.innerHTML = document.getElementById('dashboard-content').outerHTML;
-                    loadDashboardData();
-                    break;
-                    
                 case 'inventories':
                     loadInventoriesPage();
                     break;
@@ -2217,9 +2177,9 @@
                             </div>
                             <div class="empty-state-title">Coming Soon</div>
                             <div class="empty-state-text">This feature is under development and will be available soon.</div>
-                            <button class="btn btn-primary" onclick="setActivePage('dashboard')">
+                            <button class="btn btn-primary" onclick="setActivePage('inventories')">
                                 <i class="fas fa-arrow-left"></i>
-                                Back to Dashboard
+                                Back to Inventories
                             </button>
                         </div>
                     `;
@@ -2232,8 +2192,8 @@
             console.log('Switched to inventory:', inventoryId);
             
             // Refresh current page data
-            if (currentPage === 'dashboard') {
-                loadDashboardData();
+            if (currentPage === 'inventories') {
+                loadInventoriesPage();
             }
             
             // Show toast notification
@@ -2250,80 +2210,410 @@
         }
 
         // Load inventories page
-        function loadInventoriesPage() {
+        async function loadInventoriesPage() {
             try {
                 const content = document.getElementById('main-content');
                 
-                // Load categories from localStorage to display as inventory cards
-                const savedCategories = JSON.parse(localStorage.getItem('categories') || '[]');
-                categories = savedCategories;
-                
-                let inventoriesHTML = `
-                <div class="management-container">
-                    <div class="management-stats">
-                        <button class="btn btn-primary" onclick="showCategoryModal()">
-                            <i class="fas fa-plus"></i>
-                            New Category
-                        </button>
-                        <div class="stat-badge">
-                            ${categories.length} Total Categories
+                // Show loading state
+                content.innerHTML = `
+                    <div style="display: flex; justify-content: center; align-items: center; min-height: 400px;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">⏳</div>
+                            <div style="color: var(--text-secondary);">Loading inventories...</div>
                         </div>
                     </div>
-            `;
-            
-            if (categories.length === 0) {
-                inventoriesHTML += `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">
-                            <i class="fas fa-tags"></i>
+                `;
+                
+                // Fetch inventories from API
+                const response = await fetch('/api/inventories');
+                const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error(result.error || 'Failed to load inventories');
+                }
+                
+                inventories = result.data || [];
+                
+                // Update main header
+                document.getElementById('page-title').innerHTML = '<i class="fas fa-warehouse"></i> Your Inventories';
+                document.getElementById('page-subtitle').textContent = 'Manage and organize your inventory collections';
+                
+                // Build inventories HTML
+                let inventoriesHTML = `
+                    <div class="inventories-container">
+                        <div style="display: flex; justify-content: flex-end; margin-bottom: 1.5rem;">
+                            <button class="btn btn-primary" onclick="showCreateInventoryModal()">
+                                <i class="fas fa-plus"></i>
+                                Create Inventory
+                            </button>
                         </div>
-                        <div class="empty-state-title">No Categories Yet</div>
-                        <div class="empty-state-text">Create your first category to start organizing your items.</div>
-                        <button class="btn btn-primary" onclick="showCategoryModal()">
-                            <i class="fas fa-plus"></i>
-                            Create Your First Category
+                `;
+                
+                if (inventories.length === 0) {
+                    inventoriesHTML += `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">
+                                <i class="fas fa-warehouse"></i>
+                            </div>
+                            <div class="empty-state-title">No Inventories Yet</div>
+                            <div class="empty-state-text">
+                                Create your first inventory to start organizing your items.
+                            </div>
+                            <button class="btn btn-primary" onclick="showCreateInventoryModal()">
+                                <i class="fas fa-plus"></i>
+                                Create Your First Inventory
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    inventoriesHTML += '<div class="inventories-grid">';
+                    
+                    for (const inventory of inventories) {
+                        // Fetch item count for this inventory
+                        const itemsResponse = await fetch(`/api/inventories/${inventory.id}/items`);
+                        const itemsResult = await itemsResponse.json();
+                        const itemCount = itemsResult.success ? (itemsResult.data || []).length : 0;
+                        
+                        inventoriesHTML += `
+                            <div class="inventory-card" onclick="showInventoryDetail(${inventory.id})">
+                                <div class="inventory-card-header">
+                                    <div class="inventory-card-image">
+                                        ${inventory.image_url 
+                                            ? `<img src="${inventory.image_url}" alt="${inventory.name}" style="width: 100%; height: 100%; object-fit: cover;">` 
+                                            : `<div style="width: 100%; height: 100%; background: linear-gradient(135deg, var(--primary-color), var(--primary-light)); display: flex; align-items: center; justify-content: center; color: white; font-size: 2.5rem;">
+                                                    <i class="fas fa-warehouse"></i>
+                                               </div>`
+                                        }
+                                    </div>
+                                </div>
+                                <div class="inventory-card-body">
+                                    <h3 class="inventory-card-title">${inventory.name}</h3>
+                                    <p class="inventory-card-description">
+                                        ${inventory.description || 'No description'}
+                                    </p>
+                                    ${inventory.location ? `
+                                        <p class="inventory-card-location">
+                                            <i class="fas fa-map-marker-alt"></i>
+                                            ${inventory.location}
+                                        </p>
+                                    ` : ''}
+                                    <div class="inventory-card-stats">
+                                        <div class="stat-item">
+                                            <i class="fas fa-box"></i>
+                                            <span>${itemCount} items</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="inventory-card-footer">
+                                    <button class="btn btn-sm btn-ghost" onclick="event.stopPropagation(); editInventory(${inventory.id})" title="Edit Inventory">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-ghost" onclick="event.stopPropagation(); deleteInventory(${inventory.id})" title="Delete Inventory">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    inventoriesHTML += '</div>';
+                }
+                
+                inventoriesHTML += '</div>';
+                
+                content.innerHTML = inventoriesHTML;
+                
+            } catch (error) {
+                console.error('Error loading inventories:', error);
+                const content = document.getElementById('main-content');
+                content.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon" style="color: var(--danger-color);">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="empty-state-title">Error Loading Inventories</div>
+                        <div class="empty-state-text">${error.message}</div>
+                        <button class="btn btn-primary" onclick="loadInventoriesPage()">
+                            <i class="fas fa-sync"></i>
+                            Try Again
                         </button>
                     </div>
                 `;
-            } else {
-                inventoriesHTML += '<div class="management-grid">';
+            }
+        }
+        
+        // Show inventory detail view with items
+        async function showInventoryDetail(inventoryId) {
+            try {
+                const content = document.getElementById('main-content');
                 
-                categories.forEach(category => {
-                    inventoriesHTML += `
-                        <div class="inventory-card" onclick="openCategoryInventory(${category.id})" style="border-top: 4px solid ${category.color || '#1A72EE'};">
-                            <div class="inventory-card-image">
-                                ${category.imageUrl 
-                                    ? `<img src="${category.imageUrl}" alt="${category.name}">` 
-                                    : `<div class="placeholder" style="background-color: ${category.color || '#1A72EE'}; color: white;"><i class="fas fa-tags"></i></div>`
-                                }
-                            </div>
-                            <div class="inventory-card-content">
-                                <div class="inventory-card-title">${category.name}</div>
-                                <div class="inventory-card-category">${category.description || 'No description'}</div>
-                                <div class="inventory-card-stats">
-                                    <small class="text-secondary">
-                                        0 items • $0
-                                    </small>
+                // Show loading state
+                content.innerHTML = `
+                    <div style="display: flex; justify-content: center; align-items: center; min-height: 400px;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">⏳</div>
+                            <div style="color: var(--text-secondary);">Loading inventory details...</div>
+                        </div>
+                    </div>
+                `;
+                
+                // Fetch inventory details
+                const invResponse = await fetch(`/api/inventories/${inventoryId}`);
+                const invResult = await invResponse.json();
+                
+                if (!invResult.success) {
+                    throw new Error(invResult.error || 'Failed to load inventory');
+                }
+                
+                const inventory = invResult.data;
+                
+                // Update main header with inventory name
+                document.getElementById('page-title').innerHTML = `<i class="fas fa-warehouse"></i> ${inventory.name}`;
+                document.getElementById('page-subtitle').textContent = inventory.description || 'Manage and organize your inventory collections';
+                
+                // Fetch items for this inventory
+                const itemsResponse = await fetch(`/api/inventories/${inventoryId}/items`);
+                const itemsResult = await itemsResponse.json();
+                const inventoryItems = itemsResult.success ? (itemsResult.data || []) : [];
+                
+                // Calculate stats
+                const totalValue = inventoryItems.reduce((sum, item) => 
+                    sum + (parseFloat(item.purchase_price) || 0) * (parseInt(item.quantity) || 1), 0
+                );
+                
+                // Build inventory detail HTML
+                let detailHTML = `
+                    <div class="inventory-detail">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                            <button class="btn btn-ghost" onclick="loadInventoriesPage()">
+                                <i class="fas fa-arrow-left"></i>
+                                Back to Inventories
+                            </button>
+                            <button class="btn btn-primary" onclick="showAddItemToInventoryModal(${inventoryId})">
+                                <i class="fas fa-plus"></i>
+                                Add Item
+                            </button>
+                        </div>
+                        
+                        <div class="inventory-detail-stats">
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background: var(--primary-color);">
+                                    <i class="fas fa-box"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-label">Total Items</div>
+                                    <div class="stat-value">${inventoryItems.length}</div>
                                 </div>
                             </div>
-                            <div class="inventory-card-actions">
-                                <button class="btn-icon" onclick="event.stopPropagation(); editCategory(${category.id})" title="Edit Category">
-                                    <i class="fas fa-edit"></i>
-                                </button>
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background: var(--success-color);">
+                                    <i class="fas fa-dollar-sign"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-label">Total Value</div>
+                                    <div class="stat-value">$${totalValue.toFixed(2)}</div>
+                                </div>
                             </div>
                         </div>
-                    `;
-                });
+                        
+                        <div class="inventory-detail-items">
+                            <h2 class="section-title">
+                                <i class="fas fa-boxes"></i>
+                                Items in this Inventory
+                            </h2>
+                `;
                 
-                inventoriesHTML += '</div>';
+                if (inventoryItems.length === 0) {
+                    detailHTML += `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">
+                                <i class="fas fa-box-open"></i>
+                            </div>
+                            <div class="empty-state-title">No Items Yet</div>
+                            <div class="empty-state-text">
+                                Start adding items to this inventory.
+                            </div>
+                            <button class="btn btn-primary" onclick="showAddItemToInventoryModal(${inventoryId})">
+                                <i class="fas fa-plus"></i>
+                                Add First Item
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    detailHTML += '<div class="items-grid">';
+                    
+                    inventoryItems.forEach(item => {
+                        const itemValue = (parseFloat(item.purchase_price) || 0) * (parseInt(item.quantity) || 1);
+                        
+                        detailHTML += `
+                            <div class="item-card">
+                                <div class="item-card-header">
+                                    <h3 class="item-card-title">${item.name}</h3>
+                                    ${item.category ? `<span class="item-card-category">${item.category}</span>` : ''}
+                                </div>
+                                <div class="item-card-body">
+                                    ${item.description ? `<p class="item-card-description">${item.description}</p>` : ''}
+                                    <div class="item-card-details">
+                                        ${item.location ? `
+                                            <div class="detail-item">
+                                                <i class="fas fa-map-marker-alt"></i>
+                                                <span>${item.location}</span>
+                                            </div>
+                                        ` : ''}
+                                        ${item.quantity ? `
+                                            <div class="detail-item">
+                                                <i class="fas fa-boxes"></i>
+                                                <span>Qty: ${item.quantity}</span>
+                                            </div>
+                                        ` : ''}
+                                        ${item.purchase_price ? `
+                                            <div class="detail-item">
+                                                <i class="fas fa-dollar-sign"></i>
+                                                <span>$${parseFloat(item.purchase_price).toFixed(2)} ea</span>
+                                            </div>
+                                        ` : ''}
+                                        ${itemValue ? `
+                                            <div class="detail-item">
+                                                <i class="fas fa-calculator"></i>
+                                                <span>Total: $${itemValue.toFixed(2)}</span>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                                <div class="item-card-footer">
+                                    <button class="btn btn-sm btn-ghost" onclick="viewItemDetail(${item.id})" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-ghost" onclick="editItem(${item.id})" title="Edit Item">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-ghost text-danger" onclick="deleteItem(${item.id})" title="Delete Item">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    detailHTML += '</div>';
+                }
+                
+                detailHTML += `
+                        </div>
+                    </div>
+                `;
+                
+                content.innerHTML = detailHTML;
+                
+            } catch (error) {
+                console.error('Error loading inventory detail:', error);
+                const content = document.getElementById('main-content');
+                content.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon" style="color: var(--danger-color);">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="empty-state-title">Error Loading Inventory</div>
+                        <div class="empty-state-text">${error.message}</div>
+                        <button class="btn btn-primary" onclick="loadInventoriesPage()">
+                            <i class="fas fa-arrow-left"></i>
+                            Back to Inventories
+                        </button>
+                    </div>
+                `;
+            }
+        }
+        
+        // Create inventory modal
+        function showCreateInventoryModal() {
+            const modal = document.getElementById('add-inventory-modal');
+            if (modal) {
+                // Reset form
+                document.getElementById('inventory-name').value = '';
+                document.getElementById('inventory-description').value = '';
+                modal.style.display = 'flex';
+            }
+        }
+        
+        function hideAddInventory() {
+            const modal = document.getElementById('add-inventory-modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        // Create new inventory
+        async function createNewInventory() {
+            const name = document.getElementById('inventory-name').value.trim();
+            const description = document.getElementById('inventory-description').value.trim();
+            
+            if (!name) {
+                showToast('Please enter an inventory name', 'error');
+                return;
             }
             
-            inventoriesHTML += '</div>';
-            
-            content.innerHTML = inventoriesHTML;
-            
+            try {
+                const response = await fetch('/api/inventories', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, description })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('Inventory created successfully!', 'success');
+                    hideAddInventory();
+                    await loadInventoriesPage();
+                } else {
+                    showToast(`Failed to create inventory: ${result.error}`, 'error');
+                }
             } catch (error) {
-                console.error('Error in loadInventoriesPage:', error);
+                console.error('Error creating inventory:', error);
+                showToast('Failed to create inventory', 'error');
+            }
+        }
+        
+        // Delete inventory
+        async function deleteInventory(inventoryId) {
+            if (!confirm('Are you sure you want to delete this inventory? This action cannot be undone.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/inventories/${inventoryId}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('Inventory deleted successfully!', 'success');
+                    await loadInventoriesPage();
+                } else {
+                    showToast(`Failed to delete inventory: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting inventory:', error);
+                showToast('Failed to delete inventory', 'error');
+            }
+        }
+        
+        // Show add item modal for specific inventory
+        function showAddItemToInventoryModal(inventoryId) {
+            // Set the current inventory ID
+            currentInventoryId = inventoryId;
+            // Show the quick add modal
+            const modal = document.getElementById('quick-add-modal');
+            if (modal) {
+                // Reset form
+                document.getElementById('item-name').value = '';
+                document.getElementById('item-category').value = '';
+                document.getElementById('item-location').value = '';
+                document.getElementById('item-price').value = '';
+                document.getElementById('item-quantity').value = '1';
+                document.getElementById('item-description').value = '';
+                modal.style.display = 'flex';
             }
         }
 
@@ -2978,78 +3268,8 @@
             } catch (error) {
                 console.error('Error fetching inventories:', error);
                 showToast('Failed to load inventories', 'error');
-            }
-            return [];
         }
-
-        // Dashboard functions
-        async function loadDashboardData() {
-            await fetchItems();
-            updateDashboardStats();
-            displayRecentItems();
-        }
-
-        function updateDashboardStats() {
-            const currentItems = items.filter(item => item.inventory_id === currentInventoryId || !item.inventory_id);
-            const totalItems = currentItems.length;
-            const totalValue = currentItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0);
-            const categories = new Set(currentItems.map(item => item.category).filter(Boolean)).size;
-
-            document.getElementById('total-items').textContent = totalItems;
-            document.getElementById('total-value').textContent = '$' + totalValue.toLocaleString('en-US', { 
-                minimumFractionDigits: 2, 
-                maximumFractionDigits: 2 
-            });
-            document.getElementById('total-categories').textContent = categories;
-        }
-
-        function displayRecentItems() {
-            const recentItemsContainer = document.getElementById('recent-items');
-            
-            if (!recentItemsContainer) return;
-            
-            const currentItems = items.filter(item => item.inventory_id === currentInventoryId || !item.inventory_id);
-            
-            if (currentItems.length === 0) {
-                recentItemsContainer.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">
-                            <i class="fas fa-box-open"></i>
-                        </div>
-                        <div class="empty-state-title">No items yet</div>
-                        <div class="empty-state-text">Start building your inventory by adding your first item.</div>
-                        <button class="btn btn-primary" onclick="showQuickAdd()">
-                            <i class="fas fa-plus"></i>
-                            Add First Item
-                        </button>
-                    </div>
-                `;
-                return;
-            }
-
-            // Sort by most recent and take first 5
-            const recentItems = currentItems
-                .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
-                .slice(0, 5);
-
-            recentItemsContainer.innerHTML = recentItems.map(item => `
-                <div class="item-row">
-                    <div class="item-image">
-                        <i class="fas fa-cube"></i>
-                    </div>
-                    <div class="item-info">
-                        <div class="item-name">${item.name || 'Unnamed Item'}</div>
-                        <div class="item-details">
-                            ${item.category ? `<span class="item-tag">${item.category}</span>` : ''}
-                            ${item.location ? `<span style="color: var(--text-secondary);">${item.location}</span>` : ''}
-                        </div>
-                    </div>
-                    <div class="item-price">$${(parseFloat(item.purchase_price) || 0).toLocaleString('en-US', { 
-                        minimumFractionDigits: 2, 
-                        maximumFractionDigits: 2 
-                    })}</div>
-                </div>
-            `).join('');
+        return [];
         }
 
         // Add new item
@@ -3086,7 +3306,13 @@
                 if (result.success) {
                     showToast('Item added successfully!', 'success');
                     hideQuickAdd();
-                    await loadDashboardData(); // Refresh data
+                    await fetchItems(); // Refresh data
+                    // Refresh the inventory detail view if we're viewing one
+                    if (currentInventoryId) {
+                        await showInventoryDetail(currentInventoryId);
+                    } else if (currentPage === 'inventories') {
+                        await loadInventoriesPage();
+                    }
                 } else {
                     showToast('Failed to add item: ' + (result.error || 'Unknown error'), 'error');
                 }
@@ -3204,11 +3430,6 @@
             }
         }
 
-        function refreshRecentItems() {
-            loadDashboardData();
-            showToast('Recent items refreshed', 'success');
-        }
-
         function showToast(message, type = 'info') {
             // Create toast notification
             const toast = document.createElement('div');
@@ -3323,7 +3544,7 @@
             }
 
             // Initialize the app
-            loadDashboardData();
+            setActivePage('inventories');
         });
 
         // Keyboard shortcuts
