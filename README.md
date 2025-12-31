@@ -35,7 +35,7 @@ docker-compose up -d
 docker-compose logs -f app
 ```
 
-The application will be available at `http://localhost:8000`
+The application will be available at `http://localhost:8210`
 
 **Default Database Credentials:**
 - Database: `home_inventory`

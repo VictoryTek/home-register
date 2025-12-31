@@ -1,1 +1,14 @@
 /target
+analysis/
+/screenshots/
+backups/
+.history/
+
+# Test artifacts
+test_results.txt
+*.test.log
+
+# Environment and secrets
+.env
+secrets/*.txt
+!secrets/*.txt.example

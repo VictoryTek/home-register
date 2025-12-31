@@ -22,7 +22,7 @@ async fn main() -> std::io::Result<()> {
     env_logger::init();
     
     let host = env::var("HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
-    let port = env::var("PORT").unwrap_or_else(|_| "8000".to_string());
+    let port = env::var("PORT").unwrap_or_else(|_| "8210".to_string());
     
     log::info!("Starting Home Inventory server at http://{}:{}", host, port);
     log::info!("Environment: {}", env::var("RUST_ENV").unwrap_or_else(|_| "development".to_string()));

@@ -1056,20 +1056,6 @@
             font-size: 0.875rem;
         }
 
-        .item-card-stats a {
-            color: var(--primary-color);
-            text-decoration: none;
-            font-size: 0.8rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.3rem;
-            margin-top: 0.3rem;
-        }
-
-        .item-card-stats a:hover {
-            text-decoration: underline;
-        }
-
         .item-card-actions {
             position: absolute;
             top: 1rem;
@@ -1109,82 +1095,6 @@
             color: white;
         }
 
-        /* Item field styles */
-        .item-field {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.25rem 0;
-            font-size: 0.875rem;
-        }
-
-        .field-label {
-            font-weight: 500;
-            color: var(--text-secondary);
-        }
-
-        .field-value {
-            color: var(--text-primary);
-        }
-
-        .item-custom-fields {
-            margin-top: 0.5rem;
-            padding-top: 0.5rem;
-            border-top: 1px solid var(--border-light);
-        }
-
-        /* Quantity Control Styles */
-        .quantity-control {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 0.5rem;
-        }
-
-        .quantity-buttons {
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-            background: var(--bg-secondary);
-            border-radius: var(--radius-md);
-            padding: 0.25rem;
-            border: 1px solid var(--border-color);
-        }
-
-        .btn-quantity {
-            width: 24px;
-            height: 24px;
-            border: none;
-            background: var(--bg-primary);
-            color: var(--text-secondary);
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-            transition: all 0.2s ease;
-        }
-
-        .btn-quantity:hover:not(:disabled) {
-            background: var(--primary-color);
-            color: white;
-            transform: scale(1.1);
-        }
-
-        .btn-quantity:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        .quantity-display {
-            min-width: 30px;
-            text-align: center;
-            font-weight: 600;
-            color: var(--text-primary);
-            font-size: 0.875rem;
-        }
-
         /* Page Header */
         .page-header {
             background: var(--bg-primary);
@@ -1199,12 +1109,6 @@
             align-items: center;
             flex-wrap: wrap;
             gap: 1rem;
-        }
-
-        .page-header-actions {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
         }
 
         .page-header h1 {
@@ -2099,30 +2003,25 @@
             <div class="modal-body">
                 <form id="item-form">
                     <div class="form-group">
-                        <label class="form-label" for="add-item-name">Item Name *</label>
-                        <input type="text" class="form-input" id="add-item-name" placeholder="e.g., Laptop, Chair, Hammer" required>
+                        <label class="form-label" for="item-name">Item Name *</label>
+                        <input type="text" class="form-input" id="item-name" placeholder="e.g., Laptop, Chair, Hammer" required>
                     </div>
                     
                     <div class="form-group">
-                        <label class="form-label" for="add-item-description">Description</label>
-                        <textarea class="form-input" id="add-item-description" placeholder="Optional description" rows="3"></textarea>
+                        <label class="form-label" for="item-description">Description</label>
+                        <textarea class="form-input" id="item-description" placeholder="Optional description" rows="3"></textarea>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label" for="add-item-quantity">Quantity</label>
-                            <input type="number" class="form-input" id="add-item-quantity" placeholder="1" min="1" value="1">
+                            <label class="form-label" for="item-quantity">Quantity</label>
+                            <input type="number" class="form-input" id="item-quantity" placeholder="1" min="1" value="1">
                         </div>
                         
                         <div class="form-group">
-                            <label class="form-label" for="add-item-value">Value ($)</label>
-                            <input type="number" class="form-input" id="add-item-value" placeholder="0.00" min="0" step="0.01">
+                            <label class="form-label" for="item-value">Value ($)</label>
+                            <input type="number" class="form-input" id="item-value" placeholder="0.00" min="0" step="0.01">
                         </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="add-item-purchase-link">Purchase Link</label>
-                        <input type="url" class="form-input" id="add-item-purchase-link" placeholder="https://example.com/product" title="Link to where you purchased this item">
                     </div>
 
                     <!-- Custom Fields Container -->
@@ -2131,9 +2030,9 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="add-item-image">Item Image</label>
+                        <label class="form-label" for="item-image">Item Image</label>
                         <div class="image-upload-container">
-                            <input type="file" class="form-input" id="add-item-image" accept="image/*" onchange="previewItemImage(this)">
+                            <input type="file" class="form-input" id="item-image" accept="image/*" onchange="previewItemImage(this)">
                             <div id="item-image-preview" class="image-preview"></div>
                         </div>
                     </div>
@@ -2218,24 +2117,6 @@
 
     <!-- Enhanced JavaScript -->
     <script>
-        // Clear localStorage completely to ensure fresh start with API data only
-        console.log('Clearing localStorage for fresh start...');
-        
-        // Clear all localStorage data related to inventory management
-        const keysToRemove = [];
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key.includes('category') || key.includes('item') || key.includes('inventory') || key.includes('tag')) {
-                keysToRemove.push(key);
-            }
-        }
-        keysToRemove.forEach(key => {
-            console.log(`Removing localStorage key: ${key}`);
-            localStorage.removeItem(key);
-        });
-        
-        console.log('localStorage cleared. Working with API data only.');
-
         // Global state
         let items = [];
         let inventories = [];
@@ -2245,7 +2126,6 @@
         let currentPage = 'dashboard';
         let editingCategoryId = null;
         let editingTagId = null;
-        let currentCategoryItems = []; // Store current category items globally
 
         // Theme management
         function initTheme() {
@@ -2369,43 +2249,14 @@
             return names[inventoryId] || 'Unknown Inventory';
         }
 
-        // Function to restore default header actions
-        function restoreDefaultHeader() {
-            const headerActions = document.querySelector('.header-actions');
-            const currentTheme = document.body.getAttribute('data-theme') || 'light';
-            const themeIcon = currentTheme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
-            
-            headerActions.innerHTML = `
-                <button class="theme-toggle" onclick="toggleTheme()" id="theme-toggle" title="Toggle dark/light mode">
-                    <i class="${themeIcon}"></i>
-                </button>
-                <button class="btn btn-primary" onclick="showQuickAdd()">
-                    <i class="fas fa-plus"></i>
-                    Quick Add
-                </button>
-                <div class="search-box">
-                    <i class="fas fa-search search-icon"></i>
-                    <input type="text" class="search-input" placeholder="Search items, categories..." id="global-search">
-                </div>
-            `;
-        }
-
         // Load inventories page
         function loadInventoriesPage() {
             try {
-                // Restore default header
-                restoreDefaultHeader();
-                
                 const content = document.getElementById('main-content');
                 
-                // Load categories from localStorage instead of starting with empty array
-                try {
-                    const savedCategories = JSON.parse(localStorage.getItem('categories') || '[]');
-                    categories = savedCategories;
-                } catch (error) {
-                    console.error('Error loading categories from localStorage:', error);
-                    categories = [];
-                }
+                // Load categories from localStorage to display as inventory cards
+                const savedCategories = JSON.parse(localStorage.getItem('categories') || '[]');
+                categories = savedCategories;
                 
                 let inventoriesHTML = `
                 <div class="management-container">
@@ -2476,191 +2327,41 @@
             }
         }
 
-        async function openCategoryInventory(categoryId) {
+        function openCategoryInventory(categoryId) {
             const category = categories.find(cat => cat.id === categoryId);
             if (category) {
                 currentCategoryId = categoryId;
-                await loadCategoryInventoryPage(category);
+                loadCategoryInventoryPage(category);
             }
         }
 
-        async function loadCategoryInventoryPage(category) {
+        function loadCategoryInventoryPage(category) {
             const content = document.getElementById('main-content');
             
-            // Update main header title and subtitle
-            document.getElementById('page-title').textContent = `${category.name} Inventory`;
-            document.getElementById('page-subtitle').textContent = category.description || 'Manage items in this inventory';
+            // Load items for this category from localStorage
+            const savedItems = JSON.parse(localStorage.getItem('categoryItems') || '{}');
+            const categoryItems = savedItems[category.id] || [];
             
-            // Update header actions to show inventory-specific buttons
-            const headerActions = document.querySelector('.header-actions');
-            const currentTheme = document.body.getAttribute('data-theme') || 'light';
-            const themeIcon = currentTheme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
-            
-            headerActions.innerHTML = `
-                <button class="btn btn-ghost" onclick="loadInventoriesPage()" style="margin-right: 1rem;">
-                    <i class="fas fa-arrow-left"></i>
-                    Back to Inventories
-                </button>
-                <button class="btn btn-secondary" onclick="showFieldManagementModal(${category.id})" title="Manage Fields">
-                    <i class="fas fa-cog"></i>
-                    Manage Fields
-                </button>
-                <button class="btn btn-primary" onclick="showAddItemModal(${category.id})">
-                    <i class="fas fa-plus"></i>
-                    Add Item
-                </button>
-                <button class="theme-toggle" onclick="toggleTheme()" id="theme-toggle" title="Toggle dark/light mode">
-                    <i class="${themeIcon}"></i>
-                </button>
-            `;
-            
-            // Load items for this category from API (since new items are saved there)
-            await loadCategoryItemsFromAPI(category);
-        }
-
-        async function loadCategoryItemsFromAPI(category) {
-            const content = document.getElementById('main-content');
-            
-            try {
-                // Load all items from API
-                const response = await fetch('/api/items');
-                const result = await response.json();
-                
-                let categoryItems = [];
-                if (result.success && result.data) {
-                    // Filter items to only show those belonging to the current inventory
-                    categoryItems = result.data.filter(item => item.inventory_id === currentInventoryId);
-                    
-                    // Merge with extended data from localStorage (custom fields, images, etc.)
-                    const extendedItems = JSON.parse(localStorage.getItem('extendedItemData') || '{}');
-                    categoryItems = categoryItems.map(item => {
-                        const extendedData = extendedItems[item.id] || {};
-                        return {
-                            ...item,
-                            customFields: extendedData.customFields || {},
-                            purchaseLink: extendedData.purchaseLink || '',
-                            imageUrl: extendedData.imageUrl || ''
-                        };
-                    });
-                }
-                
-                // Store the items globally for edit/delete operations
-                currentCategoryItems = categoryItems;
-                
-                displayCategoryItems(category, categoryItems);
-                
-            } catch (error) {
-                console.error('Error loading items from API:', error);
-                showToast('Failed to load items from database', 'error');
-                
-                // Show empty category if API fails
-                displayCategoryItems(category, []);
-            }
-        }
-        
-        function displayCategoryItems(category, categoryItems) {
-            const content = document.getElementById('main-content');
-            
-            // Generate the HTML
             let inventoryHTML = `
-                <div class="items-container">
-                    <div class="inventory-stats">
-                        <div class="stat-badge">
-                            ${categoryItems.length} Total Items
+                <div class="page-header">
+                    <div class="page-header-content">
+                        <div>
+                            <button class="btn btn-ghost" onclick="loadInventoriesPage()" style="margin-right: 1rem;">
+                                <i class="fas fa-arrow-left"></i>
+                                Back to Inventories
+                            </button>
+                            <h1 style="color: ${category.color || '#1A72EE'}">${category.name} Inventory</h1>
+                            <p>${category.description || 'Manage items in this category'}</p>
                         </div>
-                        <div class="stat-badge">
-                            $${categoryItems.reduce((sum, item) => sum + (item.value || item.purchase_price || 0), 0).toLocaleString()} Total Value
-                        </div>
-                    </div>
-            `;
-            
-            if (categoryItems.length === 0) {
-                inventoryHTML += `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">
-                            <i class="fas fa-box-open"></i>
-                        </div>
-                        <div class="empty-state-title">No Items Yet</div>
-                        <div class="empty-state-text">Start building your inventory by adding your first item.</div>
                         <button class="btn btn-primary" onclick="showAddItemModal(${category.id})">
                             <i class="fas fa-plus"></i>
-                            Add Your First Item
+                            Add Item
                         </button>
                     </div>
-                `;
-            } else {
-                inventoryHTML += '<div class="items-grid">';
+                </div>
                 
-                categoryItems.forEach((item, index) => {
-                    const customFieldDefinitions = category.customFields || [];
-                    const itemCustomFields = item.customFields || {};
-                    
-                    let fieldsHTML = '';
-                    customFieldDefinitions.forEach(fieldDef => {
-                        const value = itemCustomFields[fieldDef.id] || '-';
-                        fieldsHTML += `
-                            <div class="item-field">
-                                <span class="field-label">${fieldDef.name}:</span>
-                                <span class="field-value">${value}</span>
-                            </div>
-                        `;
-                    });
-                    
-                    inventoryHTML += `
-                        <div class="item-card" data-item-id="${item.id}">
-                            <div class="item-card-image">
-                                ${item.imageUrl ? 
-                                    `<img src="${item.imageUrl}" alt="${item.name}" onclick="openImageModal('${item.imageUrl}')">` : 
-                                    '<div class="placeholder"><i class="fas fa-box"></i></div>'
-                                }
-                            </div>
-                            <div class="item-card-content">
-                                <div class="item-card-title">${item.name}</div>
-                                <div class="item-card-description">${item.description || 'No description'}</div>
-                                <div class="item-card-stats">
-                                    <div><strong>Value:</strong> $${(item.value || item.purchase_price || 0).toLocaleString()}</div>
-                                    <div class="quantity-control">
-                                        <span><strong>Quantity:</strong></span>
-                                        <div class="quantity-buttons">
-                                            <button class="btn-quantity decrease" onclick="updateItemQuantity(${item.id}, ${(item.quantity || 1) - 1})" title="Decrease quantity" ${(item.quantity || 1) <= 1 ? 'disabled' : ''}>
-                                                <i class="fas fa-minus"></i>
-                                            </button>
-                                            <span class="quantity-display">${item.quantity || 1}</span>
-                                            <button class="btn-quantity increase" onclick="updateItemQuantity(${item.id}, ${(item.quantity || 1) + 1})" title="Increase quantity">
-                                                <i class="fas fa-plus"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    ${item.purchaseLink ? 
-                                        `<a href="${item.purchaseLink}" target="_blank" title="View Purchase Link">
-                                            <i class="fas fa-external-link-alt"></i> Purchase Link
-                                        </a>` : ''
-                                    }
-                                    ${fieldsHTML ? `<div class="item-custom-fields">${fieldsHTML}</div>` : ''}
-                                </div>
-                            </div>
-                            <div class="item-card-actions">
-                                <button class="btn-icon" onclick="editItem(${category.id}, ${item.id})" title="Edit Item">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn-icon danger" onclick="deleteItem(${category.id}, ${item.id})" title="Delete Item">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                });
-                
-                inventoryHTML += '</div>';
-            }
-            
-            inventoryHTML += '</div>';
-            content.innerHTML = inventoryHTML;
-        }
-
-        function openInventory(inventoryId) {
-            
-            let inventoryHTML = `<div class="items-container">`;
+                <div class="items-container">
+            `;
             
             if (categoryItems.length === 0) {
                 inventoryHTML += `
@@ -2669,7 +2370,7 @@
                             <i class="fas fa-box"></i>
                         </div>
                         <div class="empty-state-title">No Items Yet</div>
-                        <div class="empty-state-text">Add your first item to this inventory.</div>
+                        <div class="empty-state-text">Add your first item to this category.</div>
                         <button class="btn btn-primary" onclick="showAddItemModal(${category.id})">
                             <i class="fas fa-plus"></i>
                             Add First Item
@@ -2694,7 +2395,6 @@
                                 <div class="item-card-stats">
                                     <small class="text-secondary">
                                         Qty: ${item.quantity || 1} • $${(item.value || 0).toLocaleString()}
-                                        ${item.purchaseLink ? `<br><a href="${item.purchaseLink}" target="_blank" rel="noopener" title="View purchase link"><i class="fas fa-external-link-alt"></i> Purchase Link</a>` : ''}
                                     </small>
                                 </div>
                             </div>
@@ -2728,19 +2428,11 @@
 
         // Categories Page Management
         function loadCategoriesPage() {
-            // Restore default header
-            restoreDefaultHeader();
-            
             const content = document.getElementById('main-content');
             
-            // Load categories from localStorage instead of starting with empty array
-            try {
-                const savedCategories = JSON.parse(localStorage.getItem('categories') || '[]');
-                categories = savedCategories;
-            } catch (error) {
-                console.error('Error loading categories from localStorage:', error);
-                categories = [];
-            }
+            // Load categories from localStorage
+            const savedCategories = JSON.parse(localStorage.getItem('categories') || '[]');
+            categories = savedCategories;
             
             let categoriesHTML = `
                 <div class="management-container">
@@ -2780,6 +2472,9 @@
                                 <div class="management-item-count">${category.description || 'No description'}</div>
                             </div>
                             <div class="management-item-actions">
+                                <button class="btn-icon" onclick="showFieldManagementModal(${category.id})" title="Manage Fields">
+                                    <i class="fas fa-cog"></i>
+                                </button>
                                 <button class="btn-icon" onclick="editCategory(${category.id})" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </button>
@@ -2800,14 +2495,13 @@
 
         // Tags Page Management
         function loadTagsPage() {
-            // Restore default header
-            restoreDefaultHeader();
-            
             const content = document.getElementById('main-content');
             
-            // Start with empty arrays - API would be used in full implementation
-            tags = [];
-            categories = [];
+            // Load tags and categories from localStorage
+            const savedTags = JSON.parse(localStorage.getItem('tags') || '[]');
+            const savedCategories = JSON.parse(localStorage.getItem('categories') || '[]');
+            tags = savedTags;
+            categories = savedCategories;
             
             let tagsHTML = `
                 <div class="management-container">
@@ -3103,41 +2797,15 @@
             const category = categories.find(c => c.id === categoryId);
             if (!category) return;
 
-            // Check if there are items in this category
-            const savedItems = JSON.parse(localStorage.getItem('categoryItems') || '{}');
-            const categoryItems = savedItems[categoryId] || [];
-            
-            let confirmMessage = `Are you sure you want to delete the category "${category.name}"?`;
-            if (categoryItems.length > 0) {
-                confirmMessage += `\n\nWarning: This category contains ${categoryItems.length} item(s). These items will remain in the database but will no longer be accessible through this category.`;
-            }
-
-            if (confirm(confirmMessage)) {
+            if (confirm(`Are you sure you want to delete the category "${category.name}"?`)) {
                 try {
-                    // Remove category from localStorage
                     const savedCategories = JSON.parse(localStorage.getItem('categories') || '[]');
                     const filteredCategories = savedCategories.filter(c => c.id !== categoryId);
+                    
                     localStorage.setItem('categories', JSON.stringify(filteredCategories));
                     categories = filteredCategories;
                     
-                    // Clean up category items from localStorage
-                    if (savedItems[categoryId]) {
-                        delete savedItems[categoryId];
-                        localStorage.setItem('categoryItems', JSON.stringify(savedItems));
-                    }
-                    
-                    // Clean up extended item data for this category
-                    const extendedItems = JSON.parse(localStorage.getItem('extendedItemData') || '{}');
-                    const categoryItemIds = categoryItems.map(item => item.id);
-                    categoryItemIds.forEach(itemId => {
-                        if (extendedItems[itemId]) {
-                            delete extendedItems[itemId];
-                        }
-                    });
-                    localStorage.setItem('extendedItemData', JSON.stringify(extendedItems));
-                    
-                    showToast(`Category deleted. ${categoryItems.length > 0 ? 'Note: Related items remain in database.' : ''}`, 
-                              categoryItems.length > 0 ? 'warning' : 'success');
+                    showToast('Category deleted successfully', 'success');
                     
                     // Refresh the current page if it's categories or inventories
                     if (currentPage === 'categories') {
@@ -3316,16 +2984,13 @@
 
         // Dashboard functions
         async function loadDashboardData() {
-            // Restore default header
-            restoreDefaultHeader();
-            
             await fetchItems();
             updateDashboardStats();
             displayRecentItems();
         }
 
         function updateDashboardStats() {
-            const currentItems = items.filter(item => item.inventory_id === currentInventoryId);
+            const currentItems = items.filter(item => item.inventory_id === currentInventoryId || !item.inventory_id);
             const totalItems = currentItems.length;
             const totalValue = currentItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0);
             const categories = new Set(currentItems.map(item => item.category).filter(Boolean)).size;
@@ -3343,7 +3008,7 @@
             
             if (!recentItemsContainer) return;
             
-            const currentItems = items.filter(item => item.inventory_id === currentInventoryId);
+            const currentItems = items.filter(item => item.inventory_id === currentInventoryId || !item.inventory_id);
             
             if (currentItems.length === 0) {
                 recentItemsContainer.innerHTML = `
@@ -3450,81 +3115,57 @@
                 return;
             }
 
-            try {
-                // Create inventory in backend database
-                const inventoryData = {
-                    name,
-                    description: description || `${category} inventory`
+            // Create inventory object
+            const inventoryData = {
+                id: Date.now(), // Simple ID generation
+                name,
+                category,
+                description,
+                imageUrl: null,
+                itemCount: 0,
+                totalValue: 0,
+                createdAt: new Date().toISOString()
+            };
+
+            // Handle image upload
+            if (imageFile) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    inventoryData.imageUrl = e.target.result;
+                    saveInventory(inventoryData);
                 };
-
-                const response = await fetch('/api/inventories', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(inventoryData)
-                });
-
-                if (response.ok) {
-                    const result = await response.json();
-                    showToast('Inventory created successfully!', 'success');
-                    hideAddInventory();
-                    clearInventoryForm();
-                    
-                    // Also save as frontend category for organization
-                    const frontendCategory = {
-                        id: result.data.id, // Use the backend inventory ID
-                        name,
-                        category,
-                        description,
-                        imageUrl: null,
-                        itemCount: 0,
-                        totalValue: 0,
-                        createdAt: new Date().toISOString()
-                    };
-
-                    // Handle image upload for frontend category
-                    if (imageFile) {
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            frontendCategory.imageUrl = e.target.result;
-                            saveFrontendCategory(frontendCategory);
-                        };
-                        reader.readAsDataURL(imageFile);
-                    } else {
-                        saveFrontendCategory(frontendCategory);
-                    }
-                    
-                    // Refresh the inventories page if we're currently on it
-                    if (currentPage === 'inventories') {
-                        loadInventoriesPage();
-                    }
-                } else {
-                    const errorData = await response.json();
-                    showToast(errorData.error || 'Failed to create inventory', 'error');
-                }
-            } catch (error) {
-                console.error('Error creating inventory:', error);
-                showToast('Failed to create inventory', 'error');
+                reader.readAsDataURL(imageFile);
+            } else {
+                saveInventory(inventoryData);
             }
         }
 
-        function saveFrontendCategory(categoryData) {
+        function saveInventory(inventoryData) {
             try {
-                // Get existing categories from localStorage
-                const existingCategories = JSON.parse(localStorage.getItem('categories') || '[]');
+                // Get existing inventories from localStorage
+                const existingInventories = JSON.parse(localStorage.getItem('inventories') || '[]');
                 
-                // Add new category
-                existingCategories.push(categoryData);
+                // Add new inventory
+                existingInventories.push(inventoryData);
                 
                 // Save back to localStorage
-                localStorage.setItem('categories', JSON.stringify(existingCategories));
+                localStorage.setItem('inventories', JSON.stringify(existingInventories));
                 
-                // Update global categories array
-                categories = existingCategories;
+                // Update global inventories array
+                inventories = existingInventories;
+                
+                showToast('Inventory created successfully!', 'success');
+                hideAddInventory();
+                clearInventoryForm();
+                
+                // Refresh the inventories page if we're currently on it
+                if (currentPage === 'inventories') {
+                    loadInventoriesPage();
+                }
                 
             } catch (error) {
-                console.error('Error saving frontend category:', error);
+                console.error('Error saving inventory:', error);
+                showToast('Failed to create inventory', 'error');
             }
         }
 
@@ -3720,13 +3361,13 @@
             title.textContent = 'Add New Item';
             document.getElementById('item-form').reset();
             document.getElementById('item-image-preview').innerHTML = '';
-            document.getElementById('add-item-quantity').value = '1';
+            document.getElementById('item-quantity').value = '1';
             
             // Generate custom fields for this category
             generateCustomFields(categoryId);
             
             modal.classList.add('active');
-            document.getElementById('add-item-name').focus();
+            document.getElementById('item-name').focus();
         }
 
         function generateCustomFields(categoryId, itemData = null) {
@@ -3850,13 +3491,13 @@
         // Field Management Functions
         let currentFieldConfig = [];
 
-        function showFieldManagementModal(inventoryId) {
-            currentCategoryId = inventoryId; // Keep the same variable name for compatibility
-            const inventory = categories.find(c => c.id === inventoryId); // categories array contains inventories
+        function showFieldManagementModal(categoryId) {
+            currentCategoryId = categoryId;
+            const category = categories.find(c => c.id === categoryId);
             
-            if (inventory) {
-                document.getElementById('field-management-title').textContent = `Manage Fields for "${inventory.name}" Inventory`;
-                currentFieldConfig = [...(inventory.customFields || [])];
+            if (category) {
+                document.getElementById('field-management-title').textContent = `Manage Fields for "${category.name}"`;
+                currentFieldConfig = [...(category.customFields || [])];
                 updateCurrentFieldsList();
                 document.getElementById('field-management-modal').classList.add('active');
             }
@@ -3903,7 +3544,7 @@
             const name = document.getElementById('field-name').value.trim();
             const type = document.getElementById('field-type').value;
             const required = document.getElementById('field-required').checked;
-            const optionsText = document.getElementById('field-options-input').value.trim();
+            const optionsText = document.getElementById('field-options').value.trim();
 
             if (!name) {
                 showToast('Please enter a field name', 'error');
@@ -3946,13 +3587,13 @@
 
         function updateFieldOptionsVisibility() {
             const fieldType = document.getElementById('field-type').value;
-            const optionsGroup = document.getElementById('field-options');
+            const optionsGroup = document.getElementById('field-options').closest('.form-group');
             
             if (fieldType === 'select') {
                 optionsGroup.style.display = 'block';
             } else {
                 optionsGroup.style.display = 'none';
-                document.getElementById('field-options-input').value = '';
+                document.getElementById('field-options').value = '';
             }
         }
 
@@ -3986,146 +3627,77 @@
             }
         }
 
-        async function saveItem() {
-            const name = document.getElementById('add-item-name').value.trim();
-            const description = document.getElementById('add-item-description').value.trim();
-            const quantity = parseInt(document.getElementById('add-item-quantity').value) || 1;
-            const value = parseFloat(document.getElementById('add-item-value').value) || 0;
-            const purchaseLink = document.getElementById('add-item-purchase-link').value.trim();
-            const imageInput = document.getElementById('add-item-image');
+        function saveItem() {
+            const name = document.getElementById('item-name').value.trim();
+            const description = document.getElementById('item-description').value.trim();
+            const quantity = parseInt(document.getElementById('item-quantity').value) || 1;
+            const value = parseFloat(document.getElementById('item-value').value) || 0;
+            const imageInput = document.getElementById('item-image');
 
             if (!name) {
                 showToast('Please enter an item name', 'error');
                 return;
             }
 
-            // Prepare item data for API
+            // Collect custom field data
+            const customFields = {};
+            const category = categories.find(c => c.id === currentCategoryId);
+            if (category && category.customFields) {
+                for (const field of category.customFields) {
+                    const input = document.getElementById(`custom-${field.id}`);
+                    if (input) {
+                        let value;
+                        if (field.type === 'checkbox') {
+                            value = input.checked;
+                        } else {
+                            value = input.value;
+                        }
+                        
+                        // Validate required fields
+                        if (field.required && (!value || (typeof value === 'string' && value.trim() === ''))) {
+                            showToast(`Please fill in the required field: ${field.name}`, 'error');
+                            input.focus();
+                            return;
+                        }
+                        
+                        customFields[field.id] = value;
+                    }
+                }
+            }
+
             const itemData = {
+                id: editingItemId || Date.now(),
                 name,
                 description,
-                purchase_price: value,
                 quantity,
-                inventory_id: currentInventoryId, // Use the current inventory being viewed
-                location: '', // Default empty location
-                category: '' // Default empty category
+                value,
+                customFields,
+                createdAt: editingItemId ? undefined : new Date().toISOString()
             };
 
-            try {
-                showSpinner();
-                
-                let response;
-                let isEditing = editingItemId !== null;
-                
-                if (isEditing) {
-                    // Update existing item
-                    response = await fetch(`/api/items/${editingItemId}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(itemData)
-                    });
-                } else {
-                    // Create new item
-                    response = await fetch('/api/items', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(itemData)
-                    });
-                }
-
-                const result = await response.json();
-                if (result.success) {
-                    // Get the item ID (either from edit or newly created)
-                    const itemId = isEditing ? editingItemId : (result.data ? result.data.id : null);
-                    
-                    if (itemId) {
-                        // Store extended fields (image, purchase link, custom fields) in localStorage
-                        const extendedData = {
-                            purchaseLink,
-                            customFields: {},
-                            createdAt: isEditing ? undefined : new Date().toISOString(), // Don't overwrite creation date when editing
-                            updatedAt: new Date().toISOString()
-                        };
-
-                        // Collect custom field data
-                        const currentCategory = categories.find(c => c.id === currentCategoryId);
-                        if (currentCategory && currentCategory.customFields) {
-                            for (const field of currentCategory.customFields) {
-                                const input = document.getElementById(`custom-${field.id}`);
-                                if (input) {
-                                    let value;
-                                    if (field.type === 'checkbox') {
-                                        value = input.checked;
-                                    } else {
-                                        value = input.value;
-                                    }
-                                    extendedData.customFields[field.id] = value;
-                                }
-                            }
-                        }
-
-                        // Handle image upload for extended data
-                        if (imageInput.files && imageInput.files[0]) {
-                            const reader = new FileReader();
-                            reader.onload = function(e) {
-                                extendedData.imageUrl = e.target.result;
-                                // Store extended data with item ID
-                                const extendedItems = JSON.parse(localStorage.getItem('extendedItemData') || '{}');
-                                
-                                // If editing, preserve creation date
-                                if (isEditing && extendedItems[itemId]) {
-                                    extendedData.createdAt = extendedItems[itemId].createdAt;
-                                }
-                                
-                                extendedItems[itemId] = extendedData;
-                                localStorage.setItem('extendedItemData', JSON.stringify(extendedItems));
-                            };
-                            reader.readAsDataURL(imageInput.files[0]);
-                        } else {
-                            // Store extended data even without new image
-                            const extendedItems = JSON.parse(localStorage.getItem('extendedItemData') || '{}');
-                            
-                            // If editing, preserve creation date and existing image
-                            if (isEditing && extendedItems[itemId]) {
-                                extendedData.createdAt = extendedItems[itemId].createdAt;
-                                extendedData.imageUrl = extendedItems[itemId].imageUrl; // Keep existing image
-                            }
-                            
-                            // Only store if there's extended data to save
-                            if (purchaseLink || Object.keys(extendedData.customFields).length > 0 || extendedData.imageUrl) {
-                                extendedItems[itemId] = extendedData;
-                                localStorage.setItem('extendedItemData', JSON.stringify(extendedItems));
-                            }
-                        }
+            // Handle image upload
+            if (imageInput.files && imageInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    itemData.imageUrl = e.target.result;
+                    saveItemData(itemData);
+                };
+                reader.readAsDataURL(imageInput.files[0]);
+            } else {
+                // If editing and no new image selected, keep existing image
+                if (editingItemId) {
+                    const savedItems = JSON.parse(localStorage.getItem('categoryItems') || '{}');
+                    const categoryItems = savedItems[currentCategoryId] || [];
+                    const existingItem = categoryItems.find(item => item.id === editingItemId);
+                    if (existingItem && existingItem.imageUrl) {
+                        itemData.imageUrl = existingItem.imageUrl;
                     }
-
-                    showToast(isEditing ? 'Item updated successfully!' : 'Item added successfully!', 'success');
-                    hideItemModal();
-                    
-                    // Clear editing state
-                    editingItemId = null;
-                    
-                    // Refresh the category inventory page and overall data
-                    await loadDashboardData(); // Refresh all data
-                    const categoryForRefresh = categories.find(cat => cat.id === currentCategoryId);
-                    if (categoryForRefresh) {
-                        await loadCategoryInventoryPage(categoryForRefresh); // Refresh current page
-                    }
-                } else {
-                    showToast(`Failed to ${isEditing ? 'update' : 'add'} item: ` + (result.error || 'Unknown error'), 'error');
                 }
-            } catch (error) {
-                console.error(`Error ${editingItemId ? 'updating' : 'adding'} item:`, error);
-                showToast(`Failed to ${editingItemId ? 'update' : 'add'} item`, 'error');
-            } finally {
-                hideSpinner();
+                saveItemData(itemData);
             }
         }
 
-        async function saveItemData(itemData) {
+        function saveItemData(itemData) {
             try {
                 const savedItems = JSON.parse(localStorage.getItem('categoryItems') || '{}');
                 
@@ -4150,7 +3722,7 @@
                 // Refresh the category inventory page
                 const category = categories.find(cat => cat.id === currentCategoryId);
                 if (category) {
-                    await loadCategoryInventoryPage(category);
+                    loadCategoryInventoryPage(category);
                 }
                 
             } catch (error) {
@@ -4163,19 +3735,19 @@
             currentCategoryId = categoryId;
             editingItemId = itemId;
             
-            // Find the item in the current category items (which includes API data)
-            const item = currentCategoryItems.find(item => item.id === itemId);
+            const savedItems = JSON.parse(localStorage.getItem('categoryItems') || '{}');
+            const categoryItems = savedItems[categoryId] || [];
+            const item = categoryItems.find(item => item.id === itemId);
             
             if (item) {
                 const modal = document.getElementById('item-modal');
                 const title = document.getElementById('item-modal-title');
                 
                 title.textContent = 'Edit Item';
-                document.getElementById('add-item-name').value = item.name;
-                document.getElementById('add-item-description').value = item.description || '';
-                document.getElementById('add-item-quantity').value = item.quantity || 1;
-                document.getElementById('add-item-value').value = item.value || item.purchase_price || 0;
-                document.getElementById('add-item-purchase-link').value = item.purchaseLink || '';
+                document.getElementById('item-name').value = item.name;
+                document.getElementById('item-description').value = item.description || '';
+                document.getElementById('item-quantity').value = item.quantity || 1;
+                document.getElementById('item-value').value = item.value || 0;
                 
                 // Show existing image preview
                 const imagePreview = document.getElementById('item-image-preview');
@@ -4185,424 +3757,34 @@
                     imagePreview.innerHTML = '';
                 }
                 
-                // Generate custom fields and populate them with existing data
-                generateCustomFields(categoryId, item);
-                
                 modal.classList.add('active');
-                document.getElementById('add-item-name').focus();
-            } else {
-                showToast('Item not found', 'error');
+                document.getElementById('item-name').focus();
             }
         }
 
-        async function updateItemQuantity(itemId, newQuantity) {
-            console.log(`[QUANTITY] ==> updateItemQuantity called with itemId=${itemId}, newQuantity=${newQuantity}`);
-            
-            if (newQuantity < 1) {
-                console.log('[QUANTITY] Cannot set quantity below 1');
-                return;
-            }
-
-            console.log(`[QUANTITY] Starting quantity update for item ${itemId} to ${newQuantity}`);
-
-            try {
-                // Try a minimal update request first - just quantity
-                const minimalUpdateData = {
-                    quantity: newQuantity
-                };
-
-                console.log('[QUANTITY] Sending minimal update request:', minimalUpdateData);
-                console.log('[QUANTITY] Request URL:', `/api/items/${itemId}`);
-
-                const response = await fetch(`/api/items/${itemId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(minimalUpdateData)
-                });
-
-                console.log(`[QUANTITY] Response received - Status: ${response.status}, OK: ${response.ok}`);
-
-                if (response.ok) {
-                    console.log('[QUANTITY] Quantity updated successfully');
-                    
-                    // Parse the response to get updated item data
-                    let updatedItem = null;
-                    try {
-                        const responseText = await response.text();
-                        console.log('[QUANTITY] Response text:', responseText);
-                        if (responseText) {
-                            const responseData = JSON.parse(responseText);
-                            updatedItem = responseData.data;
-                            console.log('[QUANTITY] Updated item data:', updatedItem);
-                        }
-                    } catch (parseError) {
-                        console.log('[QUANTITY] Could not parse response, but update was successful');
-                    }
-                    
-                    // Update the UI immediately by finding and updating the specific elements
-                    const itemCard = document.querySelector(`[data-item-id="${itemId}"]`);
-                    if (itemCard) {
-                        // Update the quantity display
-                        const quantityDisplay = itemCard.querySelector('.quantity-display');
-                        if (quantityDisplay) {
-                            quantityDisplay.textContent = newQuantity;
-                            console.log('[QUANTITY] Updated quantity display to:', newQuantity);
-                        }
-                        
-                        // Update the decrease button disabled state
-                        const decreaseBtn = itemCard.querySelector('.btn-quantity.decrease');
-                        if (decreaseBtn) {
-                            if (newQuantity <= 1) {
-                                decreaseBtn.disabled = true;
-                                decreaseBtn.setAttribute('disabled', '');
-                            } else {
-                                decreaseBtn.disabled = false;
-                                decreaseBtn.removeAttribute('disabled');
-                            }
-                        }
-                        
-                        // Update the onclick handlers with the new quantity
-                        const increaseBtn = itemCard.querySelector('.btn-quantity.increase');
-                        if (increaseBtn) {
-                            increaseBtn.setAttribute('onclick', `updateItemQuantity(${itemId}, ${newQuantity + 1})`);
-                        }
-                        if (decreaseBtn) {
-                            decreaseBtn.setAttribute('onclick', `updateItemQuantity(${itemId}, ${newQuantity - 1})`);
-                        }
-                        
-                        console.log('[QUANTITY] Updated UI elements for item:', itemId);
-                    } else {
-                        console.warn('[QUANTITY] Could not find item card for itemId:', itemId);
-                    }
-                    
-                    // Update the local currentCategoryItems array
-                    if (window.currentCategoryItems) {
-                        const itemIndex = window.currentCategoryItems.findIndex(item => 
-                            item.id == itemId // Use loose equality to handle type differences
-                        );
-                        if (itemIndex !== -1) {
-                            window.currentCategoryItems[itemIndex].quantity = newQuantity;
-                            console.log(`[QUANTITY] Updated local item array at index ${itemIndex}`);
-                        } else {
-                            console.warn(`[QUANTITY] Could not find item ${itemId} in local array to update`);
-                        }
-                    }
-                    
-                    // Show success toast
-                    showToast(`Quantity updated to ${newQuantity}`, 'success');
-                    
-                } else if (response.status === 404) {
-                    console.log('[QUANTITY] Item not found on server (404)');
-                    showToast('Item not found', 'error');
-                } else {
-                    console.error('[QUANTITY] Update failed with status:', response.status);
-                    
-                    let errorMessage = `Failed to update quantity (${response.status})`;
-                    try {
-                        const errorText = await response.text();
-                        console.error('[QUANTITY] Error response text:', errorText);
-                        if (errorText) {
-                            const errorData = JSON.parse(errorText);
-                            errorMessage = errorData.error || errorMessage;
-                        }
-                    } catch (parseError) {
-                        console.error('[QUANTITY] Could not parse error response');
-                    }
-                    
-                    showToast(errorMessage, 'error');
-                }
-                
-            } catch (networkError) {
-                console.error('[QUANTITY] Network error details:');
-                console.error('- Error message:', networkError.message);
-                console.error('- Error type:', networkError.name);
-                console.error('- Error stack:', networkError.stack);
-                console.error('- Full error object:', networkError);
-                
-                // Check if it's a CORS or network connectivity issue
-                if (networkError.name === 'TypeError' && networkError.message.includes('fetch')) {
-                    console.error('[QUANTITY] This appears to be a fetch/network error');
-                    showToast('Connection error - check if server is running', 'error');
-                } else {
-                    console.error('[QUANTITY] Unknown network error type');
-                    showToast(`Network error while updating quantity: ${networkError.message}`, 'error');
-                }
-            }
-        }
-
-        async function deleteItem(categoryId, itemId) {
+        function deleteItem(categoryId, itemId) {
             if (confirm('Are you sure you want to delete this item?')) {
-                console.log(`[DELETE] Starting delete operation for item ${itemId} in category ${categoryId}`);
-                
                 try {
-                    // Call the API to delete the item
-                    console.log(`[DELETE] Sending DELETE request to /api/items/${itemId}`);
-                    const response = await fetch(`/api/items/${itemId}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    console.log(`[DELETE] Response received - Status: ${response.status}, OK: ${response.ok}`);
-
-                    if (response.ok) {
-                        console.log('[DELETE] Response is OK, processing successful deletion');
-                        
-                        // Show success message immediately
-                        showToast('Item deleted successfully!', 'success');
-                        
-                        // Clean up frontend state synchronously first
-                        console.log('[DELETE] Cleaning up frontend state');
-                        if (window.currentCategoryItems) {
-                            const initialLength = window.currentCategoryItems.length;
-                            window.currentCategoryItems = window.currentCategoryItems.filter(item => item.id !== itemId);
-                            console.log(`[DELETE] Removed item from currentCategoryItems (${initialLength} -> ${window.currentCategoryItems.length})`);
-                        }
-                        
-                        // Clean up localStorage
-                        console.log('[DELETE] Cleaning up localStorage');
-                        try {
-                            const extendedItems = JSON.parse(localStorage.getItem('extendedItemData') || '{}');
-                            if (extendedItems[itemId]) {
-                                delete extendedItems[itemId];
-                                localStorage.setItem('extendedItemData', JSON.stringify(extendedItems));
-                                console.log('[DELETE] Removed item from localStorage');
-                            }
-                        } catch (storageError) {
-                            console.error('[DELETE] Error cleaning localStorage:', storageError);
-                        }
-                        
-                        // Update the UI immediately by removing the item card directly
-                        console.log('[DELETE] Removing item card from DOM');
-                        const itemCard = document.querySelector(`[data-item-id="${itemId}"]`);
-                        if (itemCard) {
-                            // Add a fade-out animation before removing
-                            itemCard.style.transition = 'opacity 0.3s ease';
-                            itemCard.style.opacity = '0';
-                            
-                            // Remove the element after the animation
-                            setTimeout(() => {
-                                itemCard.remove();
-                                console.log('[DELETE] Item card removed from DOM');
-                            }, 300);
-                        } else {
-                            console.warn('[DELETE] Could not find item card to remove for itemId:', itemId);
-                        }
-                        
-                        console.log('[DELETE] Delete operation completed successfully');
-                        
-                    } else if (response.status === 404) {
-                        console.log('[DELETE] Item was already deleted (404 response)');
-                        showToast('Item has already been deleted', 'info');
-                        
-                        // Clean up state anyway
-                        if (window.currentCategoryItems) {
-                            window.currentCategoryItems = window.currentCategoryItems.filter(item => item.id !== itemId);
-                        }
-                        
-                        try {
-                            const extendedItems = JSON.parse(localStorage.getItem('extendedItemData') || '{}');
-                            if (extendedItems[itemId]) {
-                                delete extendedItems[itemId];
-                                localStorage.setItem('extendedItemData', JSON.stringify(extendedItems));
-                            }
-                        } catch (storageError) {
-                            console.error('[DELETE] Error cleaning localStorage for 404:', storageError);
-                        }
-                        
-                        // Update UI immediately by removing the item card directly
-                        console.log('[DELETE] Removing item card from DOM (404 case)');
-                        const itemCard = document.querySelector(`[data-item-id="${itemId}"]`);
-                        if (itemCard) {
-                            // Add a fade-out animation before removing
-                            itemCard.style.transition = 'opacity 0.3s ease';
-                            itemCard.style.opacity = '0';
-                            
-                            // Remove the element after the animation
-                            setTimeout(() => {
-                                itemCard.remove();
-                                console.log('[DELETE] Item card removed from DOM (404)');
-                            }, 300);
-                        } else {
-                            console.warn('[DELETE] Could not find item card to remove for itemId (404):', itemId);
-                        }
-                        
-                    } else {
-                        console.log(`[DELETE] Delete failed with status ${response.status}`);
-                        
-                        let errorMessage = 'Failed to delete item';
-                        try {
-                            const errorData = await response.json();
-                            errorMessage = errorData.error || errorMessage;
-                            console.log('[DELETE] Error response:', errorData);
-                        } catch (parseError) {
-                            console.log('[DELETE] Could not parse error response');
-                        }
-                        
-                        showToast(errorMessage, 'error');
-                    }
-                } catch (networkError) {
-                    console.error('[DELETE] Network error caught:', networkError.message, networkError.stack);
+                    const savedItems = JSON.parse(localStorage.getItem('categoryItems') || '{}');
                     
-                    // Try to verify if the deletion actually succeeded despite the error
-                    console.log('[DELETE] Attempting to verify item status after network error');
-                    try {
-                        const checkResponse = await fetch(`/api/items/${itemId}`, {
-                            method: 'GET',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            }
-                        });
+                    if (savedItems[categoryId]) {
+                        savedItems[categoryId] = savedItems[categoryId].filter(item => item.id !== itemId);
+                        localStorage.setItem('categoryItems', JSON.stringify(savedItems));
                         
-                        console.log(`[DELETE] Verification response status: ${checkResponse.status}`);
+                        showToast('Item deleted!', 'success');
                         
-                        if (checkResponse.status === 404) {
-                            console.log('[DELETE] Verification confirmed: item was deleted successfully');
-                            showToast('Item was deleted successfully', 'success');
-                            
-                            // Clean up frontend state
-                            if (window.currentCategoryItems) {
-                                window.currentCategoryItems = window.currentCategoryItems.filter(item => item.id !== itemId);
-                            }
-                            
-                            try {
-                                const extendedItems = JSON.parse(localStorage.getItem('extendedItemData') || '{}');
-                                if (extendedItems[itemId]) {
-                                    delete extendedItems[itemId];
-                                    localStorage.setItem('extendedItemData', JSON.stringify(extendedItems));
-                                }
-                            } catch (storageError) {
-                                console.error('[DELETE] Error cleaning localStorage after verification:', storageError);
-                            }
-                            
-                            // Update UI immediately
-                            try {
-                                const category = categories.find(cat => cat.id === categoryId);
-                                if (category && currentPage === 'category-inventory') {
-                                    displayCategoryItems(category, window.currentCategoryItems || []);
-                                } else if (currentPage === 'dashboard') {
-                                    await loadDashboard();
-                                }
-                            } catch (displayError) {
-                                console.error('[DELETE] Error during verified deletion UI update:', displayError);
-                            }
-                        } else if (checkResponse.ok) {
-                            console.log('[DELETE] Verification shows item still exists - real network error');
-                            showToast('Network error occurred while deleting. Please try again.', 'error');
-                        } else {
-                            console.log('[DELETE] Cannot verify item status due to server error');
-                            showToast('Connection error. Please refresh and try again.', 'warning');
+                        // Refresh the category inventory page
+                        const category = categories.find(cat => cat.id === categoryId);
+                        if (category) {
+                            loadCategoryInventoryPage(category);
                         }
-                    } catch (verifyError) {
-                        console.error('[DELETE] Could not verify item status:', verifyError.message, verifyError.stack);
-                        showToast('Connection error. Refreshing to check current state...', 'warning');
-                        
-                        // Still try to refresh the view to show current state after a delay
-                        setTimeout(async () => {
-                            try {
-                                console.log('[DELETE] Delayed refresh after verification failure');
-                                const category = categories.find(cat => cat.id === categoryId);
-                                if (category && currentPage === 'category-inventory') {
-                                    await loadCategoryInventoryPage(category);
-                                }
-                                if (currentPage === 'dashboard') {
-                                    await loadDashboard();
-                                }
-                            } catch (delayedRefreshError) {
-                                console.error('[DELETE] Error in delayed refresh:', delayedRefreshError);
-                            }
-                        }, 1000);
                     }
+                } catch (error) {
+                    console.error('Error deleting item:', error);
+                    showToast('Failed to delete item', 'error');
                 }
             }
         }
-
-        // Initialize the application
-        document.addEventListener('DOMContentLoaded', function() {
-            initTheme();
-            loadDashboardData();
-            setActivePage('dashboard');
-            
-            // Add event listeners for navigation
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.addEventListener('click', function() {
-                    const page = this.dataset.page;
-                    if (page) {
-                        setActivePage(page);
-                    }
-                });
-            });
-            
-            // Add modal close handlers
-            document.querySelectorAll('.modal').forEach(modal => {
-                modal.addEventListener('click', function(e) {
-                    if (e.target === this) {
-                        this.classList.remove('active');
-                    }
-                });
-            });
-        });
-
-        // Modal close functions
-        function hideQuickAdd() {
-            document.getElementById('quick-add-modal').classList.remove('active');
-        }
-
-        function hideAddInventory() {
-            document.getElementById('add-inventory-modal').classList.remove('active');
-        }
-
-        function hideCategoryModal() {
-            document.getElementById('category-modal').classList.remove('active');
-        }
-
-        function hideTagModal() {
-            document.getElementById('tag-modal').classList.remove('active');
-        }
-
-        function hideItemModal() {
-            document.getElementById('item-modal').classList.remove('active');
-        }
-
-        function hideFieldManagementModal() {
-            document.getElementById('field-management-modal').classList.remove('active');
-        }
-
-        // Show modal functions
-        function showQuickAdd() {
-            document.getElementById('quick-add-modal').classList.add('active');
-        }
-
-        function showAddInventory() {
-            document.getElementById('add-inventory-modal').classList.add('active');
-        }
-
-        function restoreDefaultHeader() {
-            document.getElementById('page-title').textContent = 'Dashboard';
-            document.getElementById('page-subtitle').textContent = 'Welcome back! Here\'s your inventory overview.';
-            
-            const headerActions = document.querySelector('.header-actions');
-            headerActions.innerHTML = `
-                <button class="theme-toggle" onclick="toggleTheme()" id="theme-toggle" title="Toggle dark/light mode">
-                    <i class="fas fa-sun"></i>
-                </button>
-                <button class="btn btn-primary" onclick="showQuickAdd()">
-                    <i class="fas fa-plus"></i>
-                    Quick Add
-                </button>
-                <div class="search-box">
-                    <i class="fas fa-search search-icon"></i>
-                    <input type="text" class="search-input" placeholder="Search items, categories..." id="global-search">
-                </div>
-            `;
-            
-            // Re-initialize theme
-            initTheme();
-        }
-
     </script>
 </body>
 </html>

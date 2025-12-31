@@ -16,5 +16,5 @@ COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/home-register 
 COPY static ./static
 COPY migrations ./migrations
 COPY .env .env
-EXPOSE 8000
+EXPOSE 8210
 CMD ["./home-register"]

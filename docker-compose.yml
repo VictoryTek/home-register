@@ -16,8 +16,9 @@ services:
       - db
     environment:
       DATABASE_URL: postgres://postgres:password@db:5432/home_inventory
+      PORT: 8210
     ports:
-      - "8000:8000"
+      - "8210:8210"
     command: ["./home-register"]
 volumes:
   pgdata:
