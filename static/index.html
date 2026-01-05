@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home Register - Modern Inventory Management</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%231A72EE'/%3E%3Cstop offset='100%25' style='stop-color:%234a90f0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='6' fill='url(%23bg)'/%3E%3Cpath d='M8 14h16v12H8z' fill='white' opacity='0.9'/%3E%3Cpath d='M16 6l8 6H8z' fill='white'/%3E%3Crect x='12' y='18' width='2' height='4' fill='%231A72EE'/%3E%3Crect x='18' y='18' width='2' height='4' fill='%231A72EE'/%3E%3Crect x='12' y='22' width='8' height='1' fill='%231A72EE' opacity='0.5'/%3E%3C/svg%3E">
-    <link rel="apple-touch-icon" sizes="180x180" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%231A72EE'/%3E%3Cstop offset='100%25' style='stop-color:%234a90f0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' rx='35' fill='url(%23bg)'/%3E%3Cpath d='M45 80h90v70H45z' fill='white' opacity='0.95'/%3E%3Cpath d='M90 35l45 35H45z' fill='white'/%3E%3Crect x='70' y='100' width='10' height='25' fill='%231A72EE'/%3E%3Crect x='100' y='100' width='10' height='25' fill='%231A72EE'/%3E%3Crect x='70' y='130' width='40' height='5' fill='%231A72EE' opacity='0.4'/%3E%3Crect x='70' y='140' width='30' height='3' fill='%231A72EE' opacity='0.3'/%3E%3C/svg%3E">
+    <link rel="icon" type="image/png" href="/logo_icon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/logo_icon.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -143,7 +143,8 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 120px;
+            height: 120px;
+            box-sizing: border-box;
         }
 
         .logo {
@@ -364,8 +365,14 @@
         .page-title {
             font-size: 1.875rem;
             font-weight: 700;
-            color: var(--text-primary);
             background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        [data-theme="dark"] .page-title {
+            background: linear-gradient(135deg, #ffffff, #e2e8f0);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
