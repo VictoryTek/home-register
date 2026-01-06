@@ -322,7 +322,7 @@ impl DatabaseService {
 
         let rows = client
             .query(
-                "SELECT id, name, description, location, created_at, updated_at 
+                "SELECT id, name, description, location, image_url, created_at, updated_at 
                  FROM inventories ORDER BY created_at DESC",
                 &[],
             )
@@ -335,8 +335,9 @@ impl DatabaseService {
                 name: row.get(1),
                 description: row.get(2),
                 location: row.get(3),
-                created_at: row.get::<_, Option<DateTime<Utc>>>(4),
-                updated_at: row.get::<_, Option<DateTime<Utc>>>(5),
+                image_url: row.get(4),
+                created_at: row.get::<_, Option<DateTime<Utc>>>(5),
+                updated_at: row.get::<_, Option<DateTime<Utc>>>(6),
             };
             inventories.push(inventory);
         }
@@ -353,7 +354,7 @@ impl DatabaseService {
 
         let rows = client
             .query(
-                "SELECT id, name, description, location, created_at, updated_at 
+                "SELECT id, name, description, location, image_url, created_at, updated_at 
                  FROM inventories WHERE id = $1",
                 &[&id],
             )
@@ -365,8 +366,9 @@ impl DatabaseService {
                 name: row.get(1),
                 description: row.get(2),
                 location: row.get(3),
-                created_at: row.get::<_, Option<DateTime<Utc>>>(4),
-                updated_at: row.get::<_, Option<DateTime<Utc>>>(5),
+                image_url: row.get(4),
+                created_at: row.get::<_, Option<DateTime<Utc>>>(5),
+                updated_at: row.get::<_, Option<DateTime<Utc>>>(6),
             };
             Ok(Some(inventory))
         } else {
@@ -382,10 +384,10 @@ impl DatabaseService {
 
         let row = client
             .query_one(
-                "INSERT INTO inventories (name, description) 
-                 VALUES ($1, $2) 
-                 RETURNING id, name, description, location, created_at, updated_at",
-                &[&request.name, &request.description],
+                "INSERT INTO inventories (name, description, location, image_url) 
+                 VALUES ($1, $2, $3, $4) 
+                 RETURNING id, name, description, location, image_url, created_at, updated_at",
+                &[&request.name, &request.description, &request.location, &request.image_url],
             )
             .await?;
 
@@ -394,12 +396,78 @@ impl DatabaseService {
             name: row.get(1),
             description: row.get(2),
             location: row.get(3),
-            created_at: row.get::<_, Option<DateTime<Utc>>>(4),
-            updated_at: row.get::<_, Option<DateTime<Utc>>>(5),
+            image_url: row.get(4),
+            created_at: row.get::<_, Option<DateTime<Utc>>>(5),
+            updated_at: row.get::<_, Option<DateTime<Utc>>>(6),
         };
 
         info!("Created new inventory: {} (ID: {:?})", inventory.name, inventory.id);
         Ok(inventory)
+    }
+
+    pub async fn update_inventory(
+        &self,
+        id: i32,
+        request: crate::models::UpdateInventoryRequest,
+    ) -> Result<Option<Inventory>, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        // Build dynamic update query
+        let mut fields = Vec::new();
+        let mut values: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = Vec::new();
+        let mut param_count = 1;
+
+        if let Some(ref name) = request.name {
+            fields.push(format!("name = ${}", param_count));
+            values.push(name);
+            param_count += 1;
+        }
+        if let Some(ref description) = request.description {
+            fields.push(format!("description = ${}", param_count));
+            values.push(description);
+            param_count += 1;
+        }
+        if let Some(ref location) = request.location {
+            fields.push(format!("location = ${}", param_count));
+            values.push(location);
+            param_count += 1;
+        }
+        if let Some(ref image_url) = request.image_url {
+            fields.push(format!("image_url = ${}", param_count));
+            values.push(image_url);
+            param_count += 1;
+        }
+
+        if fields.is_empty() {
+            return self.get_inventory_by_id(id).await;
+        }
+
+        fields.push("updated_at = NOW()".to_string());
+        values.push(&id);
+
+        let query = format!(
+            "UPDATE inventories SET {} WHERE id = ${} RETURNING id, name, description, location, image_url, created_at, updated_at",
+            fields.join(", "),
+            param_count
+        );
+
+        let rows = client.query(&query, &values).await?;
+
+        if let Some(row) = rows.first() {
+            let inventory = Inventory {
+                id: Some(row.get(0)),
+                name: row.get(1),
+                description: row.get(2),
+                location: row.get(3),
+                image_url: row.get(4),
+                created_at: row.get::<_, Option<DateTime<Utc>>>(5),
+                updated_at: row.get::<_, Option<DateTime<Utc>>>(6),
+            };
+            info!("Updated inventory ID: {}", id);
+            Ok(Some(inventory))
+        } else {
+            Ok(None)
+        }
     }
 
     pub async fn get_items_by_inventory(

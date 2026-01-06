@@ -2,7 +2,8 @@ import type {
   ApiResponse, 
   Inventory, 
   Item, 
-  CreateInventoryRequest, 
+  CreateInventoryRequest,
+  UpdateInventoryRequest,
   CreateItemRequest, 
   UpdateItemRequest 
 } from '@/types';
@@ -29,6 +30,15 @@ export const inventoryApi = {
   async create(data: CreateInventoryRequest): Promise<ApiResponse<Inventory>> {
     const response = await fetch(`${API_BASE}/inventories`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse<Inventory>(response);
+  },
+
+  async update(id: number, data: UpdateInventoryRequest): Promise<ApiResponse<Inventory>> {
+    const response = await fetch(`${API_BASE}/inventories/${id}`, {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });

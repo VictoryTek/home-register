@@ -58,7 +58,7 @@
   padding: 1.5rem 0;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 120px);
+  height: calc(100vh - var(--sidebar-header-height, 120px));
 }
 
 .nav-section {

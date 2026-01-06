@@ -7,6 +7,7 @@ pub struct Inventory {
     pub name: String,
     pub description: Option<String>,
     pub location: Option<String>,
+    pub image_url: Option<String>,
     pub created_at: Option<DateTime<Utc>>,
     pub updated_at: Option<DateTime<Utc>>,
 }
@@ -32,6 +33,16 @@ pub struct Item {
 pub struct CreateInventoryRequest {
     pub name: String,
     pub description: Option<String>,
+    pub location: Option<String>,
+    pub image_url: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct UpdateInventoryRequest {
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub location: Option<String>,
+    pub image_url: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]

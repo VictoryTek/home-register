@@ -1,6 +1,6 @@
 use actix_web::{delete, get, post, put, web, HttpResponse, Responder, Result, Scope};
 use crate::db::DatabaseService;
-use crate::models::{ApiResponse, CreateItemRequest, ErrorResponse, UpdateItemRequest, CreateInventoryRequest};
+use crate::models::{ApiResponse, CreateItemRequest, ErrorResponse, UpdateItemRequest, CreateInventoryRequest, UpdateInventoryRequest};
 use deadpool_postgres::Pool;
 use log::{error, info};
 
@@ -136,6 +136,43 @@ pub async fn get_inventory_items(
                 success: false,
                 error: format!("Database error: {}", e),
                 message: Some("Failed to retrieve inventory items".to_string()),
+            }))
+        }
+    }
+}
+
+#[put("/inventories/{id}")]
+pub async fn update_inventory(
+    pool: web::Data<Pool>,
+    path: web::Path<i32>,
+    req: web::Json<UpdateInventoryRequest>
+) -> Result<impl Responder> {
+    let inventory_id = path.into_inner();
+    let db_service = DatabaseService::new(pool.get_ref().clone());
+    
+    match db_service.update_inventory(inventory_id, req.into_inner()).await {
+        Ok(Some(inventory)) => {
+            info!("Successfully updated inventory with id: {}", inventory_id);
+            Ok(HttpResponse::Ok().json(ApiResponse {
+                success: true,
+                data: Some(inventory),
+                message: Some("Inventory updated successfully".to_string()),
+                error: None,
+            }))
+        },
+        Ok(None) => {
+            Ok(HttpResponse::NotFound().json(ErrorResponse {
+                success: false,
+                error: format!("Inventory with id {} not found", inventory_id),
+                message: Some("Inventory not found".to_string()),
+            }))
+        },
+        Err(e) => {
+            error!("Error updating inventory: {}", e);
+            Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: format!("Database error: {}", e),
+                message: Some("Failed to update inventory".to_string()),
             }))
         }
     }
@@ -345,6 +382,7 @@ pub fn api_scope() -> Scope {
         .service(create_inventory)
         .service(get_inventory)
         .service(get_inventory_items)
+        .service(update_inventory)
         // Item routes
         .service(get_items)
         .service(get_item)

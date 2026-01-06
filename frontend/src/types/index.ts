@@ -18,6 +18,7 @@ export interface Inventory {
   name: string;
   description?: string;
   location?: string;
+  image_url?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -80,6 +81,15 @@ export interface CustomFieldValue {
 export interface CreateInventoryRequest {
   name: string;
   description?: string;
+  location?: string;
+  image_url?: string;
+}
+
+export interface UpdateInventoryRequest {
+  name?: string;
+  description?: string;
+  location?: string;
+  image_url?: string;
 }
 
 export interface CreateItemRequest {

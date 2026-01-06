@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Header, LoadingState, EmptyState, Modal } from '@/components';
+import { Header, LoadingState, EmptyState, Modal, ConfirmModal } from '@/components';
 import { inventoryApi } from '@/services/api';
 import { useApp } from '@/context/AppContext';
 import type { Inventory } from '@/types';
@@ -11,7 +11,18 @@ export function InventoriesPage() {
   const [loading, setLoading] = useState(true);
   const [itemCounts, setItemCounts] = useState<Record<number, number>>({});
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newInventory, setNewInventory] = useState({ name: '', description: '' });
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [editingInventory, setEditingInventory] = useState<Inventory | null>(null);
+  const [deletingInventory, setDeletingInventory] = useState<Inventory | null>(null);
+  const [formData, setFormData] = useState({ 
+    name: '', 
+    description: '', 
+    location: '', 
+    image_url: '' 
+  });
+  const [imageOption, setImageOption] = useState<'upload' | 'url'>('url');
+  const [imagePreview, setImagePreview] = useState<string>('');
 
   useEffect(() => {
     loadInventories();
@@ -44,17 +55,17 @@ export function InventoriesPage() {
   };
 
   const handleCreateInventory = async () => {
-    if (!newInventory.name.trim()) {
+    if (!formData.name.trim()) {
       showToast('Please enter an inventory name', 'error');
       return;
     }
 
     try {
-      const result = await inventoryApi.create(newInventory);
+      const result = await inventoryApi.create(formData);
       if (result.success) {
         showToast('Inventory created successfully!', 'success');
         setShowCreateModal(false);
-        setNewInventory({ name: '', description: '' });
+        resetForm();
         loadInventories();
       } else {
         showToast(result.error || 'Failed to create inventory', 'error');
@@ -64,12 +75,34 @@ export function InventoriesPage() {
     }
   };
 
-  const handleDeleteInventory = async (e: React.MouseEvent, id: number) => {
-    e.stopPropagation();
-    if (!confirm('Are you sure you want to delete this inventory?')) return;
+  const handleEditInventory = async () => {
+    if (!formData.name.trim()) {
+      showToast('Please enter an inventory name', 'error');
+      return;
+    }
+
+    if (!editingInventory?.id) return;
 
     try {
-      const result = await inventoryApi.delete(id);
+      const result = await inventoryApi.update(editingInventory.id, formData);
+      if (result.success) {
+        showToast('Inventory updated successfully!', 'success');
+        setShowEditModal(false);
+        resetForm();
+        loadInventories();
+      } else {
+        showToast(result.error || 'Failed to update inventory', 'error');
+      }
+    } catch (error) {
+      showToast('Failed to update inventory', 'error');
+    }
+  };
+
+  const handleDeleteInventory = async () => {
+    if (!deletingInventory?.id) return;
+
+    try {
+      const result = await inventoryApi.delete(deletingInventory.id);
       if (result.success) {
         showToast('Inventory deleted successfully!', 'success');
         loadInventories();
@@ -79,6 +112,52 @@ export function InventoriesPage() {
     } catch (error) {
       showToast('Failed to delete inventory', 'error');
     }
+  };
+
+  const openEditModal = (e: React.MouseEvent, inventory: Inventory) => {
+    e.stopPropagation();
+    setEditingInventory(inventory);
+    setFormData({
+      name: inventory.name,
+      description: inventory.description || '',
+      location: inventory.location || '',
+      image_url: inventory.image_url || ''
+    });
+    setImagePreview(inventory.image_url || '');
+    setImageOption(inventory.image_url?.startsWith('data:') ? 'upload' : 'url');
+    setShowEditModal(true);
+  };
+
+  const openDeleteModal = (e: React.MouseEvent, inventory: Inventory) => {
+    e.stopPropagation();
+    setDeletingInventory(inventory);
+    setShowDeleteModal(true);
+  };
+
+  const resetForm = () => {
+    setFormData({ name: '', description: '', location: '', image_url: '' });
+    setImagePreview('');
+    setImageOption('url');
+    setEditingInventory(null);
+    setDeletingInventory(null);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string;
+        setImagePreview(dataUrl);
+        setFormData({ ...formData, image_url: dataUrl });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleImageUrlChange = (url: string) => {
+    setFormData({ ...formData, image_url: url });
+    setImagePreview(url);
   };
 
   return (
@@ -122,18 +201,30 @@ export function InventoriesPage() {
                 >
                   <div className="inventory-card-header">
                     <div className="inventory-card-image">
-                      <div style={{
-                        width: '100%',
-                        height: '100%',
-                        background: 'linear-gradient(135deg, var(--primary-color), var(--primary-light))',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                        fontSize: '2.5rem'
-                      }}>
-                        <i className="fas fa-warehouse"></i>
-                      </div>
+                      {inventory.image_url ? (
+                        <img 
+                          src={inventory.image_url} 
+                          alt={inventory.name}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                          }}
+                        />
+                      ) : (
+                        <div style={{
+                          width: '100%',
+                          height: '100%',
+                          background: 'linear-gradient(135deg, var(--primary-color), var(--primary-light))',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'white',
+                          fontSize: '2.5rem'
+                        }}>
+                          <i className="fas fa-warehouse"></i>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="inventory-card-body">
@@ -157,14 +248,14 @@ export function InventoriesPage() {
                   <div className="inventory-card-footer">
                     <button
                       className="btn btn-sm btn-ghost"
-                      onClick={(e) => { e.stopPropagation(); /* TODO: Edit */ }}
+                      onClick={(e) => openEditModal(e, inventory)}
                       title="Edit Inventory"
                     >
                       <i className="fas fa-edit"></i>
                     </button>
                     <button
                       className="btn btn-sm btn-ghost text-danger"
-                      onClick={(e) => handleDeleteInventory(e, inventory.id!)}
+                      onClick={(e) => openDeleteModal(e, inventory)}
                       title="Delete Inventory"
                     >
                       <i className="fas fa-trash"></i>
@@ -201,8 +292,8 @@ export function InventoriesPage() {
             className="form-input"
             id="inventory-name"
             placeholder="e.g., Main House, Garage, Storage Unit"
-            value={newInventory.name}
-            onChange={(e) => setNewInventory({ ...newInventory, name: e.target.value })}
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           />
         </div>
         <div className="form-group">
@@ -212,11 +303,243 @@ export function InventoriesPage() {
             id="inventory-description"
             placeholder="Optional description"
             rows={3}
-            value={newInventory.description}
-            onChange={(e) => setNewInventory({ ...newInventory, description: e.target.value })}
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           />
         </div>
+        <div className="form-group">
+          <label className="form-label" htmlFor="inventory-location">Location</label>
+          <input
+            type="text"
+            className="form-input"
+            id="inventory-location"
+            placeholder="e.g., Main Office, Kitchen, Living Room"
+            value={formData.location}
+            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Inventory Image</label>
+          <div style={{ marginBottom: '1rem' }}>
+            <button
+              type="button"
+              className={`btn btn-sm ${imageOption === 'url' ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => setImageOption('url')}
+              style={{ marginRight: '0.5rem' }}
+            >
+              Image URL
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm ${imageOption === 'upload' ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => setImageOption('upload')}
+            >
+              Upload Image
+            </button>
+          </div>
+          
+          {imageOption === 'url' ? (
+            <input
+              type="text"
+              className="form-input"
+              placeholder="Enter image URL"
+              value={formData.image_url}
+              onChange={(e) => handleImageUrlChange(e.target.value)}
+            />
+          ) : (
+            <div 
+              className="image-upload-container"
+              onClick={() => document.getElementById('inventory-image-input')?.click()}
+              style={{ cursor: 'pointer' }}
+            >
+              <input
+                type="file"
+                id="inventory-image-input"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleImageUpload}
+              />
+              <div className="image-preview">
+                {imagePreview ? (
+                  <img 
+                    src={imagePreview} 
+                    alt="Preview"
+                    style={{ 
+                      maxWidth: '100%', 
+                      maxHeight: '120px', 
+                      borderRadius: 'var(--radius-md)',
+                      objectFit: 'cover'
+                    }}
+                  />
+                ) : (
+                  <div className="image-placeholder">
+                    <i className="fas fa-image" style={{ fontSize: '2rem', opacity: 0.6 }}></i>
+                    <span>Click to upload an image</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {imagePreview && (
+            <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
+              <button
+                type="button"
+                className="btn btn-sm btn-secondary"
+                onClick={() => {
+                  setImagePreview('');
+                  setFormData({ ...formData, image_url: '' });
+                }}
+              >
+                Clear Image
+              </button>
+            </div>
+          )}
+        </div>
       </Modal>
+
+      {/* Edit Inventory Modal */}
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => { setShowEditModal(false); resetForm(); }}
+        title="Edit Inventory"
+        subtitle="Update your inventory information"
+        footer={
+          <>
+            <button className="btn btn-secondary" onClick={() => { setShowEditModal(false); resetForm(); }}>
+              Cancel
+            </button>
+            <button className="btn btn-primary" onClick={handleEditInventory}>
+              <i className="fas fa-save"></i>
+              Save Changes
+            </button>
+          </>
+        }
+      >
+        <div className="form-group">
+          <label className="form-label" htmlFor="edit-inventory-name">Inventory Name *</label>
+          <input
+            type="text"
+            className="form-input"
+            id="edit-inventory-name"
+            placeholder="e.g., Main House, Garage, Storage Unit"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label" htmlFor="edit-inventory-description">Description</label>
+          <textarea
+            className="form-input"
+            id="edit-inventory-description"
+            placeholder="Optional description"
+            rows={3}
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label" htmlFor="edit-inventory-location">Location</label>
+          <input
+            type="text"
+            className="form-input"
+            id="edit-inventory-location"
+            placeholder="e.g., Main Office, Kitchen, Living Room"
+            value={formData.location}
+            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Inventory Image</label>
+          <div style={{ marginBottom: '1rem' }}>
+            <button
+              type="button"
+              className={`btn btn-sm ${imageOption === 'url' ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => setImageOption('url')}
+              style={{ marginRight: '0.5rem' }}
+            >
+              Image URL
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm ${imageOption === 'upload' ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => setImageOption('upload')}
+            >
+              Upload Image
+            </button>
+          </div>
+          
+          {imageOption === 'url' ? (
+            <input
+              type="text"
+              className="form-input"
+              placeholder="Enter image URL"
+              value={formData.image_url}
+              onChange={(e) => handleImageUrlChange(e.target.value)}
+            />
+          ) : (
+            <div 
+              className="image-upload-container"
+              onClick={() => document.getElementById('edit-inventory-image-input')?.click()}
+              style={{ cursor: 'pointer' }}
+            >
+              <input
+                type="file"
+                id="edit-inventory-image-input"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleImageUpload}
+              />
+              <div className="image-preview">
+                {imagePreview ? (
+                  <img 
+                    src={imagePreview} 
+                    alt="Preview"
+                    style={{ 
+                      maxWidth: '100%', 
+                      maxHeight: '120px', 
+                      borderRadius: 'var(--radius-md)',
+                      objectFit: 'cover'
+                    }}
+                  />
+                ) : (
+                  <div className="image-placeholder">
+                    <i className="fas fa-image" style={{ fontSize: '2rem', opacity: 0.6 }}></i>
+                    <span>Click to upload an image</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {imagePreview && (
+            <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
+              <button
+                type="button"
+                className="btn btn-sm btn-secondary"
+                onClick={() => {
+                  setImagePreview('');
+                  setFormData({ ...formData, image_url: '' });
+                }}
+              >
+                Clear Image
+              </button>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => { setShowDeleteModal(false); setDeletingInventory(null); }}
+        onConfirm={handleDeleteInventory}
+        title="Delete Inventory"
+        message={`Are you sure you want to delete "${deletingInventory?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        confirmButtonClass="btn-danger"
+        icon="fas fa-trash"
+      />
     </>
   );
 }
