@@ -16,6 +16,11 @@ async fn health() -> impl Responder {
     }))
 }
 
+// Serve index.html for client-side routing (SPA fallback)
+async fn spa_fallback() -> actix_web::Result<fs::NamedFile> {
+    Ok(fs::NamedFile::open("static/index.html")?)
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
@@ -37,7 +42,11 @@ async fn main() -> std::io::Result<()> {
             .wrap(Logger::default())
             .route("/health", web::get().to(health))
             .service(api::init_routes())
+            // Serve static files from the built React app
+            .service(fs::Files::new("/assets", "static/assets"))
             .service(fs::Files::new("/", "static/").index_file("index.html"))
+            // Fallback to index.html for client-side routing
+            .default_service(web::get().to(spa_fallback))
     })
     .bind(format!("{}:{}", host, port))?
     .run()
