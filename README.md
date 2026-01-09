@@ -1,8 +1,8 @@
 <div align="center">
-  <img src="logo_full.png" alt="Home Register Logo" width="400"/>
+  <img src="logo_full.png" alt="Home Registry Logo" width="400"/>
 </div>
 
-# Home Register
+# Home Registry
 
 ** WORK IN PROGRESS **
 
@@ -21,12 +21,12 @@ A modern, web-based home inventory management system built with **Rust + Actix-W
 
 ## Quick Start with Docker
 
-To run Home Register on your server, simply use Docker Compose:
+To run Home Registry on your server, simply use Docker Compose:
 
 ```bash
 # Clone the repository
-git clone https://github.com/VictoryTek/home-register.git
-cd home-register
+git clone https://github.com/VictoryTek/home-registry.git
+cd home-registry
 
 # Start the application
 docker-compose up -d

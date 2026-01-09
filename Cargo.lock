@@ -860,7 +860,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "home-register"
+name = "home-registry"
 version = "0.1.0"
 dependencies = [
  "actix-cors",

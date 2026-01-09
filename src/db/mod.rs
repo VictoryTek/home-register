@@ -323,7 +323,7 @@ impl DatabaseService {
         let rows = client
             .query(
                 "SELECT id, name, description, location, image_url, created_at, updated_at 
-                 FROM inventories ORDER BY created_at DESC",
+                 FROM inventories ORDER BY name ASC",
                 &[],
             )
             .await?;

@@ -10,7 +10,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
     <aside className="sidebar">
       <div className="sidebar-header">
         <a href="/" className="logo">
-          <img src="/logo_full.png" alt="Home Register" />
+          <img src="/logo_full.png" alt="Home Registry" />
         </a>
       </div>
       

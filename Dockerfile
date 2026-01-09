@@ -19,11 +19,11 @@ RUN apt-get update && apt-get install -y musl-tools \
 FROM debian:buster-slim
 WORKDIR /app
 # Copy the binary
-COPY --from=backend-builder /app/target/x86_64-unknown-linux-musl/release/home-register .
+COPY --from=backend-builder /app/target/x86_64-unknown-linux-musl/release/home-registry .
 # Copy built frontend to static directory
 COPY --from=frontend-builder /app/frontend/dist ./static
 # Copy migrations
 COPY migrations ./migrations
 COPY .env .env
 EXPOSE 8210
-CMD ["./home-register"]
+CMD ["./home-registry"]

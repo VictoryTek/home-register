@@ -1,7 +1,7 @@
-# Home Register - AI Coding Instructions
+# Home Registry - AI Coding Instructions
 
 ## Project Overview
-Home Register is a Rust-based home inventory management system inspired by the HomeBox project. Built with **Actix-Web** + **PostgreSQL**, it provides a web-based interface to track belongings with categories, tags, and custom fields.
+Home Registry is a Rust-based home inventory management system inspired by the HomeBox project. Built with **Actix-Web** + **PostgreSQL**, it provides a web-based interface to track belongings with categories, tags, and custom fields.
 
 **Tech Stack**: Rust 2021 edition, Actix-Web 4, PostgreSQL 16, deadpool-postgres for connection pooling, tokio async runtime.
 

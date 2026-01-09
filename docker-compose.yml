@@ -26,7 +26,7 @@ services:
       RUST_LOG: info
     ports:
       - "8210:8210"
-    command: ["./home-register"]
+    command: ["./home-registry"]
     restart: on-failure
 volumes:
   pgdata:

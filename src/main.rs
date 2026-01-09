@@ -10,7 +10,7 @@ mod api;
 async fn health() -> impl Responder {
     HttpResponse::Ok().json(serde_json::json!({
         "status": "healthy",
-        "service": "home-register",
+        "service": "home-registry",
         "version": "0.1.0",
         "timestamp": chrono::Utc::now()
     }))
