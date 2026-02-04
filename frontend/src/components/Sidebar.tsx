@@ -24,6 +24,13 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
             <i className="fas fa-warehouse"></i>
             <span>Inventories</span>
           </button>
+          <button
+            className={`nav-item ${currentPage === 'organizers' ? 'active' : ''}`}
+            onClick={() => onNavigate('organizers')}
+          >
+            <i className="fas fa-folder-tree"></i>
+            <span>Organizers</span>
+          </button>
         </div>
 
         <div className="nav-section system-section">

@@ -5,7 +5,17 @@ import type {
   CreateInventoryRequest,
   UpdateInventoryRequest,
   CreateItemRequest, 
-  UpdateItemRequest 
+  UpdateItemRequest,
+  OrganizerTypeWithOptions,
+  OrganizerType,
+  OrganizerOption,
+  CreateOrganizerTypeRequest,
+  UpdateOrganizerTypeRequest,
+  CreateOrganizerOptionRequest,
+  UpdateOrganizerOptionRequest,
+  ItemOrganizerValueWithDetails,
+  ItemOrganizerValue,
+  SetItemOrganizerValuesRequest,
 } from '@/types';
 
 const API_BASE = '/api';
@@ -98,6 +108,90 @@ export const itemApi = {
   async search(query: string): Promise<ApiResponse<Item[]>> {
     const response = await fetch(`${API_BASE}/items/search/${encodeURIComponent(query)}`);
     return handleResponse<Item[]>(response);
+  },
+
+  async getOrganizerValues(itemId: number): Promise<ApiResponse<ItemOrganizerValueWithDetails[]>> {
+    const response = await fetch(`${API_BASE}/items/${itemId}/organizer-values`);
+    return handleResponse<ItemOrganizerValueWithDetails[]>(response);
+  },
+
+  async setOrganizerValues(itemId: number, data: SetItemOrganizerValuesRequest): Promise<ApiResponse<ItemOrganizerValue[]>> {
+    const response = await fetch(`${API_BASE}/items/${itemId}/organizer-values`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse<ItemOrganizerValue[]>(response);
+  },
+};
+
+// Organizer API
+export const organizerApi = {
+  // Organizer Types
+  async getByInventory(inventoryId: number): Promise<ApiResponse<OrganizerTypeWithOptions[]>> {
+    const response = await fetch(`${API_BASE}/inventories/${inventoryId}/organizers`);
+    return handleResponse<OrganizerTypeWithOptions[]>(response);
+  },
+
+  async createType(inventoryId: number, data: CreateOrganizerTypeRequest): Promise<ApiResponse<OrganizerType>> {
+    const response = await fetch(`${API_BASE}/inventories/${inventoryId}/organizers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse<OrganizerType>(response);
+  },
+
+  async getType(id: number): Promise<ApiResponse<OrganizerType>> {
+    const response = await fetch(`${API_BASE}/organizers/${id}`);
+    return handleResponse<OrganizerType>(response);
+  },
+
+  async updateType(id: number, data: UpdateOrganizerTypeRequest): Promise<ApiResponse<OrganizerType>> {
+    const response = await fetch(`${API_BASE}/organizers/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse<OrganizerType>(response);
+  },
+
+  async deleteType(id: number): Promise<ApiResponse<void>> {
+    const response = await fetch(`${API_BASE}/organizers/${id}`, {
+      method: 'DELETE',
+    });
+    return handleResponse<void>(response);
+  },
+
+  // Organizer Options
+  async getOptions(organizerTypeId: number): Promise<ApiResponse<OrganizerOption[]>> {
+    const response = await fetch(`${API_BASE}/organizers/${organizerTypeId}/options`);
+    return handleResponse<OrganizerOption[]>(response);
+  },
+
+  async createOption(organizerTypeId: number, data: CreateOrganizerOptionRequest): Promise<ApiResponse<OrganizerOption>> {
+    const response = await fetch(`${API_BASE}/organizers/${organizerTypeId}/options`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse<OrganizerOption>(response);
+  },
+
+  async updateOption(optionId: number, data: UpdateOrganizerOptionRequest): Promise<ApiResponse<OrganizerOption>> {
+    const response = await fetch(`${API_BASE}/organizer-options/${optionId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse<OrganizerOption>(response);
+  },
+
+  async deleteOption(optionId: number): Promise<ApiResponse<void>> {
+    const response = await fetch(`${API_BASE}/organizer-options/${optionId}`, {
+      method: 'DELETE',
+    });
+    return handleResponse<void>(response);
   },
 };
 

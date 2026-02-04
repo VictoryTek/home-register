@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { AppProvider } from '@/context/AppContext';
 import { Sidebar, Toast } from '@/components';
-import { InventoriesPage, InventoryDetailPage, SettingsPage } from '@/pages';
+import { InventoriesPage, InventoryDetailPage, OrganizersPage, SettingsPage } from '@/pages';
 import '@/styles/index.css';
 
 function AppContent() {
@@ -10,6 +10,7 @@ function AppContent() {
 
   const getCurrentPage = () => {
     if (location.pathname === '/settings') return 'settings';
+    if (location.pathname.includes('/organizers')) return 'organizers';
     if (location.pathname.startsWith('/inventory/')) return 'inventories';
     return 'inventories';
   };
@@ -18,6 +19,9 @@ function AppContent() {
     switch (page) {
       case 'inventories':
         navigate('/');
+        break;
+      case 'organizers':
+        navigate('/organizers');
         break;
       case 'settings':
         navigate('/settings');
@@ -34,6 +38,8 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<InventoriesPage />} />
           <Route path="/inventory/:id" element={<InventoryDetailPage />} />
+          <Route path="/organizers" element={<OrganizersPage />} />
+          <Route path="/inventory/:id/organizers" element={<OrganizersPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </main>

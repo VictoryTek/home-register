@@ -121,10 +121,90 @@ export interface UpdateItemRequest {
 // UI state types
 export type Theme = 'light' | 'dark';
 
-export type Page = 'inventories' | 'categories' | 'tags' | 'settings' | 'inventory-detail';
+export type Page = 'inventories' | 'categories' | 'tags' | 'settings' | 'inventory-detail' | 'organizers';
 
 export interface ToastMessage {
   id: string;
   message: string;
   type: 'success' | 'error' | 'warning' | 'info';
+}
+
+// Organizer types
+export interface OrganizerType {
+  id?: number;
+  inventory_id: number;
+  name: string;
+  input_type: 'select' | 'text';
+  is_required: boolean;
+  display_order: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface OrganizerOption {
+  id?: number;
+  organizer_type_id: number;
+  name: string;
+  display_order: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface OrganizerTypeWithOptions extends OrganizerType {
+  options: OrganizerOption[];
+}
+
+export interface ItemOrganizerValue {
+  id?: number;
+  item_id: number;
+  organizer_type_id: number;
+  organizer_option_id?: number;
+  text_value?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ItemOrganizerValueWithDetails {
+  organizer_type_id: number;
+  organizer_type_name: string;
+  input_type: 'select' | 'text';
+  is_required: boolean;
+  value?: string;
+  organizer_option_id?: number;
+  text_value?: string;
+}
+
+// Organizer request types
+export interface CreateOrganizerTypeRequest {
+  name: string;
+  input_type?: 'select' | 'text';
+  is_required?: boolean;
+  display_order?: number;
+}
+
+export interface UpdateOrganizerTypeRequest {
+  name?: string;
+  input_type?: 'select' | 'text';
+  is_required?: boolean;
+  display_order?: number;
+}
+
+export interface CreateOrganizerOptionRequest {
+  name: string;
+  display_order?: number;
+}
+
+export interface UpdateOrganizerOptionRequest {
+  name?: string;
+  display_order?: number;
+}
+
+export interface SetItemOrganizerValueRequest {
+  organizer_type_id: number;
+  organizer_option_id?: number;
+  text_value?: string;
+}
+
+export interface SetItemOrganizerValuesRequest {
+  values: SetItemOrganizerValueRequest[];
 }

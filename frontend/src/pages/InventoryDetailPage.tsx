@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header, LoadingState, EmptyState, Modal } from '@/components';
-import { inventoryApi, itemApi } from '@/services/api';
+import { inventoryApi, itemApi, organizerApi } from '@/services/api';
 import { useApp } from '@/context/AppContext';
-import type { Inventory, Item, CreateItemRequest } from '@/types';
+import type { Inventory, Item, CreateItemRequest, OrganizerTypeWithOptions, SetItemOrganizerValueRequest } from '@/types';
 
 export function InventoryDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -12,6 +12,7 @@ export function InventoryDetailPage() {
   const [loading, setLoading] = useState(true);
   const [inventory, setInventory] = useState<Inventory | null>(null);
   const [items, setItems] = useState<Item[]>([]);
+  const [organizers, setOrganizers] = useState<OrganizerTypeWithOptions[]>([]);
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [newItem, setNewItem] = useState<CreateItemRequest>({
     inventory_id: parseInt(id || '0'),
@@ -22,6 +23,7 @@ export function InventoryDetailPage() {
     purchase_price: undefined,
     quantity: 1,
   });
+  const [organizerValues, setOrganizerValues] = useState<Record<number, { optionId?: number; textValue?: string }>>({});
 
   useEffect(() => {
     if (id) {
@@ -32,9 +34,10 @@ export function InventoryDetailPage() {
   const loadInventoryDetail = async (inventoryId: number) => {
     setLoading(true);
     try {
-      const [invResult, itemsResult] = await Promise.all([
+      const [invResult, itemsResult, organizersResult] = await Promise.all([
         inventoryApi.getById(inventoryId),
         inventoryApi.getItems(inventoryId),
+        organizerApi.getByInventory(inventoryId),
       ]);
 
       if (invResult.success && invResult.data) {
@@ -47,6 +50,10 @@ export function InventoryDetailPage() {
 
       if (itemsResult.success && itemsResult.data) {
         setItems(itemsResult.data);
+      }
+
+      if (organizersResult.success && organizersResult.data) {
+        setOrganizers(organizersResult.data);
       }
     } catch (error) {
       showToast('Failed to load inventory', 'error');
@@ -62,13 +69,41 @@ export function InventoryDetailPage() {
       return;
     }
 
+    // Check required organizers
+    for (const org of organizers) {
+      if (org.is_required) {
+        const value = organizerValues[org.id!];
+        if (!value || (org.input_type === 'select' && !value.optionId) || (org.input_type === 'text' && !value.textValue?.trim())) {
+          showToast(`Please fill in the required field: ${org.name}`, 'error');
+          return;
+        }
+      }
+    }
+
     try {
       const result = await itemApi.create({
         ...newItem,
         inventory_id: parseInt(id || '0'),
       });
 
-      if (result.success) {
+      if (result.success && result.data) {
+        // Save organizer values if any are set
+        const valuesToSave: SetItemOrganizerValueRequest[] = [];
+        for (const [typeIdStr, value] of Object.entries(organizerValues)) {
+          const typeId = parseInt(typeIdStr);
+          if (value.optionId || value.textValue?.trim()) {
+            valuesToSave.push({
+              organizer_type_id: typeId,
+              organizer_option_id: value.optionId,
+              text_value: value.textValue?.trim() || undefined,
+            });
+          }
+        }
+
+        if (valuesToSave.length > 0) {
+          await itemApi.setOrganizerValues(result.data.id!, { values: valuesToSave });
+        }
+
         showToast('Item added successfully!', 'success');
         setShowAddItemModal(false);
         setNewItem({
@@ -80,6 +115,7 @@ export function InventoryDetailPage() {
           purchase_price: undefined,
           quantity: 1,
         });
+        setOrganizerValues({});
         loadInventoryDetail(parseInt(id || '0'));
       } else {
         showToast(result.error || 'Failed to add item', 'error');
@@ -140,16 +176,22 @@ export function InventoryDetailPage() {
               <i className="fas fa-arrow-left"></i>
               Back to Inventories
             </button>
-            <button className="btn btn-primary" onClick={() => setShowAddItemModal(true)}>
-              <i className="fas fa-plus"></i>
-              Add Item
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button className="btn btn-secondary" onClick={() => navigate(`/inventory/${id}/organizers`)}>
+                <i className="fas fa-folder-tree"></i>
+                Organizers
+              </button>
+              <button className="btn btn-primary" onClick={() => setShowAddItemModal(true)}>
+                <i className="fas fa-plus"></i>
+                Add Item
+              </button>
+            </div>
           </div>
 
-          <div className="inventory-detail-stats">
+          <div className="stats-row" style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
             <div className="stat-card">
               <div className="stat-icon" style={{ background: 'var(--primary-color)' }}>
-                <i className="fas fa-box"></i>
+                <i className="fas fa-boxes"></i>
               </div>
               <div className="stat-content">
                 <div className="stat-label">Total Items</div>
@@ -281,45 +323,74 @@ export function InventoryDetailPage() {
           />
         </div>
 
-        <div className="form-row">
-          <div className="form-group">
-            <label className="form-label" htmlFor="item-category">Category</label>
-            <select
-              className="form-select"
-              id="item-category"
-              value={newItem.category}
-              onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-            >
-              <option value="">Select category</option>
-              <option value="Electronics">Electronics</option>
-              <option value="Furniture">Furniture</option>
-              <option value="Clothing">Clothing</option>
-              <option value="Books">Books</option>
-              <option value="Tools">Tools</option>
-              <option value="Kitchen">Kitchen</option>
-              <option value="Other">Other</option>
-            </select>
+        {/* Dynamic Organizer Fields */}
+        {organizers.length > 0 && (
+          <div className="organizer-fields">
+            {organizers.map((org) => (
+              <div className="form-group" key={org.id}>
+                <label className="form-label" htmlFor={`organizer-${org.id}`}>
+                  {org.name}{org.is_required ? ' *' : ''}
+                </label>
+                {org.input_type === 'select' ? (
+                  <select
+                    className="form-select"
+                    id={`organizer-${org.id}`}
+                    value={organizerValues[org.id!]?.optionId || ''}
+                    onChange={(e) => setOrganizerValues({
+                      ...organizerValues,
+                      [org.id!]: { optionId: e.target.value ? parseInt(e.target.value) : undefined }
+                    })}
+                  >
+                    <option value="">Select {org.name.toLowerCase()}</option>
+                    {org.options.map((opt) => (
+                      <option key={opt.id} value={opt.id}>{opt.name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    className="form-input"
+                    id={`organizer-${org.id}`}
+                    placeholder={`Enter ${org.name.toLowerCase()}`}
+                    value={organizerValues[org.id!]?.textValue || ''}
+                    onChange={(e) => setOrganizerValues({
+                      ...organizerValues,
+                      [org.id!]: { textValue: e.target.value }
+                    })}
+                  />
+                )}
+              </div>
+            ))}
           </div>
+        )}
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="item-location">Location</label>
-            <select
-              className="form-select"
-              id="item-location"
-              value={newItem.location}
-              onChange={(e) => setNewItem({ ...newItem, location: e.target.value })}
-            >
-              <option value="">Select location</option>
-              <option value="Living Room">Living Room</option>
-              <option value="Bedroom">Bedroom</option>
-              <option value="Kitchen">Kitchen</option>
-              <option value="Garage">Garage</option>
-              <option value="Office">Office</option>
-              <option value="Storage">Storage</option>
-              <option value="Other">Other</option>
-            </select>
+        {organizers.length === 0 && (
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label" htmlFor="item-category">Category</label>
+              <input
+                type="text"
+                className="form-input"
+                id="item-category"
+                placeholder="Enter category"
+                value={newItem.category}
+                onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="item-location">Location</label>
+              <input
+                type="text"
+                className="form-input"
+                id="item-location"
+                placeholder="Enter location"
+                value={newItem.location}
+                onChange={(e) => setNewItem({ ...newItem, location: e.target.value })}
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="form-row">
           <div className="form-group">

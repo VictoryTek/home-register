@@ -100,6 +100,7 @@ pub struct Category {
     pub updated_at: Option<DateTime<Utc>>,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 pub struct CreateCategoryRequest {
     pub name: String,
@@ -118,6 +119,7 @@ pub struct Tag {
     pub updated_at: Option<DateTime<Utc>>,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 pub struct CreateTagRequest {
     pub name: String,
@@ -180,4 +182,99 @@ pub struct ItemWithRelations {
 pub struct CustomFieldWithValue {
     pub field: CustomField,
     pub value: Option<String>,
+}
+
+// Organizer Types - flexible categorization per inventory
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct OrganizerType {
+    pub id: Option<i32>,
+    pub inventory_id: i32,
+    pub name: String,
+    pub input_type: String, // "select" or "text"
+    pub is_required: bool,
+    pub display_order: i32,
+    pub created_at: Option<DateTime<Utc>>,
+    pub updated_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct CreateOrganizerTypeRequest {
+    pub name: String,
+    pub input_type: Option<String>, // defaults to "select"
+    pub is_required: Option<bool>,  // defaults to false
+    pub display_order: Option<i32>, // defaults to 0
+}
+
+#[derive(Deserialize, Debug)]
+pub struct UpdateOrganizerTypeRequest {
+    pub name: Option<String>,
+    pub input_type: Option<String>,
+    pub is_required: Option<bool>,
+    pub display_order: Option<i32>,
+}
+
+// Organizer Options - predefined values for "select" type organizers
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct OrganizerOption {
+    pub id: Option<i32>,
+    pub organizer_type_id: i32,
+    pub name: String,
+    pub display_order: i32,
+    pub created_at: Option<DateTime<Utc>>,
+    pub updated_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct CreateOrganizerOptionRequest {
+    pub name: String,
+    pub display_order: Option<i32>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct UpdateOrganizerOptionRequest {
+    pub name: Option<String>,
+    pub display_order: Option<i32>,
+}
+
+// Item Organizer Values - links items to organizer values
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ItemOrganizerValue {
+    pub id: Option<i32>,
+    pub item_id: i32,
+    pub organizer_type_id: i32,
+    pub organizer_option_id: Option<i32>, // For "select" type
+    pub text_value: Option<String>,       // For "text" type
+    pub created_at: Option<DateTime<Utc>>,
+    pub updated_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct SetItemOrganizerValueRequest {
+    pub organizer_type_id: i32,
+    pub organizer_option_id: Option<i32>, // For "select" type
+    pub text_value: Option<String>,       // For "text" type
+}
+
+#[derive(Deserialize, Debug)]
+pub struct SetItemOrganizerValuesRequest {
+    pub values: Vec<SetItemOrganizerValueRequest>,
+}
+
+// Extended response with organizer details
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct OrganizerTypeWithOptions {
+    #[serde(flatten)]
+    pub organizer_type: OrganizerType,
+    pub options: Vec<OrganizerOption>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ItemOrganizerValueWithDetails {
+    pub organizer_type_id: i32,
+    pub organizer_type_name: String,
+    pub input_type: String,
+    pub is_required: bool,
+    pub value: Option<String>,         // Display value (option name or text value)
+    pub organizer_option_id: Option<i32>,
+    pub text_value: Option<String>,
 }
