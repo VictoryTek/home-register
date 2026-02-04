@@ -242,9 +242,12 @@ impl DatabaseService {
         // Handle date fields
         let purchase_date_val: Option<chrono::NaiveDate>;
         if let Some(ref pd) = request.purchase_date {
-            purchase_date_val = pd.as_str()
-                .filter(|s| !s.is_empty())
-                .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
+            let date_str = pd.trim();
+            purchase_date_val = if date_str.is_empty() {
+                None
+            } else {
+                chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d").ok()
+            };
             fields.push(format!("purchase_date = ${}", param_count));
             values.push(&purchase_date_val);
             param_count += 1;
@@ -252,9 +255,12 @@ impl DatabaseService {
         
         let warranty_expiry_val: Option<chrono::NaiveDate>;
         if let Some(ref we) = request.warranty_expiry {
-            warranty_expiry_val = we.as_str()
-                .filter(|s| !s.is_empty())
-                .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
+            let date_str = we.trim();
+            warranty_expiry_val = if date_str.is_empty() {
+                None
+            } else {
+                chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d").ok()
+            };
             fields.push(format!("warranty_expiry = ${}", param_count));
             values.push(&warranty_expiry_val);
             param_count += 1;

@@ -220,12 +220,6 @@ export function InventoryDetailPage() {
                 icon="fas fa-box-open"
                 title="No Items Yet"
                 text="Start adding items to this inventory."
-                action={
-                  <button className="btn btn-primary" onClick={() => setShowAddItemModal(true)}>
-                    <i className="fas fa-plus"></i>
-                    Add First Item
-                  </button>
-                }
               />
             ) : (
               <div className="items-grid">
