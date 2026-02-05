@@ -170,7 +170,7 @@ export function InventoriesPage() {
       
       <div className="content">
         <div className="inventories-container">
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1.5rem' }}>
+          <div className="page-actions">
             <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
               <i className="fas fa-plus"></i>
               Create Inventory
@@ -184,12 +184,6 @@ export function InventoriesPage() {
               icon="fas fa-warehouse"
               title="No Inventories Yet"
               text="Create your first inventory to start organizing your items."
-              action={
-                <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
-                  <i className="fas fa-plus"></i>
-                  Create Your First Inventory
-                </button>
-              }
             />
           ) : (
             <div className="inventories-grid">

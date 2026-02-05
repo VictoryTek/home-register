@@ -24,9 +24,14 @@ services:
       DATABASE_URL: postgres://postgres:password@db:5432/home_inventory
       PORT: 8210
       RUST_LOG: info
+      # JWT_SECRET: "your-secure-secret-here"  # Uncomment and set for production
+      # JWT_TOKEN_LIFETIME_HOURS: 24  # Token lifetime in hours (default: 24)
     ports:
       - "8210:8210"
+    volumes:
+      - appdata:/app/data  # Persist JWT secret and other app data
     command: ["./home-registry"]
     restart: on-failure
 volumes:
   pgdata:
+  appdata:

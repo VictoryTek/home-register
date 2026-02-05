@@ -4,12 +4,17 @@ use crate::models::{
     ItemOrganizerValueWithDetails, OrganizerOption, OrganizerType, OrganizerTypeWithOptions,
     SetItemOrganizerValueRequest, UpdateItemRequest,
     UpdateOrganizerOptionRequest, UpdateOrganizerTypeRequest,
+    // User-related models
+    User, UserResponse, AdminUpdateUserRequest,
+    UserSettings, UpdateUserSettingsRequest,
+    InventoryShare, InventoryShareWithUser, PermissionLevel,
 };
 use chrono::{DateTime, Utc};
 use deadpool_postgres::{Config, ManagerConfig, Pool, RecyclingMethod};
 use log::info;
 use std::env;
 use tokio_postgres::NoTls;
+use uuid::Uuid;
 
 pub async fn get_pool() -> Pool {
     let db_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
@@ -1057,4 +1062,826 @@ impl DatabaseService {
         info!("Cleared {} organizer values for item {}", rows_affected, item_id);
         Ok(rows_affected)
     }
+
+    // ==================== User Operations ====================
+
+    /// Get user count for setup status check
+    pub async fn get_user_count(&self) -> Result<i64, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+        let row = client.query_one("SELECT COUNT(*) FROM users", &[]).await?;
+        Ok(row.get(0))
+    }
+
+    /// Get a user by ID
+    pub async fn get_user_by_id(&self, id: Uuid) -> Result<Option<User>, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+        let rows = client
+            .query(
+                "SELECT id, username, email, full_name, password_hash, is_admin, is_active, created_at, updated_at 
+                 FROM users WHERE id = $1",
+                &[&id],
+            )
+            .await?;
+
+        if let Some(row) = rows.first() {
+            Ok(Some(User {
+                id: row.get(0),
+                username: row.get(1),
+                email: row.get(2),
+                full_name: row.get(3),
+                password_hash: row.get(4),
+                is_admin: row.get(5),
+                is_active: row.get(6),
+                created_at: row.get(7),
+                updated_at: row.get(8),
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Get a user by username
+    pub async fn get_user_by_username(&self, username: &str) -> Result<Option<User>, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+        let rows = client
+            .query(
+                "SELECT id, username, email, full_name, password_hash, is_admin, is_active, created_at, updated_at 
+                 FROM users WHERE LOWER(username) = LOWER($1)",
+                &[&username],
+            )
+            .await?;
+
+        if let Some(row) = rows.first() {
+            Ok(Some(User {
+                id: row.get(0),
+                username: row.get(1),
+                email: row.get(2),
+                full_name: row.get(3),
+                password_hash: row.get(4),
+                is_admin: row.get(5),
+                is_active: row.get(6),
+                created_at: row.get(7),
+                updated_at: row.get(8),
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Get a user by email
+    pub async fn get_user_by_email(&self, email: &str) -> Result<Option<User>, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+        let rows = client
+            .query(
+                "SELECT id, username, email, full_name, password_hash, is_admin, is_active, created_at, updated_at 
+                 FROM users WHERE LOWER(email) = LOWER($1)",
+                &[&email],
+            )
+            .await?;
+
+        if let Some(row) = rows.first() {
+            Ok(Some(User {
+                id: row.get(0),
+                username: row.get(1),
+                email: row.get(2),
+                full_name: row.get(3),
+                password_hash: row.get(4),
+                is_admin: row.get(5),
+                is_active: row.get(6),
+                created_at: row.get(7),
+                updated_at: row.get(8),
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Get a user by username or email (for login)
+    pub async fn get_user_by_username_or_email(&self, identifier: &str) -> Result<Option<User>, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+        let rows = client
+            .query(
+                "SELECT id, username, email, full_name, password_hash, is_admin, is_active, created_at, updated_at 
+                 FROM users WHERE LOWER(username) = LOWER($1) OR LOWER(email) = LOWER($1)",
+                &[&identifier],
+            )
+            .await?;
+
+        if let Some(row) = rows.first() {
+            Ok(Some(User {
+                id: row.get(0),
+                username: row.get(1),
+                email: row.get(2),
+                full_name: row.get(3),
+                password_hash: row.get(4),
+                is_admin: row.get(5),
+                is_active: row.get(6),
+                created_at: row.get(7),
+                updated_at: row.get(8),
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Get all users (admin only)
+    pub async fn get_all_users(&self) -> Result<Vec<UserResponse>, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+        let rows = client
+            .query(
+                "SELECT id, username, email, full_name, is_admin, is_active, created_at, updated_at 
+                 FROM users ORDER BY created_at DESC",
+                &[],
+            )
+            .await?;
+
+        let users = rows
+            .iter()
+            .map(|row| UserResponse {
+                id: row.get(0),
+                username: row.get(1),
+                email: row.get(2),
+                full_name: row.get(3),
+                is_admin: row.get(4),
+                is_active: row.get(5),
+                created_at: row.get(6),
+                updated_at: row.get(7),
+            })
+            .collect();
+
+        Ok(users)
+    }
+
+    /// Create a new user
+    pub async fn create_user(
+        &self,
+        username: &str,
+        email: &str,
+        full_name: &str,
+        password_hash: &str,
+        is_admin: bool,
+        is_active: bool,
+    ) -> Result<User, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        let row = client
+            .query_one(
+                "INSERT INTO users (username, email, full_name, password_hash, is_admin, is_active) 
+                 VALUES ($1, $2, $3, $4, $5, $6) 
+                 RETURNING id, username, email, full_name, password_hash, is_admin, is_active, created_at, updated_at",
+                &[&username, &email, &full_name, &password_hash, &is_admin, &is_active],
+            )
+            .await?;
+
+        let user = User {
+            id: row.get(0),
+            username: row.get(1),
+            email: row.get(2),
+            full_name: row.get(3),
+            password_hash: row.get(4),
+            is_admin: row.get(5),
+            is_active: row.get(6),
+            created_at: row.get(7),
+            updated_at: row.get(8),
+        };
+
+        info!("Created new user: {} (ID: {})", user.username, user.id);
+        Ok(user)
+    }
+
+    /// Update a user's profile
+    pub async fn update_user_profile(
+        &self,
+        id: Uuid,
+        email: Option<&str>,
+        full_name: Option<&str>,
+    ) -> Result<Option<User>, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        let mut fields = Vec::new();
+        let mut values: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = Vec::new();
+        let mut param_count = 1;
+
+        if let Some(ref e) = email {
+            fields.push(format!("email = ${}", param_count));
+            values.push(e);
+            param_count += 1;
+        }
+        if let Some(ref n) = full_name {
+            fields.push(format!("full_name = ${}", param_count));
+            values.push(n);
+            param_count += 1;
+        }
+
+        if fields.is_empty() {
+            return self.get_user_by_id(id).await;
+        }
+
+        fields.push("updated_at = NOW()".to_string());
+        values.push(&id);
+
+        let query = format!(
+            "UPDATE users SET {} WHERE id = ${} 
+             RETURNING id, username, email, full_name, password_hash, is_admin, is_active, created_at, updated_at",
+            fields.join(", "),
+            param_count
+        );
+
+        let rows = client.query(&query, &values).await?;
+
+        if let Some(row) = rows.first() {
+            Ok(Some(User {
+                id: row.get(0),
+                username: row.get(1),
+                email: row.get(2),
+                full_name: row.get(3),
+                password_hash: row.get(4),
+                is_admin: row.get(5),
+                is_active: row.get(6),
+                created_at: row.get(7),
+                updated_at: row.get(8),
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Admin update user
+    pub async fn admin_update_user(
+        &self,
+        id: Uuid,
+        request: AdminUpdateUserRequest,
+    ) -> Result<Option<User>, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        let mut fields = Vec::new();
+        let mut values: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = Vec::new();
+        let mut param_count = 1;
+
+        if let Some(ref username) = request.username {
+            fields.push(format!("username = ${}", param_count));
+            values.push(username);
+            param_count += 1;
+        }
+        if let Some(ref email) = request.email {
+            fields.push(format!("email = ${}", param_count));
+            values.push(email);
+            param_count += 1;
+        }
+        if let Some(ref full_name) = request.full_name {
+            fields.push(format!("full_name = ${}", param_count));
+            values.push(full_name);
+            param_count += 1;
+        }
+        if let Some(ref is_admin) = request.is_admin {
+            fields.push(format!("is_admin = ${}", param_count));
+            values.push(is_admin);
+            param_count += 1;
+        }
+        if let Some(ref is_active) = request.is_active {
+            fields.push(format!("is_active = ${}", param_count));
+            values.push(is_active);
+            param_count += 1;
+        }
+
+        if fields.is_empty() {
+            return self.get_user_by_id(id).await;
+        }
+
+        fields.push("updated_at = NOW()".to_string());
+        values.push(&id);
+
+        let query = format!(
+            "UPDATE users SET {} WHERE id = ${} 
+             RETURNING id, username, email, full_name, password_hash, is_admin, is_active, created_at, updated_at",
+            fields.join(", "),
+            param_count
+        );
+
+        let rows = client.query(&query, &values).await?;
+
+        if let Some(row) = rows.first() {
+            Ok(Some(User {
+                id: row.get(0),
+                username: row.get(1),
+                email: row.get(2),
+                full_name: row.get(3),
+                password_hash: row.get(4),
+                is_admin: row.get(5),
+                is_active: row.get(6),
+                created_at: row.get(7),
+                updated_at: row.get(8),
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Update user password
+    pub async fn update_user_password(
+        &self,
+        id: Uuid,
+        password_hash: &str,
+    ) -> Result<bool, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        let rows_affected = client
+            .execute(
+                "UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2",
+                &[&password_hash, &id],
+            )
+            .await?;
+
+        Ok(rows_affected > 0)
+    }
+
+    /// Delete a user
+    pub async fn delete_user(&self, id: Uuid) -> Result<bool, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        let rows_affected = client
+            .execute("DELETE FROM users WHERE id = $1", &[&id])
+            .await?;
+
+        let deleted = rows_affected > 0;
+        if deleted {
+            info!("Deleted user ID: {}", id);
+        }
+        Ok(deleted)
+    }
+
+    /// Count admin users
+    pub async fn count_admin_users(&self) -> Result<i64, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+        let row = client
+            .query_one("SELECT COUNT(*) FROM users WHERE is_admin = true", &[])
+            .await?;
+        Ok(row.get(0))
+    }
+
+    // ==================== Password Reset Token Operations ====================
+
+    /// Create a password reset token
+    pub async fn create_password_reset_token(
+        &self,
+        user_id: Uuid,
+        token: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        // Delete any existing tokens for this user first
+        client
+            .execute(
+                "DELETE FROM password_reset_tokens WHERE user_id = $1",
+                &[&user_id],
+            )
+            .await?;
+
+        // Create new token
+        client
+            .execute(
+                "INSERT INTO password_reset_tokens (user_id, token) VALUES ($1, $2)",
+                &[&user_id, &token],
+            )
+            .await?;
+
+        info!("Created password reset token for user {}", user_id);
+        Ok(())
+    }
+
+    /// Get user ID from password reset token (valid for 30 minutes)
+    pub async fn get_user_id_from_reset_token(
+        &self,
+        token: &str,
+    ) -> Result<Option<Uuid>, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        let rows = client
+            .query(
+                "SELECT user_id FROM password_reset_tokens 
+                 WHERE token = $1 AND created_at > NOW() - INTERVAL '30 minutes'",
+                &[&token],
+            )
+            .await?;
+
+        if let Some(row) = rows.first() {
+            Ok(Some(row.get(0)))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Delete password reset token
+    pub async fn delete_password_reset_token(&self, token: &str) -> Result<bool, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        let rows_affected = client
+            .execute(
+                "DELETE FROM password_reset_tokens WHERE token = $1",
+                &[&token],
+            )
+            .await?;
+
+        Ok(rows_affected > 0)
+    }
+
+    /// Clean up expired password reset tokens
+    pub async fn cleanup_expired_reset_tokens(&self) -> Result<u64, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        let rows_affected = client
+            .execute(
+                "DELETE FROM password_reset_tokens WHERE created_at < NOW() - INTERVAL '30 minutes'",
+                &[],
+            )
+            .await?;
+
+        if rows_affected > 0 {
+            info!("Cleaned up {} expired password reset tokens", rows_affected);
+        }
+        Ok(rows_affected)
+    }
+
+    // ==================== User Settings Operations ====================
+
+    /// Get user settings
+    pub async fn get_user_settings(&self, user_id: Uuid) -> Result<Option<UserSettings>, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        let rows = client
+            .query(
+                "SELECT id, user_id, theme, default_inventory_id, items_per_page, date_format, 
+                        currency, notifications_enabled, settings_json, created_at, updated_at 
+                 FROM user_settings WHERE user_id = $1",
+                &[&user_id],
+            )
+            .await?;
+
+        if let Some(row) = rows.first() {
+            Ok(Some(UserSettings {
+                id: row.get(0),
+                user_id: row.get(1),
+                theme: row.get(2),
+                default_inventory_id: row.get(3),
+                items_per_page: row.get(4),
+                date_format: row.get(5),
+                currency: row.get(6),
+                notifications_enabled: row.get(7),
+                settings_json: row.get(8),
+                created_at: row.get(9),
+                updated_at: row.get(10),
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Create default user settings
+    pub async fn create_user_settings(&self, user_id: Uuid) -> Result<UserSettings, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        let row = client
+            .query_one(
+                "INSERT INTO user_settings (user_id) VALUES ($1) 
+                 RETURNING id, user_id, theme, default_inventory_id, items_per_page, date_format, 
+                           currency, notifications_enabled, settings_json, created_at, updated_at",
+                &[&user_id],
+            )
+            .await?;
+
+        Ok(UserSettings {
+            id: row.get(0),
+            user_id: row.get(1),
+            theme: row.get(2),
+            default_inventory_id: row.get(3),
+            items_per_page: row.get(4),
+            date_format: row.get(5),
+            currency: row.get(6),
+            notifications_enabled: row.get(7),
+            settings_json: row.get(8),
+            created_at: row.get(9),
+            updated_at: row.get(10),
+        })
+    }
+
+    /// Update user settings
+    pub async fn update_user_settings(
+        &self,
+        user_id: Uuid,
+        request: UpdateUserSettingsRequest,
+    ) -> Result<Option<UserSettings>, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        let mut fields = Vec::new();
+        let mut values: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = Vec::new();
+        let mut param_count = 1;
+
+        if let Some(ref theme) = request.theme {
+            fields.push(format!("theme = ${}", param_count));
+            values.push(theme);
+            param_count += 1;
+        }
+        if let Some(ref default_inventory_id) = request.default_inventory_id {
+            fields.push(format!("default_inventory_id = ${}", param_count));
+            values.push(default_inventory_id);
+            param_count += 1;
+        }
+        if let Some(ref items_per_page) = request.items_per_page {
+            fields.push(format!("items_per_page = ${}", param_count));
+            values.push(items_per_page);
+            param_count += 1;
+        }
+        if let Some(ref date_format) = request.date_format {
+            fields.push(format!("date_format = ${}", param_count));
+            values.push(date_format);
+            param_count += 1;
+        }
+        if let Some(ref currency) = request.currency {
+            fields.push(format!("currency = ${}", param_count));
+            values.push(currency);
+            param_count += 1;
+        }
+        if let Some(ref notifications_enabled) = request.notifications_enabled {
+            fields.push(format!("notifications_enabled = ${}", param_count));
+            values.push(notifications_enabled);
+            param_count += 1;
+        }
+        if let Some(ref settings_json) = request.settings_json {
+            fields.push(format!("settings_json = ${}", param_count));
+            values.push(settings_json);
+            param_count += 1;
+        }
+
+        if fields.is_empty() {
+            return self.get_user_settings(user_id).await;
+        }
+
+        fields.push("updated_at = NOW()".to_string());
+        values.push(&user_id);
+
+        let query = format!(
+            "UPDATE user_settings SET {} WHERE user_id = ${} 
+             RETURNING id, user_id, theme, default_inventory_id, items_per_page, date_format, 
+                       currency, notifications_enabled, settings_json, created_at, updated_at",
+            fields.join(", "),
+            param_count
+        );
+
+        let rows = client.query(&query, &values).await?;
+
+        if let Some(row) = rows.first() {
+            Ok(Some(UserSettings {
+                id: row.get(0),
+                user_id: row.get(1),
+                theme: row.get(2),
+                default_inventory_id: row.get(3),
+                items_per_page: row.get(4),
+                date_format: row.get(5),
+                currency: row.get(6),
+                notifications_enabled: row.get(7),
+                settings_json: row.get(8),
+                created_at: row.get(9),
+                updated_at: row.get(10),
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Get or create user settings
+    pub async fn get_or_create_user_settings(&self, user_id: Uuid) -> Result<UserSettings, Box<dyn std::error::Error>> {
+        if let Some(settings) = self.get_user_settings(user_id).await? {
+            Ok(settings)
+        } else {
+            self.create_user_settings(user_id).await
+        }
+    }
+
+    // ==================== Inventory Sharing Operations ====================
+
+    /// Share an inventory with a user
+    pub async fn create_inventory_share(
+        &self,
+        inventory_id: i32,
+        shared_with_user_id: Uuid,
+        shared_by_user_id: Uuid,
+        permission_level: PermissionLevel,
+    ) -> Result<InventoryShare, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        let permission_str = permission_level.to_string();
+        let row = client
+            .query_one(
+                "INSERT INTO inventory_shares (inventory_id, shared_with_user_id, shared_by_user_id, permission_level) 
+                 VALUES ($1, $2, $3, $4) 
+                 RETURNING id, inventory_id, shared_with_user_id, shared_by_user_id, permission_level, created_at, updated_at",
+                &[&inventory_id, &shared_with_user_id, &shared_by_user_id, &permission_str],
+            )
+            .await?;
+
+        let perm_str: String = row.get(4);
+        Ok(InventoryShare {
+            id: row.get(0),
+            inventory_id: row.get(1),
+            shared_with_user_id: row.get(2),
+            shared_by_user_id: row.get(3),
+            permission_level: perm_str.parse().unwrap_or(PermissionLevel::View),
+            created_at: row.get(5),
+            updated_at: row.get(6),
+        })
+    }
+
+    /// Get shares for an inventory
+    pub async fn get_inventory_shares(
+        &self,
+        inventory_id: i32,
+    ) -> Result<Vec<InventoryShareWithUser>, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        let rows = client
+            .query(
+                "SELECT 
+                    s.id, s.inventory_id, s.permission_level, s.created_at, s.updated_at,
+                    sw.id, sw.username, sw.email, sw.full_name, sw.is_admin, sw.is_active, sw.created_at, sw.updated_at,
+                    sb.id, sb.username, sb.email, sb.full_name, sb.is_admin, sb.is_active, sb.created_at, sb.updated_at
+                 FROM inventory_shares s
+                 JOIN users sw ON s.shared_with_user_id = sw.id
+                 JOIN users sb ON s.shared_by_user_id = sb.id
+                 WHERE s.inventory_id = $1
+                 ORDER BY s.created_at DESC",
+                &[&inventory_id],
+            )
+            .await?;
+
+        let shares = rows
+            .iter()
+            .map(|row| {
+                let perm_str: String = row.get(2);
+                InventoryShareWithUser {
+                    id: row.get(0),
+                    inventory_id: row.get(1),
+                    permission_level: perm_str.parse().unwrap_or(PermissionLevel::View),
+                    created_at: row.get(3),
+                    updated_at: row.get(4),
+                    shared_with_user: UserResponse {
+                        id: row.get(5),
+                        username: row.get(6),
+                        email: row.get(7),
+                        full_name: row.get(8),
+                        is_admin: row.get(9),
+                        is_active: row.get(10),
+                        created_at: row.get(11),
+                        updated_at: row.get(12),
+                    },
+                    shared_by_user: UserResponse {
+                        id: row.get(13),
+                        username: row.get(14),
+                        email: row.get(15),
+                        full_name: row.get(16),
+                        is_admin: row.get(17),
+                        is_active: row.get(18),
+                        created_at: row.get(19),
+                        updated_at: row.get(20),
+                    },
+                }
+            })
+            .collect();
+
+        Ok(shares)
+    }
+
+    /// Get user's permission for an inventory
+    pub async fn get_user_permission_for_inventory(
+        &self,
+        user_id: Uuid,
+        inventory_id: i32,
+    ) -> Result<Option<PermissionLevel>, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        // Check if user is the owner
+        let owner_rows = client
+            .query(
+                "SELECT user_id FROM inventories WHERE id = $1",
+                &[&inventory_id],
+            )
+            .await?;
+
+        if let Some(row) = owner_rows.first() {
+            let owner_id: Option<Uuid> = row.get(0);
+            if owner_id == Some(user_id) {
+                return Ok(Some(PermissionLevel::Full)); // Owner has full access
+            }
+        }
+
+        // Check for shared access
+        let rows = client
+            .query(
+                "SELECT permission_level FROM inventory_shares 
+                 WHERE inventory_id = $1 AND shared_with_user_id = $2",
+                &[&inventory_id, &user_id],
+            )
+            .await?;
+
+        if let Some(row) = rows.first() {
+            let perm_str: String = row.get(0);
+            Ok(Some(perm_str.parse().unwrap_or(PermissionLevel::View)))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Update inventory share permission
+    pub async fn update_inventory_share(
+        &self,
+        share_id: Uuid,
+        permission_level: PermissionLevel,
+    ) -> Result<Option<InventoryShare>, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        let permission_str = permission_level.to_string();
+        let rows = client
+            .query(
+                "UPDATE inventory_shares SET permission_level = $1, updated_at = NOW() 
+                 WHERE id = $2 
+                 RETURNING id, inventory_id, shared_with_user_id, shared_by_user_id, permission_level, created_at, updated_at",
+                &[&permission_str, &share_id],
+            )
+            .await?;
+
+        if let Some(row) = rows.first() {
+            let perm_str: String = row.get(4);
+            Ok(Some(InventoryShare {
+                id: row.get(0),
+                inventory_id: row.get(1),
+                shared_with_user_id: row.get(2),
+                shared_by_user_id: row.get(3),
+                permission_level: perm_str.parse().unwrap_or(PermissionLevel::View),
+                created_at: row.get(5),
+                updated_at: row.get(6),
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Delete inventory share
+    pub async fn delete_inventory_share(&self, share_id: Uuid) -> Result<bool, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        let rows_affected = client
+            .execute("DELETE FROM inventory_shares WHERE id = $1", &[&share_id])
+            .await?;
+
+        Ok(rows_affected > 0)
+    }
+
+    /// Get inventories accessible to a user (owned or shared)
+    pub async fn get_accessible_inventories(&self, user_id: Uuid) -> Result<Vec<Inventory>, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        let rows = client
+            .query(
+                "SELECT DISTINCT i.id, i.name, i.description, i.location, i.image_url, i.created_at, i.updated_at 
+                 FROM inventories i
+                 LEFT JOIN inventory_shares s ON i.id = s.inventory_id
+                 WHERE i.user_id = $1 OR s.shared_with_user_id = $1
+                 ORDER BY i.name ASC",
+                &[&user_id],
+            )
+            .await?;
+
+        let inventories = rows
+            .iter()
+            .map(|row| Inventory {
+                id: Some(row.get(0)),
+                name: row.get(1),
+                description: row.get(2),
+                location: row.get(3),
+                image_url: row.get(4),
+                created_at: row.get::<_, Option<DateTime<Utc>>>(5),
+                updated_at: row.get::<_, Option<DateTime<Utc>>>(6),
+            })
+            .collect();
+
+        Ok(inventories)
+    }
+
+    /// Set inventory owner (for migrations or admin operations)
+    pub async fn set_inventory_owner(
+        &self,
+        inventory_id: i32,
+        user_id: Uuid,
+    ) -> Result<bool, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        let rows_affected = client
+            .execute(
+                "UPDATE inventories SET user_id = $1, updated_at = NOW() WHERE id = $2",
+                &[&user_id, &inventory_id],
+            )
+            .await?;
+
+        Ok(rows_affected > 0)
+    }
 }
+

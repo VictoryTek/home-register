@@ -3,6 +3,7 @@ use actix_files as fs;
 use dotenv::dotenv;
 use std::env;
 
+mod auth;
 mod db;
 mod models;
 mod api;
@@ -31,6 +32,10 @@ async fn main() -> std::io::Result<()> {
     
     log::info!("Starting Home Inventory server at http://{}:{}", host, port);
     log::info!("Environment: {}", env::var("RUST_ENV").unwrap_or_else(|_| "development".to_string()));
+    
+    // Initialize JWT secret at startup (will auto-generate if not found)
+    let _ = auth::get_or_init_jwt_secret();
+    log::info!("JWT token lifetime: {} hours", auth::jwt_token_lifetime_hours());
     
     // Initialize database pool
     let pool = db::get_pool().await;

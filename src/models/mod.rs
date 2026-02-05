@@ -278,3 +278,275 @@ pub struct ItemOrganizerValueWithDetails {
     pub organizer_option_id: Option<i32>,
     pub text_value: Option<String>,
 }
+
+// ==================== User & Authentication Models ====================
+
+use uuid::Uuid;
+
+/// User model - represents a user in the system
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct User {
+    pub id: Uuid,
+    pub username: String,
+    pub email: String,
+    pub full_name: String,
+    #[serde(skip_serializing)]  // Never serialize password_hash
+    pub password_hash: String,
+    pub is_admin: bool,
+    pub is_active: bool,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// User response without sensitive data (for API responses)
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct UserResponse {
+    pub id: Uuid,
+    pub username: String,
+    pub email: String,
+    pub full_name: String,
+    pub is_admin: bool,
+    pub is_active: bool,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+impl From<User> for UserResponse {
+    fn from(user: User) -> Self {
+        UserResponse {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            full_name: user.full_name,
+            is_admin: user.is_admin,
+            is_active: user.is_active,
+            created_at: user.created_at,
+            updated_at: user.updated_at,
+        }
+    }
+}
+
+/// Request to create a new user (registration)
+#[derive(Deserialize, Debug)]
+pub struct CreateUserRequest {
+    pub username: String,
+    pub email: String,
+    pub full_name: String,
+    pub password: String,
+}
+
+/// Request for admin to create a new user with additional options
+#[derive(Deserialize, Debug)]
+pub struct AdminCreateUserRequest {
+    pub username: String,
+    pub email: String,
+    pub full_name: String,
+    pub password: String,
+    #[serde(default)]
+    pub is_admin: bool,
+    #[serde(default = "default_true")]
+    pub is_active: bool,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+/// Request for admin to update a user
+#[derive(Deserialize, Debug)]
+pub struct AdminUpdateUserRequest {
+    pub username: Option<String>,
+    pub email: Option<String>,
+    pub full_name: Option<String>,
+    pub is_admin: Option<bool>,
+    pub is_active: Option<bool>,
+}
+
+/// Login request
+#[derive(Deserialize, Debug)]
+pub struct LoginRequest {
+    pub username: String,
+    pub password: String,
+}
+
+/// Login response with JWT token
+#[derive(Serialize, Debug)]
+pub struct LoginResponse {
+    pub token: String,
+    pub user: UserResponse,
+}
+
+/// Request to update current user's profile
+#[derive(Deserialize, Debug)]
+pub struct UpdateProfileRequest {
+    pub email: Option<String>,
+    pub full_name: Option<String>,
+}
+
+/// Request to change password
+#[derive(Deserialize, Debug)]
+pub struct ChangePasswordRequest {
+    pub current_password: String,
+    pub new_password: String,
+}
+
+/// Request to reset password with token
+#[derive(Deserialize, Debug)]
+pub struct ResetPasswordRequest {
+    pub token: String,
+    pub new_password: String,
+}
+
+/// Request to initiate password reset
+#[derive(Deserialize, Debug)]
+pub struct ForgotPasswordRequest {
+    pub email: String,
+}
+
+/// JWT Claims structure
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Claims {
+    pub sub: String,       // User ID
+    pub username: String,
+    pub is_admin: bool,
+    pub exp: usize,        // Expiration time
+    pub iat: usize,        // Issued at
+}
+
+// ==================== Permission Models ====================
+
+/// Permission levels for shared inventories
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum PermissionLevel {
+    View,   // Can only view inventory and items
+    Edit,   // Can view, add, and edit items
+    Full,   // Full access: view, add, edit, delete items and manage sharing
+}
+
+impl PermissionLevel {
+    pub fn can_view(&self) -> bool {
+        true // All levels can view
+    }
+
+    pub fn can_edit(&self) -> bool {
+        matches!(self, PermissionLevel::Edit | PermissionLevel::Full)
+    }
+
+    pub fn can_delete(&self) -> bool {
+        matches!(self, PermissionLevel::Full)
+    }
+
+    pub fn can_manage_sharing(&self) -> bool {
+        matches!(self, PermissionLevel::Full)
+    }
+}
+
+impl std::fmt::Display for PermissionLevel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PermissionLevel::View => write!(f, "view"),
+            PermissionLevel::Edit => write!(f, "edit"),
+            PermissionLevel::Full => write!(f, "full"),
+        }
+    }
+}
+
+impl std::str::FromStr for PermissionLevel {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "view" => Ok(PermissionLevel::View),
+            "edit" => Ok(PermissionLevel::Edit),
+            "full" => Ok(PermissionLevel::Full),
+            _ => Err(format!("Invalid permission level: {}", s)),
+        }
+    }
+}
+
+/// Inventory share record
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct InventoryShare {
+    pub id: Uuid,
+    pub inventory_id: i32,
+    pub shared_with_user_id: Uuid,
+    pub shared_by_user_id: Uuid,
+    pub permission_level: PermissionLevel,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// Inventory share with user details for API responses
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct InventoryShareWithUser {
+    pub id: Uuid,
+    pub inventory_id: i32,
+    pub shared_with_user: UserResponse,
+    pub shared_by_user: UserResponse,
+    pub permission_level: PermissionLevel,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// Request to share an inventory
+#[derive(Deserialize, Debug)]
+pub struct CreateInventoryShareRequest {
+    pub shared_with_username: String,  // Username or email of user to share with
+    pub permission_level: PermissionLevel,
+}
+
+/// Request to update share permissions
+#[derive(Deserialize, Debug)]
+pub struct UpdateInventoryShareRequest {
+    pub permission_level: PermissionLevel,
+}
+
+// ==================== User Settings Models ====================
+
+/// User settings/preferences
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct UserSettings {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub theme: String,
+    pub default_inventory_id: Option<i32>,
+    pub items_per_page: i32,
+    pub date_format: String,
+    pub currency: String,
+    pub notifications_enabled: bool,
+    pub settings_json: serde_json::Value,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// Request to update user settings
+#[derive(Deserialize, Debug)]
+pub struct UpdateUserSettingsRequest {
+    pub theme: Option<String>,
+    pub default_inventory_id: Option<i32>,
+    pub items_per_page: Option<i32>,
+    pub date_format: Option<String>,
+    pub currency: Option<String>,
+    pub notifications_enabled: Option<bool>,
+    pub settings_json: Option<serde_json::Value>,
+}
+
+// ==================== First-time Setup Models ====================
+
+/// Request for initial admin setup (first run)
+#[derive(Deserialize, Debug)]
+pub struct InitialSetupRequest {
+    pub username: String,
+    pub email: String,
+    pub full_name: String,
+    pub password: String,
+    pub inventory_name: Option<String>,  // Optional first inventory name
+}
+
+/// Response for setup status check
+#[derive(Serialize, Debug)]
+pub struct SetupStatusResponse {
+    pub needs_setup: bool,
+    pub user_count: i64,
+}

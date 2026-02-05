@@ -29,7 +29,7 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+  background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
 }
 
 .stat-card:hover {
@@ -45,7 +45,7 @@
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+  background: linear-gradient(135deg, var(--accent-color), var(--accent-light));
   color: white;
   box-shadow: var(--shadow-md);
 }
@@ -92,7 +92,7 @@
 .inventory-card:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
-  border-color: var(--primary-color);
+  border-color: var(--accent-color);
 }
 
 .inventory-card-header {
@@ -162,7 +162,7 @@
 }
 
 .inventory-card-stats .stat-item i {
-  color: var(--primary-color);
+  color: var(--accent-color);
 }
 
 .inventory-card-footer {
@@ -196,7 +196,7 @@
 .item-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-  border-color: var(--primary-color);
+  border-color: var(--accent-color);
 }
 
 .item-card-header {
@@ -214,7 +214,7 @@
 }
 
 .item-card-category {
-  background: var(--primary-color);
+  background: var(--accent-color);
   color: white;
   font-size: 0.75rem;
   padding: 0.25rem 0.75rem;
@@ -247,7 +247,7 @@
 }
 
 .item-card-details .detail-item i {
-  color: var(--primary-color);
+  color: var(--accent-color);
   width: 1rem;
 }
 
@@ -296,7 +296,7 @@
 }
 
 .card-title i {
-  color: var(--primary-color);
+  color: var(--accent-color);
   font-size: 1.1rem;
 }
 

@@ -98,8 +98,8 @@
 
 .form-input:focus {
   outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(26, 114, 238, 0.1);
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
 }
 
 .form-select {
@@ -116,8 +116,8 @@
 
 .form-select:focus {
   outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(26, 114, 238, 0.1);
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
 }
 
 textarea.form-input {

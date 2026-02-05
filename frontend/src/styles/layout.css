@@ -37,7 +37,7 @@
 .page-title {
   font-size: 1.875rem;
   font-weight: 700;
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -47,7 +47,7 @@
 }
 
 [data-theme="dark"] .page-title {
-  background: linear-gradient(135deg, #ffffff, #e2e8f0);
+  background: linear-gradient(135deg, #f8fafc, var(--accent-light));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -84,17 +84,129 @@
 
 .theme-toggle:hover {
   background-color: var(--bg-tertiary);
-  border-color: var(--primary-color);
-  color: var(--primary-color);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
 }
 
 .theme-toggle:active {
   transform: scale(0.95);
 }
 
+/* Header User Section */
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  border-radius: var(--radius-lg);
+  transition: all 0.3s ease;
+}
+
+.header-user:hover {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: rgba(249, 115, 22, 0.5);
+}
+
+.header-user .user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-user .user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-dark) 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+}
+
+.header-user .user-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.header-user .user-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-user .user-role {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.header-user .logout-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.header-user .logout-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
 /* Content Area */
 .content {
   padding: 2rem;
+}
+
+/* Page Actions */
+.page-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1.5rem;
+}
+
+.page-actions .btn {
+  width: auto !important;
+  flex: 0 0 auto;
+}
+
+/* Page Header Actions - for layouts with back button + action button */
+.page-header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.page-header-actions .btn {
+  width: auto !important;
+  flex: 0 0 auto;
+}
+
+/* Back button styling */
+.btn-back {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
 }
 
 /* Mobile Responsiveness */

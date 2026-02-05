@@ -32,14 +32,14 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  background: linear-gradient(135deg, var(--accent-color), var(--accent-dark));
   color: white;
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 8px 25px rgba(249, 115, 22, 0.4);
 }
 
 .btn-secondary {
@@ -50,7 +50,7 @@
 
 .btn-secondary:hover {
   background: var(--bg-tertiary);
-  border-color: var(--primary-color);
+  border-color: var(--accent-color);
 }
 
 .btn-success {
@@ -76,8 +76,8 @@
 
 .btn-ghost:hover {
   background: var(--bg-secondary);
-  border-color: var(--primary-color);
-  color: var(--primary-color);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
 }
 
 .btn-icon {
@@ -97,9 +97,9 @@
 }
 
 .btn-icon:hover {
-  background: var(--primary-color);
+  background: var(--accent-color);
   color: white;
-  border-color: var(--primary-color);
+  border-color: var(--accent-color);
 }
 
 .btn-icon.danger:hover {

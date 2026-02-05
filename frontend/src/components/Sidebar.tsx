@@ -1,5 +1,3 @@
-import { useApp } from '@/context/AppContext';
-
 interface SidebarProps {
   currentPage: string;
   onNavigate: (page: string) => void;

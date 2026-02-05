@@ -270,8 +270,8 @@ export function OrganizersPage() {
               title="No Inventories"
               text="Create an inventory first to manage organizers."
               action={
-                <button className="btn btn-primary" onClick={() => navigate('/')}>
-                  <i className="fas fa-plus"></i>
+                <button className="btn btn-secondary" onClick={() => navigate('/')}>
+                  <i className="fas fa-arrow-left"></i>
                   Go to Inventories
                 </button>
               }
@@ -329,8 +329,8 @@ export function OrganizersPage() {
       />
       
       <div className="content">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <button className="btn btn-ghost" onClick={() => navigate(`/inventory/${inventoryId}`)}>
+        <div className="page-header-actions">
+          <button className="btn btn-ghost btn-back" onClick={() => navigate(`/inventory/${inventoryId}`)}>
             <i className="fas fa-arrow-left"></i>
             Back to Inventory
           </button>

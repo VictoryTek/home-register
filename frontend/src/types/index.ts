@@ -208,3 +208,102 @@ export interface SetItemOrganizerValueRequest {
 export interface SetItemOrganizerValuesRequest {
   values: SetItemOrganizerValueRequest[];
 }
+
+// ==================== Authentication Types ====================
+
+export interface User {
+  id: string;
+  username: string;
+  email: string;
+  full_name: string;
+  is_admin: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserSettings {
+  id: string;
+  user_id: string;
+  theme: string;
+  default_inventory_id?: number;
+  items_per_page: number;
+  date_format: string;
+  currency: string;
+  notifications_enabled: boolean;
+  settings_json: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SetupStatusResponse {
+  needs_setup: boolean;
+  user_count: number;
+}
+
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  token: string;
+  user: User;
+}
+
+export interface InitialSetupRequest {
+  username: string;
+  email: string;
+  full_name: string;
+  password: string;
+  inventory_name?: string;
+}
+
+export interface RegisterRequest {
+  username: string;
+  email: string;
+  full_name: string;
+  password: string;
+}
+
+export interface UpdateProfileRequest {
+  email?: string;
+  full_name?: string;
+}
+
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+}
+
+export interface UpdateUserSettingsRequest {
+  theme?: string;
+  default_inventory_id?: number;
+  items_per_page?: number;
+  date_format?: string;
+  currency?: string;
+  notifications_enabled?: boolean;
+  settings_json?: Record<string, unknown>;
+}
+
+// Permission types
+export type PermissionLevel = 'view' | 'edit' | 'full';
+
+export interface InventoryShare {
+  id: string;
+  inventory_id: number;
+  shared_with_user: User;
+  shared_by_user: User;
+  permission_level: PermissionLevel;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateInventoryShareRequest {
+  shared_with_username: string;
+  permission_level: PermissionLevel;
+}
+
+export interface UpdateInventoryShareRequest {
+  permission_level: PermissionLevel;
+}

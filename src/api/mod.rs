@@ -1,3 +1,5 @@
+pub mod auth;
+
 use actix_web::{delete, get, post, put, web, HttpResponse, Responder, Result, Scope};
 use crate::db::DatabaseService;
 use crate::models::{
@@ -820,6 +822,8 @@ pub async fn delete_item_organizer_value(
 pub fn api_scope() -> Scope {
     web::scope("/api")
         .service(api_health)
+        // Auth routes (setup, login, profile, admin user management)
+        .service(auth::auth_scope())
         // Inventory routes
         .service(get_inventories)
         .service(create_inventory)
