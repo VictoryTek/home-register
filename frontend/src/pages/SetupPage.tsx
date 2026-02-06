@@ -111,12 +111,18 @@ export function SetupPage() {
   };
 
   return (
-    <div className="auth-container">
+    <div className="auth-page">
+      <div className="auth-background">
+        <div className="auth-gradient-orb auth-gradient-orb-1"></div>
+        <div className="auth-gradient-orb auth-gradient-orb-2"></div>
+        <div className="auth-gradient-orb auth-gradient-orb-3"></div>
+      </div>
+      
+      <div className="auth-container">
       <div className="auth-card setup-card">
         <div className="auth-header">
           <div className="auth-logo">
-            <span className="auth-logo-icon">📦</span>
-            <h1>Home Registry</h1>
+            <img src="/logo_full.png" alt="Home Registry" className="auth-logo-img" />
           </div>
           <p className="auth-subtitle">Welcome! Let's set up your account.</p>
         </div>
@@ -154,6 +160,19 @@ export function SetupPage() {
               <p className="step-description">This will be the administrator account for your Home Registry.</p>
               
               <div className="form-group">
+                <label htmlFor="full_name">Full Name</label>
+                <input
+                  type="text"
+                  id="full_name"
+                  name="full_name"
+                  value={formData.full_name}
+                  onChange={handleInputChange}
+                  placeholder="Enter your full name"
+                  autoFocus
+                />
+              </div>
+
+              <div className="form-group">
                 <label htmlFor="username">Username</label>
                 <input
                   type="text"
@@ -162,7 +181,6 @@ export function SetupPage() {
                   value={formData.username}
                   onChange={handleInputChange}
                   placeholder="Enter username"
-                  autoFocus
                 />
               </div>
 
@@ -175,18 +193,6 @@ export function SetupPage() {
                   value={formData.email}
                   onChange={handleInputChange}
                   placeholder="Enter email address"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="full_name">Full Name</label>
-                <input
-                  type="text"
-                  id="full_name"
-                  name="full_name"
-                  value={formData.full_name}
-                  onChange={handleInputChange}
-                  placeholder="Enter your full name"
                 />
               </div>
             </div>
@@ -265,6 +271,7 @@ export function SetupPage() {
             )}
           </div>
         </form>
+      </div>
       </div>
     </div>
   );

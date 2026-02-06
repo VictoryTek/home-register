@@ -63,8 +63,30 @@ async function handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
     }
   }
   
-  const data = await response.json();
-  return data as ApiResponse<T>;
+  // Check if response is JSON
+  const contentType = response.headers.get('content-type');
+  if (!contentType || !contentType.includes('application/json')) {
+    // Not JSON - probably an HTML error page
+    const text = await response.text();
+    console.error('Received non-JSON response:', text.substring(0, 200));
+    return {
+      success: false,
+      error: `Server error (${response.status}): Expected JSON but received ${contentType || 'unknown content type'}`,
+      data: undefined as any,
+    };
+  }
+  
+  try {
+    const data = await response.json();
+    return data as ApiResponse<T>;
+  } catch (error) {
+    console.error('Failed to parse JSON response:', error);
+    return {
+      success: false,
+      error: 'Invalid JSON response from server',
+      data: undefined as any,
+    };
+  }
 }
 
 // Inventory API
@@ -318,7 +340,7 @@ export const authApi = {
       }
     }
     
-    const response = await fetch(`${API_BASE}/auth/profile`, {
+    const response = await fetch(`${API_BASE}/auth/me`, {
       headers,
     });
     return handleResponse<User>(response);
@@ -326,7 +348,7 @@ export const authApi = {
 
   // Update current user profile
   async updateProfile(data: UpdateProfileRequest): Promise<ApiResponse<User>> {
-    const response = await fetch(`${API_BASE}/auth/profile`, {
+    const response = await fetch(`${API_BASE}/auth/me`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(data),

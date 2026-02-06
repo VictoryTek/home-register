@@ -1,4 +1,4 @@
-use actix_web::{web, App, HttpServer, Responder, HttpResponse, middleware::Logger};
+use actix_web::{web, App, HttpServer, Responder, HttpResponse, middleware::Logger, guard};
 use actix_files as fs;
 use dotenv::dotenv;
 use std::env;
@@ -45,13 +45,34 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(web::Data::new(pool.clone()))
             .wrap(Logger::default())
-            .route("/health", web::get().to(health))
+            // API routes - MUST come first
             .service(api::init_routes())
-            // Serve static files from the built React app
+            .route("/health", web::get().to(health))
+            // Serve static assets (js, css, images, etc.)
             .service(fs::Files::new("/assets", "static/assets"))
-            .service(fs::Files::new("/", "static/").index_file("index.html"))
-            // Fallback to index.html for client-side routing
-            .default_service(web::get().to(spa_fallback))
+            // Root route - serve index.html
+            .route("/", web::get().to(|| async {
+                fs::NamedFile::open_async("static/index.html").await
+            }))
+            // Logo files at root level
+            .route("/logo_icon.png", web::get().to(|| async {
+                fs::NamedFile::open_async("static/logo_icon.png").await
+            }))
+            .route("/logo_full.png", web::get().to(|| async {
+                fs::NamedFile::open_async("static/logo_full.png").await
+            }))
+            .route("/logo_icon3.png", web::get().to(|| async {
+                fs::NamedFile::open_async("static/logo_icon3.png").await
+            }))
+            .route("/favicon.ico", web::get().to(|| async {
+                fs::NamedFile::open_async("static/favicon.ico").await
+            }))
+            .route("/manifest.json", web::get().to(|| async {
+                fs::NamedFile::open_async("static/manifest.json").await
+            }))
+            // Catch-all for SPA client-side routing - serve index.html for everything else
+            // This comes last so API and static routes are handled first
+            .route("/{path:.*}", web::get().to(spa_fallback))
     })
     .bind(format!("{}:{}", host, port))?
     .run()

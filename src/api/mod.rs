@@ -1,6 +1,6 @@
 pub mod auth;
 
-use actix_web::{delete, get, post, put, web, HttpResponse, Responder, Result, Scope};
+use actix_web::{delete, get, post, put, web, HttpRequest, HttpResponse, Responder, Result, Scope};
 use crate::db::DatabaseService;
 use crate::models::{
     ApiResponse, CreateItemRequest, ErrorResponse, UpdateItemRequest, 
@@ -818,12 +818,42 @@ pub async fn delete_item_organizer_value(
     }
 }
 
+// API 404 handler - returns JSON instead of HTML
+async fn api_not_found(req: HttpRequest) -> impl Responder {
+    log::warn!("API 404: {}", req.uri());
+    HttpResponse::NotFound().json(ErrorResponse {
+        success: false,
+        error: "Endpoint not found".to_string(),
+        message: Some(format!("The API endpoint {} does not exist", req.uri())),
+    })
+}
+
 // Create scope with all API routes
 pub fn api_scope() -> Scope {
     web::scope("/api")
         .service(api_health)
-        // Auth routes (setup, login, profile, admin user management)
-        .service(auth::auth_scope())
+        // Auth routes (setup, login, profile, admin user management) - imported directly to avoid nested scope
+        .service(auth::get_setup_status)
+        .service(auth::initial_setup)
+        .service(auth::login)
+        .service(auth::register)
+        .service(auth::forgot_password)
+        .service(auth::reset_password)
+        .service(auth::get_current_user)
+        .service(auth::update_current_user)  
+        .service(auth::change_password)
+        .service(auth::get_user_settings)
+        .service(auth::update_user_settings)
+        .service(auth::get_my_inventories)
+        .service(auth::get_inventory_shares)
+        .service(auth::create_inventory_share)
+        .service(auth::update_inventory_share)
+        .service(auth::delete_inventory_share)
+        .service(auth::admin_get_users)
+        .service(auth::admin_get_user)
+        .service(auth::admin_create_user)
+        .service(auth::admin_update_user)
+        .service(auth::admin_delete_user)
         // Inventory routes
         .service(get_inventories)
         .service(create_inventory)
@@ -851,6 +881,8 @@ pub fn api_scope() -> Scope {
         .service(create_organizer_option)
         .service(update_organizer_option)
         .service(delete_organizer_option)
+        // Catch-all for non-existent API endpoints
+        .default_service(web::to(api_not_found))
 }
 
 // Alias for backward compatibility

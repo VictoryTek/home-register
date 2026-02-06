@@ -1561,7 +1561,7 @@ pub fn auth_scope() -> Scope {
         .service(update_current_user)
         .service(change_password)
         .service(get_user_settings)
-        .service(update_user_settings)
+       .service(update_user_settings)
         .service(get_my_inventories)
         // Inventory sharing endpoints
         .service(get_inventory_shares)
@@ -1574,4 +1574,11 @@ pub fn auth_scope() -> Scope {
         .service(admin_create_user)
         .service(admin_update_user)
         .service(admin_delete_user)
+}
+
+/// Default handler for unmatched routes in auth scope - returns 404
+/// This is needed so unmatched /api/* routes fall through to parent scope's default_service
+async fn auth_not_found() -> actix_web::Result<HttpResponse> {
+    // Return a 404 without content so parent's default_service can handle it
+    Err(actix_web::error::ErrorNotFound(""))
 }

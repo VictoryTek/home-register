@@ -329,11 +329,11 @@ export function OrganizersPage() {
       />
       
       <div className="content">
-        <div className="page-header-actions">
-          <button className="btn btn-ghost btn-back" onClick={() => navigate(`/inventory/${inventoryId}`)}>
-            <i className="fas fa-arrow-left"></i>
-            Back to Inventory
-          </button>
+        <button className="btn btn-icon" onClick={() => navigate(`/inventory/${inventoryId}`)} title="Back to Inventory">
+          <i className="fas fa-arrow-left"></i>
+        </button>
+        
+        <div className="page-actions">
           <button className="btn btn-primary" onClick={openCreateTypeModal}>
             <i className="fas fa-plus"></i>
             Add Organizer
