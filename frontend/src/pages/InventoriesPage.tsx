@@ -209,7 +209,7 @@ export function InventoriesPage() {
                         <div style={{
                           width: '100%',
                           height: '100%',
-                          background: 'linear-gradient(135deg, var(--primary-color), var(--primary-light))',
+                          background: 'linear-gradient(135deg, var(--accent-color), var(--accent-light))',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
