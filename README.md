@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="logo_full.png" alt="Home Registry Logo" width="400"/>
+  <img src="frontend/public/logo_full.png" alt="Home Registry Logo" width="400"/>
 </div>
 
 # Home Registry
@@ -19,9 +19,9 @@ A modern, web-based home inventory management system built with **Rust + Actix-W
 - 🔍 **Advanced Search** - Find items quickly with powerful filtering options
 - 📊 **Dashboard Analytics** - Overview of your inventory with statistics and insights
 
-## Quick Start with Docker
+## Quick Start with Docker Compose
 
-To run Home Registry on your server, simply use Docker Compose:
+The easiest way to try Home Registry is with Docker Compose, which sets up both the PostgreSQL database and the application:
 
 ```bash
 # Clone the repository
@@ -37,12 +37,34 @@ docker-compose logs -f app
 
 The application will be available at `http://localhost:8210`
 
-**Default Database Credentials:**
-- Database: `home_inventory`
-- Username: `postgres`
-- Password: `password`
+**Default Configuration:**
+- **Application Port:** `8210` (can be changed in docker-compose.yml)
+- **Database:** `home_inventory`
+- **Username:** `postgres`
+- **Password:** `password` (⚠️ change for production!)
 
-To stop the application:
+**Data Persistence:**
+- Database data is persisted in the `pgdata` Docker volume
+- Application data (including JWT secrets) is stored in the `appdata` volume
+- Your data will survive container restarts and updates
+
+**For Production Use:**
+1. Edit `docker-compose.yml` and uncomment the JWT_SECRET line
+2. Set a secure random string for JWT_SECRET
+3. Change the default database password
+4. Optionally adjust JWT_TOKEN_LIFETIME_HOURS (default: 24 hours)
+
+**Useful Commands:**
 ```bash
+# Stop the application
 docker-compose down
+
+# Stop and remove all data (⚠️ destructive)
+docker-compose down -v
+
+# View database logs
+docker-compose logs -f db
+
+# Rebuild after code changes
+docker-compose up -d --build
 ```
