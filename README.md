@@ -68,3 +68,47 @@ docker-compose logs -f db
 # Rebuild after code changes
 docker-compose up -d --build
 ```
+
+### Docker Compose Configuration
+
+Here's the complete `docker-compose.yml` file:
+
+```yaml
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: home_inventory
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:password@db:5432/home_inventory
+      PORT: 8210
+      RUST_LOG: info
+      # JWT_SECRET: "your-secure-secret-here"  # Uncomment and set for production
+      # JWT_TOKEN_LIFETIME_HOURS: 24  # Token lifetime in hours (default: 24)
+    ports:
+      - "8210:8210"
+    volumes:
+      - appdata:/app/data  # Persist JWT secret and other app data
+    command: ["./home-registry"]
+    restart: on-failure
+volumes:
+  pgdata:
+  appdata:
+```
