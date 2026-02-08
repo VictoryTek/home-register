@@ -12,3 +12,10 @@ test_results.txt
 .env
 secrets/*.txt
 !secrets/*.txt.example
+
+# Frontend dependencies and build artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/dist-ssr/
+*.local

@@ -5,3 +5,6 @@ export { Modal } from './Modal';
 export { ConfirmModal } from './ConfirmModal';
 export { LoadingState } from './LoadingState';
 export { EmptyState } from './EmptyState';
+export { UserMenu } from './UserMenu';
+export { ChangePasswordModal } from './ChangePasswordModal';
+export { EditProfileModal } from './EditProfileModal';

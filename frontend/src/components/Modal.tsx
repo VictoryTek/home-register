@@ -1,4 +1,5 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 interface ModalProps {
   isOpen: boolean;
@@ -11,9 +12,19 @@ interface ModalProps {
 }
 
 export function Modal({ isOpen, onClose, title, subtitle, children, footer, maxWidth = '500px' }: ModalProps) {
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = '';
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <div className={`modal-overlay ${isOpen ? 'active' : ''}`} onClick={onClose}>
       <div 
         className="modal-content" 
@@ -35,4 +46,7 @@ export function Modal({ isOpen, onClose, title, subtitle, children, footer, maxW
       </div>
     </div>
   );
+
+  // Use portal to render modal at document root, avoiding parent stacking context issues
+  return createPortal(modalContent, document.body);
 }
