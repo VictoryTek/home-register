@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Header, LoadingState, EmptyState, Modal } from '@/components';
+import { Header, LoadingState, EmptyState, Modal, WarrantyNotificationBanner } from '@/components';
 import { inventoryApi, itemApi, organizerApi } from '@/services/api';
 import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
+import { formatDate } from '@/utils/dateFormat';
+import { formatCurrency } from '@/utils/currencyFormat';
 import type { Inventory, Item, CreateItemRequest, OrganizerTypeWithOptions, SetItemOrganizerValueRequest } from '@/types';
 
 export function InventoryDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { showToast } = useApp();
+  const { showToast, setItems: setGlobalItems } = useApp();
+  const { settings } = useAuth();
   const [loading, setLoading] = useState(true);
   const [inventory, setInventory] = useState<Inventory | null>(null);
   const [items, setItems] = useState<Item[]>([]);
@@ -20,7 +24,9 @@ export function InventoryDetailPage() {
     description: '',
     category: '',
     location: '',
+    purchase_date: undefined,
     purchase_price: undefined,
+    warranty_expiry: undefined,
     quantity: 1,
   });
   const [organizerValues, setOrganizerValues] = useState<Record<number, { optionId?: number; textValue?: string }>>({});
@@ -50,6 +56,7 @@ export function InventoryDetailPage() {
 
       if (itemsResult.success && itemsResult.data) {
         setItems(itemsResult.data);
+        setGlobalItems(itemsResult.data); // Update global items state for notifications
       }
 
       if (organizersResult.success && organizersResult.data) {
@@ -112,7 +119,9 @@ export function InventoryDetailPage() {
           description: '',
           category: '',
           location: '',
+          purchase_date: undefined,
           purchase_price: undefined,
+          warranty_expiry: undefined,
           quantity: 1,
         });
         setOrganizerValues({});
@@ -171,6 +180,8 @@ export function InventoryDetailPage() {
       
       <div className="content">
         <div className="inventory-detail">
+          <WarrantyNotificationBanner />
+          
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
             <button className="btn btn-ghost" onClick={() => navigate('/')}>
               <i className="fas fa-arrow-left"></i>
@@ -200,11 +211,11 @@ export function InventoryDetailPage() {
             </div>
             <div className="stat-card">
               <div className="stat-icon" style={{ background: 'var(--success-color)' }}>
-                <i className="fas fa-dollar-sign"></i>
+                <i className="fas fa-coins"></i>
               </div>
               <div className="stat-content">
                 <div className="stat-label">Total Value</div>
-                <div className="stat-value">${totalValue.toFixed(2)}</div>
+                <div className="stat-value">{formatCurrency(totalValue, settings?.currency as any || 'USD')}</div>
               </div>
             </div>
           </div>
@@ -250,16 +261,28 @@ export function InventoryDetailPage() {
                               <span>Qty: {item.quantity}</span>
                             </div>
                           )}
+                          {item.purchase_date && (
+                            <div className="detail-item">
+                              <i className="fas fa-calendar-alt"></i>
+                              <span>Purchased: {formatDate(item.purchase_date, settings?.date_format as any || 'MM/DD/YYYY')}</span>
+                            </div>
+                          )}
                           {item.purchase_price && (
                             <div className="detail-item">
-                              <i className="fas fa-dollar-sign"></i>
-                              <span>${item.purchase_price.toFixed(2)} ea</span>
+                              <i className="fas fa-tag"></i>
+                              <span>{formatCurrency(item.purchase_price, settings?.currency as any || 'USD')} ea</span>
                             </div>
                           )}
                           {itemValue > 0 && (
                             <div className="detail-item">
-                              <i className="fas fa-calculator"></i>
-                              <span>Total: ${itemValue.toFixed(2)}</span>
+                              <i className="fas fa-coins"></i>
+                              <span>Total: {formatCurrency(itemValue, settings?.currency as any || 'USD')}</span>
+                            </div>
+                          )}
+                          {item.warranty_expiry && (
+                            <div className="detail-item">
+                              <i className="fas fa-shield-alt"></i>
+                              <span>Warranty: {formatDate(item.warranty_expiry, settings?.date_format as any || 'MM/DD/YYYY')}</span>
                             </div>
                           )}
                         </div>
@@ -411,6 +434,30 @@ export function InventoryDetailPage() {
               min="1"
               value={newItem.quantity || 1}
               onChange={(e) => setNewItem({ ...newItem, quantity: parseInt(e.target.value) || 1 })}
+            />
+          </div>
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label" htmlFor="item-purchase-date">Purchase Date</label>
+            <input
+              type="date"
+              className="form-input"
+              id="item-purchase-date"
+              value={newItem.purchase_date || ''}
+              onChange={(e) => setNewItem({ ...newItem, purchase_date: e.target.value })}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="item-warranty">Warranty Expiry</label>
+            <input
+              type="date"
+              className="form-input"
+              id="item-warranty"
+              value={newItem.warranty_expiry || ''}
+              onChange={(e) => setNewItem({ ...newItem, warranty_expiry: e.target.value })}
             />
           </div>
         </div>

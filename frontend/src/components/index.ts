@@ -8,3 +8,5 @@ export { EmptyState } from './EmptyState';
 export { UserMenu } from './UserMenu';
 export { ChangePasswordModal } from './ChangePasswordModal';
 export { EditProfileModal } from './EditProfileModal';
+export { WarrantyNotificationBanner } from './WarrantyNotificationBanner';
+export { UserManagement } from './UserManagement';

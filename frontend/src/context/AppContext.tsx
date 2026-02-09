@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { Theme, ToastMessage, Inventory, Item } from '@/types';
+import { checkWarrantyNotifications, type WarrantyNotification } from '@/utils/notifications';
 
 interface AppContextType {
   theme: Theme;
@@ -13,6 +14,8 @@ interface AppContextType {
   setInventories: (inventories: Inventory[]) => void;
   items: Item[];
   setItems: (items: Item[]) => void;
+  warrantyNotifications: WarrantyNotification[];
+  checkNotifications: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -27,6 +30,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentInventoryId, setCurrentInventoryId] = useState<number | null>(null);
   const [inventories, setInventories] = useState<Inventory[]>([]);
   const [items, setItems] = useState<Item[]>([]);
+  const [warrantyNotifications, setWarrantyNotifications] = useState<WarrantyNotification[]>([]);
 
   useEffect(() => {
     document.body.setAttribute('data-theme', theme);
@@ -50,6 +54,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setToasts(prev => prev.filter(toast => toast.id !== id));
   };
 
+  const checkNotifications = () => {
+    // Check all items from all inventories for warranty notifications
+    const notifications = checkWarrantyNotifications(items);
+    setWarrantyNotifications(notifications);
+  };
+
+  // Auto-check notifications when items change
+  useEffect(() => {
+    checkNotifications();
+  }, [items]);
+
   return (
     <AppContext.Provider value={{
       theme,
@@ -63,6 +78,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setInventories,
       items,
       setItems,
+      warrantyNotifications,
+      checkNotifications,
     }}>
       {children}
     </AppContext.Provider>

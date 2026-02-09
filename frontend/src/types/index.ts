@@ -286,6 +286,24 @@ export interface UpdateUserSettingsRequest {
   settings_json?: Record<string, unknown>;
 }
 
+// Admin user management types
+export interface CreateUserRequest {
+  username: string;
+  email: string;
+  full_name: string;
+  password: string;
+  is_admin?: boolean;
+  is_active?: boolean;
+}
+
+export interface UpdateUserRequest {
+  email?: string;
+  full_name?: string;
+  password?: string;
+  is_admin?: boolean;
+  is_active?: boolean;
+}
+
 // Permission types
 export type PermissionLevel = 'view' | 'edit' | 'full';
 

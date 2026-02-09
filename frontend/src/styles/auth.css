@@ -132,13 +132,13 @@
   gap: 1rem;
 }
 
-.form-group {
+.auth-page .form-group {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.form-group label {
+.auth-page .form-group label {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -147,12 +147,12 @@
   color: #e7e5e4;
 }
 
-.form-group label i {
+.auth-page .form-group label i {
   font-size: 0.8rem;
   color: #f97316;
 }
 
-.form-group input {
+.auth-page .form-group input {
   width: 100%;
   padding: 0.875rem 1rem;
   font-size: 0.95rem;
@@ -165,16 +165,16 @@
   transition: all 0.25s ease;
 }
 
-.form-group input::placeholder {
+.auth-page .form-group input::placeholder {
   color: #64748b;
 }
 
-.form-group input:hover {
+.auth-page .form-group input:hover {
   border-color: rgba(249, 115, 22, 0.4);
   background: rgba(30, 41, 59, 1);
 }
 
-.form-group input:focus {
+.auth-page .form-group input:focus {
   border-color: #f97316;
   background: rgba(30, 41, 59, 1);
   box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);

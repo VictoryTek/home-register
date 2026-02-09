@@ -26,6 +26,8 @@ import type {
   UpdateProfileRequest,
   ChangePasswordRequest,
   UpdateUserSettingsRequest,
+  CreateUserRequest,
+  UpdateUserRequest,
 } from '@/types';
 
 const API_BASE = '/api';
@@ -395,5 +397,50 @@ export const authApi = {
       body: JSON.stringify(data),
     });
     return handleResponse<UserSettings>(response);
+  },
+
+  // Admin: Get all users
+  async getAllUsers(): Promise<ApiResponse<User[]>> {
+    const response = await fetch(`${API_BASE}/admin/users`, {
+      headers: getHeaders(),
+    });
+    return handleResponse<User[]>(response);
+  },
+
+  // Admin: Get specific user
+  async getUser(userId: string): Promise<ApiResponse<User>> {
+    const response = await fetch(`${API_BASE}/admin/users/${userId}`, {
+      headers: getHeaders(),
+    });
+    return handleResponse<User>(response);
+  },
+
+  // Admin: Create new user
+  async createUser(data: CreateUserRequest): Promise<ApiResponse<User>> {
+    const response = await fetch(`${API_BASE}/admin/users`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<User>(response);
+  },
+
+  // Admin: Update user
+  async updateUser(userId: string, data: UpdateUserRequest): Promise<ApiResponse<User>> {
+    const response = await fetch(`${API_BASE}/admin/users/${userId}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<User>(response);
+  },
+
+  // Admin: Delete user
+  async deleteUser(userId: string): Promise<ApiResponse<{ message: string }>> {
+    const response = await fetch(`${API_BASE}/admin/users/${userId}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return handleResponse<{ message: string }>(response);
   },
 };

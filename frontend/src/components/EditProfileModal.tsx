@@ -3,6 +3,7 @@ import { Modal } from './Modal';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { authApi } from '@/services/api';
+import { formatDate } from '@/utils/dateFormat';
 
 interface EditProfileModalProps {
   onClose: () => void;
@@ -10,7 +11,7 @@ interface EditProfileModalProps {
 
 export function EditProfileModal({ onClose }: EditProfileModalProps) {
   const { showToast } = useApp();
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, settings } = useAuth();
   const [form, setForm] = useState({
     full_name: '',
     email: '',
@@ -196,7 +197,7 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
           <label>Member Since</label>
           <input
             type="text"
-            value={user?.created_at ? new Date(user.created_at).toLocaleDateString() : ''}
+            value={formatDate(user?.created_at, settings?.date_format as any || 'MM/DD/YYYY')}
             disabled
             className="input-disabled"
           />

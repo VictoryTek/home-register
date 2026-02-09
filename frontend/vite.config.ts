@@ -9,6 +9,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: 'inline',
+      devOptions: {
+        enabled: true
+      },
       includeAssets: ['logo_icon.png', 'logo_full.png'],
       manifest: {
         name: 'Home Registry',

@@ -346,16 +346,10 @@ export function OrganizersPage() {
             icon="fas fa-folder-open"
             title="No Organizers Yet"
             text="Create organizers to classify and categorize items in this inventory."
-            action={
-              <button className="btn btn-primary" onClick={openCreateTypeModal}>
-                <i className="fas fa-plus"></i>
-                Create Organizer
-              </button>
-            }
           />
         ) : (
           <div className="organizers-grid">
-          {organizers.map((organizer) => (
+          {[...organizers].sort((a, b) => a.name.localeCompare(b.name)).map((organizer) => (
             <div key={organizer.id} className="organizer-card">
               <div className="organizer-header">
                 <div className="organizer-info">

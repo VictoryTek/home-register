@@ -70,6 +70,14 @@ async fn main() -> std::io::Result<()> {
             .route("/manifest.json", web::get().to(|| async {
                 fs::NamedFile::open_async("static/manifest.json").await
             }))
+            // Service Worker files for PWA
+            .route("/sw.js", web::get().to(|| async {
+                fs::NamedFile::open_async("static/sw.js").await
+            }))
+            .route("/workbox-{filename:.*}.js", web::get().to(|path: web::Path<String>| async move {
+                let filename = path.into_inner();
+                fs::NamedFile::open_async(format!("static/workbox-{}", filename)).await
+            }))
             // Catch-all for SPA client-side routing - serve index.html for everything else
             // This comes last so API and static routes are handled first
             .route("/{path:.*}", web::get().to(spa_fallback))

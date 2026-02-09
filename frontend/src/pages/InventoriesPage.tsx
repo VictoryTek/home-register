@@ -1,14 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Header, LoadingState, EmptyState, Modal, ConfirmModal } from '@/components';
+import { Header, LoadingState, EmptyState, Modal, ConfirmModal, WarrantyNotificationBanner } from '@/components';
 import { inventoryApi } from '@/services/api';
 import { useApp } from '@/context/AppContext';
-import type { Inventory } from '@/types';
+import { useAuth } from '@/context/AuthContext';
+import type { Inventory, Item } from '@/types';
 
 export function InventoriesPage() {
   const navigate = useNavigate();
-  const { showToast, inventories, setInventories } = useApp();
+  const { showToast, inventories, setInventories, setItems } = useApp();
+  const { settings } = useAuth();
   const [loading, setLoading] = useState(true);
+  const hasAutoNavigated = useRef(false);
   const [itemCounts, setItemCounts] = useState<Record<number, number>>({});
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -28,6 +31,18 @@ export function InventoriesPage() {
     loadInventories();
   }, []);
 
+  // Auto-navigate to default inventory if set
+  useEffect(() => {
+    if (!loading && !hasAutoNavigated.current && settings?.default_inventory_id && inventories.length > 0) {
+      // Check if the default inventory exists
+      const defaultInventory = inventories.find(inv => inv.id === settings.default_inventory_id);
+      if (defaultInventory) {
+        hasAutoNavigated.current = true;
+        navigate(`/inventory/${settings.default_inventory_id}`);
+      }
+    }
+  }, [loading, settings, inventories, navigate]);
+
   const loadInventories = async () => {
     setLoading(true);
     try {
@@ -35,15 +50,24 @@ export function InventoriesPage() {
       if (result.success && result.data) {
         setInventories(result.data);
         
-        // Load item counts for each inventory
+        // Load item counts and all items for notification checking
         const counts: Record<number, number> = {};
+        const allItems: Item[] = [];
+        
         for (const inv of result.data) {
           if (inv.id) {
             const itemsResult = await inventoryApi.getItems(inv.id);
-            counts[inv.id] = itemsResult.success && itemsResult.data ? itemsResult.data.length : 0;
+            if (itemsResult.success && itemsResult.data) {
+              counts[inv.id] = itemsResult.data.length;
+              allItems.push(...itemsResult.data);
+            } else {
+              counts[inv.id] = 0;
+            }
           }
         }
+        
         setItemCounts(counts);
+        setItems(allItems); // Update global items state for notifications
       } else {
         showToast(result.error || 'Failed to load inventories', 'error');
       }
@@ -170,11 +194,19 @@ export function InventoriesPage() {
       
       <div className="content">
         <div className="inventories-container">
+          <WarrantyNotificationBanner />
+          
           <div className="page-actions">
             <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
               <i className="fas fa-plus"></i>
               Create Inventory
             </button>
+            {settings?.default_inventory_id && (
+              <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginLeft: '1rem' }}>
+                <i className="fas fa-info-circle"></i>
+                {' '}Default inventory is set to auto-open
+              </span>
+            )}
           </div>
 
           {loading ? (

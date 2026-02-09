@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Header } from '@/components';
+import { Header, UserManagement } from '@/components';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import type { Inventory } from '@/types';
@@ -21,11 +21,9 @@ const CURRENCY_OPTIONS = [
   { value: 'JPY', label: 'JPY (¥)', symbol: '¥' },
 ];
 
-const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
-
 export function SettingsPage() {
   const { showToast } = useApp();
-  const { settings, updateSettings, token } = useAuth();
+  const { settings, updateSettings, token, user } = useAuth();
   const [inventories, setInventories] = useState<Inventory[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -33,7 +31,6 @@ export function SettingsPage() {
   const [form, setForm] = useState({
     date_format: 'MM/DD/YYYY',
     currency: 'USD',
-    items_per_page: 25,
     default_inventory_id: undefined as number | undefined,
     notifications_enabled: true,
   });
@@ -63,7 +60,6 @@ export function SettingsPage() {
       setForm({
         date_format: settings.date_format || 'MM/DD/YYYY',
         currency: settings.currency || 'USD',
-        items_per_page: settings.items_per_page || 25,
         default_inventory_id: settings.default_inventory_id,
         notifications_enabled: settings.notifications_enabled ?? true,
       });
@@ -76,7 +72,6 @@ export function SettingsPage() {
       const success = await updateSettings({
         date_format: form.date_format,
         currency: form.currency,
-        items_per_page: form.items_per_page,
         default_inventory_id: form.default_inventory_id,
         notifications_enabled: form.notifications_enabled,
       });
@@ -97,7 +92,6 @@ export function SettingsPage() {
   const hasChanges = settings && (
     form.date_format !== (settings.date_format || 'MM/DD/YYYY') ||
     form.currency !== (settings.currency || 'USD') ||
-    form.items_per_page !== (settings.items_per_page || 25) ||
     form.default_inventory_id !== settings.default_inventory_id ||
     form.notifications_enabled !== (settings.notifications_enabled ?? true)
   );
@@ -157,23 +151,6 @@ export function SettingsPage() {
                 >
                   {CURRENCY_OPTIONS.map(opt => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="setting-item">
-                <div className="setting-info">
-                  <label htmlFor="items_per_page" className="setting-label">Items Per Page</label>
-                  <p className="setting-description">Number of items shown in lists</p>
-                </div>
-                <select
-                  id="items_per_page"
-                  className="setting-select"
-                  value={form.items_per_page}
-                  onChange={(e) => setForm(prev => ({ ...prev, items_per_page: Number(e.target.value) }))}
-                >
-                  {ITEMS_PER_PAGE_OPTIONS.map(num => (
-                    <option key={num} value={num}>{num} items</option>
                   ))}
                 </select>
               </div>
@@ -251,6 +228,25 @@ export function SettingsPage() {
               </div>
             </div>
           </section>
+
+          {/* User Management (Admin Only) */}
+          {user?.is_admin && (
+            <section className="settings-section">
+              <div className="settings-section-header">
+                <div className="settings-section-icon">
+                  <i className="fas fa-users"></i>
+                </div>
+                <div>
+                  <h2 className="settings-section-title">User Management</h2>
+                  <p className="settings-section-description">
+                    Manage user accounts and permissions
+                  </p>
+                </div>
+              </div>
+              
+              <UserManagement />
+            </section>
+          )}
 
           {/* Save Button */}
           <div className="settings-actions">
