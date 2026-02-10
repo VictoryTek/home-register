@@ -2,7 +2,6 @@
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     username VARCHAR(50) UNIQUE NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
     full_name VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     is_admin BOOLEAN NOT NULL DEFAULT false,
@@ -13,7 +12,6 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- Create indexes for faster lookups
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);
 
 -- Create password reset tokens table

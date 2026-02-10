@@ -28,6 +28,14 @@ import type {
   UpdateUserSettingsRequest,
   CreateUserRequest,
   UpdateUserRequest,
+  // Sharing types
+  InventoryShare,
+  CreateInventoryShareRequest,
+  UpdateInventoryShareRequest,
+  UserAccessGrant,
+  UserAccessGrantWithUsers,
+  CreateUserAccessGrantRequest,
+  EffectivePermissions,
 } from '@/types';
 
 const API_BASE = '/api';
@@ -321,7 +329,7 @@ export const authApi = {
   },
 
   // Register new user (after initial setup)
-  async register(data: { username: string; email: string; full_name: string; password: string }): Promise<ApiResponse<LoginResponse>> {
+  async register(data: { username: string; full_name: string; password: string }): Promise<ApiResponse<LoginResponse>> {
     const response = await fetch(`${API_BASE}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -442,5 +450,89 @@ export const authApi = {
       headers: getHeaders(),
     });
     return handleResponse<{ message: string }>(response);
+  },
+
+  // ==================== Inventory Sharing ====================
+
+  // Get shares for an inventory
+  async getInventoryShares(inventoryId: number): Promise<ApiResponse<InventoryShare[]>> {
+    const response = await fetch(`${API_BASE}/inventories/${inventoryId}/shares`, {
+      headers: getHeaders(),
+    });
+    return handleResponse<InventoryShare[]>(response);
+  },
+
+  // Share an inventory with another user
+  async shareInventory(inventoryId: number, data: CreateInventoryShareRequest): Promise<ApiResponse<InventoryShare>> {
+    const response = await fetch(`${API_BASE}/inventories/${inventoryId}/shares`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<InventoryShare>(response);
+  },
+
+  // Update share permission
+  async updateInventoryShare(shareId: string, data: UpdateInventoryShareRequest): Promise<ApiResponse<InventoryShare>> {
+    const response = await fetch(`${API_BASE}/shares/${shareId}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<InventoryShare>(response);
+  },
+
+  // Remove a share
+  async removeInventoryShare(shareId: string): Promise<ApiResponse<void>> {
+    const response = await fetch(`${API_BASE}/shares/${shareId}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return handleResponse<void>(response);
+  },
+
+  // Get effective permissions for current user on an inventory
+  async getInventoryPermissions(inventoryId: number): Promise<ApiResponse<EffectivePermissions>> {
+    const response = await fetch(`${API_BASE}/inventories/${inventoryId}/permissions`, {
+      headers: getHeaders(),
+    });
+    return handleResponse<EffectivePermissions>(response);
+  },
+
+  // ==================== User Access Grants (All Access) ====================
+
+  // Get users who have All Access to my inventories
+  async getMyAccessGrants(): Promise<ApiResponse<UserAccessGrantWithUsers[]>> {
+    const response = await fetch(`${API_BASE}/auth/access-grants`, {
+      headers: getHeaders(),
+    });
+    return handleResponse<UserAccessGrantWithUsers[]>(response);
+  },
+
+  // Get users who have granted me All Access
+  async getReceivedAccessGrants(): Promise<ApiResponse<UserAccessGrantWithUsers[]>> {
+    const response = await fetch(`${API_BASE}/auth/access-grants/received`, {
+      headers: getHeaders(),
+    });
+    return handleResponse<UserAccessGrantWithUsers[]>(response);
+  },
+
+  // Grant All Access to another user
+  async createAccessGrant(data: CreateUserAccessGrantRequest): Promise<ApiResponse<UserAccessGrant>> {
+    const response = await fetch(`${API_BASE}/auth/access-grants`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<UserAccessGrant>(response);
+  },
+
+  // Revoke All Access from a user
+  async revokeAccessGrant(grantId: string): Promise<ApiResponse<void>> {
+    const response = await fetch(`${API_BASE}/auth/access-grants/${grantId}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return handleResponse<void>(response);
   },
 };

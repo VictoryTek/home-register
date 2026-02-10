@@ -8,16 +8,6 @@ CREATE TABLE IF NOT EXISTS inventories (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Insert default inventory for existing items
-INSERT INTO inventories (id, name, description) VALUES (1, 'Main Inventory', 'Default inventory for existing items') ON CONFLICT (id) DO NOTHING;
-
--- Insert some sample inventories BEFORE adding foreign key
-INSERT INTO inventories (name, description, location) VALUES 
-('Home Office', 'Electronics and office equipment', 'Main Office'),
-('Kitchen', 'Appliances and kitchenware', 'Kitchen'),
-('Living Room', 'Furniture and entertainment', 'Living Room')
-ON CONFLICT DO NOTHING;
-
 -- Add inventory_id to items table
 ALTER TABLE items ADD COLUMN IF NOT EXISTS inventory_id INTEGER DEFAULT 1;
 

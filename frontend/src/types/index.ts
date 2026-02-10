@@ -19,6 +19,7 @@ export interface Inventory {
   description?: string;
   location?: string;
   image_url?: string;
+  user_id?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -214,7 +215,6 @@ export interface SetItemOrganizerValuesRequest {
 export interface User {
   id: string;
   username: string;
-  email: string;
   full_name: string;
   is_admin: boolean;
   is_active: boolean;
@@ -253,7 +253,6 @@ export interface LoginResponse {
 
 export interface InitialSetupRequest {
   username: string;
-  email: string;
   full_name: string;
   password: string;
   inventory_name?: string;
@@ -261,13 +260,12 @@ export interface InitialSetupRequest {
 
 export interface RegisterRequest {
   username: string;
-  email: string;
+
   full_name: string;
   password: string;
 }
 
 export interface UpdateProfileRequest {
-  email?: string;
   full_name?: string;
 }
 
@@ -289,7 +287,7 @@ export interface UpdateUserSettingsRequest {
 // Admin user management types
 export interface CreateUserRequest {
   username: string;
-  email: string;
+
   full_name: string;
   password: string;
   is_admin?: boolean;
@@ -297,15 +295,21 @@ export interface CreateUserRequest {
 }
 
 export interface UpdateUserRequest {
-  email?: string;
   full_name?: string;
   password?: string;
   is_admin?: boolean;
   is_active?: boolean;
 }
 
-// Permission types
-export type PermissionLevel = 'view' | 'edit' | 'full';
+// Permission types - 4-tier system
+// view: Can view inventory and items
+// edit_items: Can view and edit item details (not add/remove)
+// edit_inventory: Can view, edit items, add/remove items, edit inventory details
+// all_access: User-to-user grant - full access to ALL grantor's inventories (via UserAccessGrant)
+export type PermissionLevel = 'view' | 'edit_items' | 'edit_inventory';
+
+// Permission source - where the user's access comes from
+export type PermissionSource = 'owner' | 'all_access' | 'inventory_share' | 'none';
 
 export interface InventoryShare {
   id: string;
@@ -324,4 +328,40 @@ export interface CreateInventoryShareRequest {
 
 export interface UpdateInventoryShareRequest {
   permission_level: PermissionLevel;
+}
+
+// User Access Grant types (All Access tier)
+export interface UserAccessGrant {
+  id: string;
+  grantor_user_id: string;
+  grantee_user_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserAccessGrantWithUsers {
+  id: string;
+  grantor: User;
+  grantee: User;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateUserAccessGrantRequest {
+  grantee_username: string;
+}
+
+// Effective permissions for a user on an inventory
+export interface EffectivePermissions {
+  can_view: boolean;
+  can_edit_items: boolean;
+  can_add_items: boolean;
+  can_remove_items: boolean;
+  can_edit_inventory: boolean;
+  can_delete_inventory: boolean;
+  can_manage_sharing: boolean;
+  can_manage_organizers: boolean;
+  is_owner: boolean;
+  has_all_access: boolean;
+  permission_source: PermissionSource;
 }

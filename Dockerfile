@@ -1,5 +1,5 @@
 # Stage 1: Build React frontend
-FROM node:20-alpine as frontend-builder
+FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm ci
@@ -7,7 +7,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # Stage 2: Build Rust backend
-FROM rust:1.88 as backend-builder
+FROM rust:1.88 AS backend-builder
 WORKDIR /app
 COPY . .
 # Build release binary

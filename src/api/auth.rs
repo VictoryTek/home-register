@@ -3,29 +3,30 @@
 //! Provides endpoints for login, registration, profile management, 
 //! admin user management, and initial setup.
 
-use actix_web::{delete, get, post, put, web, HttpRequest, HttpResponse, Responder, Result, Scope};
+use actix_web::{delete, get, post, put, web, HttpRequest, HttpResponse, Responder, Result};
 use deadpool_postgres::Pool;
 use log::{error, info, warn};
 use uuid::Uuid;
 
 use crate::auth::{
     extract_token, generate_token, hash_password, verify_password, verify_token,
-    generate_reset_token, validate_password, validate_username, validate_email,
+    validate_password, validate_username,
     AuthContext,
 };
 use crate::db::DatabaseService;
 use crate::models::{
     ApiResponse, ErrorResponse, LoginRequest, LoginResponse,
     AdminCreateUserRequest, AdminUpdateUserRequest, UpdateProfileRequest,
-    ChangePasswordRequest, ResetPasswordRequest, ForgotPasswordRequest,
+    ChangePasswordRequest,
     UserResponse, SetupStatusResponse, InitialSetupRequest,
     UpdateUserSettingsRequest, CreateInventoryShareRequest, UpdateInventoryShareRequest,
+    CreateUserAccessGrantRequest, PermissionSource,
 };
 
 // ==================== Helper Functions ====================
 
 /// Extract and verify auth context from request
-async fn get_auth_context_from_request(
+pub async fn get_auth_context_from_request(
     req: &HttpRequest,
     pool: &Pool,
 ) -> Result<AuthContext, HttpResponse> {
@@ -178,13 +179,6 @@ pub async fn initial_setup(
             message: Some("Invalid username".to_string()),
         }));
     }
-    if let Err(msg) = validate_email(&req.email) {
-        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
-            success: false,
-            error: msg.to_string(),
-            message: Some("Invalid email".to_string()),
-        }));
-    }
     if let Err(msg) = validate_password(&req.password) {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
             success: false,
@@ -209,7 +203,6 @@ pub async fn initial_setup(
     // Create admin user
     let user = match db_service.create_user(
         &req.username,
-        &req.email,
         &req.full_name,
         &password_hash,
         true,  // is_admin
@@ -273,7 +266,7 @@ pub async fn login(
 ) -> Result<impl Responder> {
     let db_service = DatabaseService::new(pool.get_ref().clone());
     
-    // Find user by username or email
+    // Find user by username
     let user = match db_service.get_user_by_username_or_email(&req.username).await {
         Ok(Some(u)) => u,
         Ok(None) => {
@@ -387,15 +380,6 @@ pub async fn register(
         }));
     }
     
-    // Validate email
-    if let Err(msg) = validate_email(&req.email) {
-        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
-            success: false,
-            error: msg.to_string(),
-            message: Some("Invalid email".to_string()),
-        }));
-    }
-    
     // Validate password
     if let Err(msg) = validate_password(&req.password) {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
@@ -411,15 +395,6 @@ pub async fn register(
             success: false,
             error: "Username already taken".to_string(),
             message: Some("Please choose a different username".to_string()),
-        }));
-    }
-    
-    // Check if email already exists
-    if let Ok(Some(_)) = db_service.get_user_by_email(&req.email).await {
-        return Ok(HttpResponse::Conflict().json(ErrorResponse {
-            success: false,
-            error: "Email already registered".to_string(),
-            message: Some("Please use a different email or log in".to_string()),
         }));
     }
     
@@ -439,7 +414,6 @@ pub async fn register(
     // Create user (non-admin, active)
     let user = match db_service.create_user(
         &req.username,
-        &req.email,
         &req.full_name,
         &password_hash,
         false, // not admin
@@ -483,121 +457,6 @@ pub async fn register(
             user: user.into(),
         }),
         message: Some("Registration successful".to_string()),
-        error: None,
-    }))
-}
-
-/// Request password reset (sends email if configured)
-#[post("/auth/forgot-password")]
-pub async fn forgot_password(
-    pool: web::Data<Pool>,
-    req: web::Json<ForgotPasswordRequest>,
-) -> Result<impl Responder> {
-    let db_service = DatabaseService::new(pool.get_ref().clone());
-    
-    // Always return success to prevent email enumeration
-    let response = HttpResponse::Ok().json(ApiResponse {
-        success: true,
-        data: None::<()>,
-        message: Some("If an account with that email exists, a password reset link has been sent.".to_string()),
-        error: None,
-    });
-    
-    // Find user by email
-    let user = match db_service.get_user_by_email(&req.email).await {
-        Ok(Some(u)) => u,
-        Ok(None) => return Ok(response),
-        Err(e) => {
-            error!("Database error during forgot password: {}", e);
-            return Ok(response);
-        }
-    };
-    
-    // Generate reset token
-    let token = generate_reset_token();
-    
-    // Store token
-    if let Err(e) = db_service.create_password_reset_token(user.id, &token).await {
-        error!("Error creating reset token: {}", e);
-        return Ok(response);
-    }
-    
-    // TODO: Send email with reset link
-    // For now, just log the token (in production, send email)
-    info!("Password reset token generated for user {} (token: {})", user.username, token);
-    
-    Ok(response)
-}
-
-/// Reset password with token
-#[post("/auth/reset-password")]
-pub async fn reset_password(
-    pool: web::Data<Pool>,
-    req: web::Json<ResetPasswordRequest>,
-) -> Result<impl Responder> {
-    let db_service = DatabaseService::new(pool.get_ref().clone());
-    
-    // Validate new password
-    if let Err(msg) = validate_password(&req.new_password) {
-        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
-            success: false,
-            error: msg.to_string(),
-            message: Some("Invalid password".to_string()),
-        }));
-    }
-    
-    // Get user ID from token
-    let user_id = match db_service.get_user_id_from_reset_token(&req.token).await {
-        Ok(Some(id)) => id,
-        Ok(None) => {
-            return Ok(HttpResponse::BadRequest().json(ErrorResponse {
-                success: false,
-                error: "Invalid or expired token".to_string(),
-                message: Some("Please request a new password reset".to_string()),
-            }));
-        }
-        Err(e) => {
-            error!("Database error checking reset token: {}", e);
-            return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
-                success: false,
-                error: "Database error".to_string(),
-                message: None,
-            }));
-        }
-    };
-    
-    // Hash new password
-    let password_hash = match hash_password(req.new_password.clone()).await {
-        Ok(hash) => hash,
-        Err(e) => {
-            error!("Error hashing password: {}", e);
-            return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
-                success: false,
-                error: "Failed to hash password".to_string(),
-                message: None,
-            }));
-        }
-    };
-    
-    // Update password
-    if let Err(e) = db_service.update_user_password(user_id, &password_hash).await {
-        error!("Error updating password: {}", e);
-        return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
-            success: false,
-            error: "Failed to update password".to_string(),
-            message: None,
-        }));
-    }
-    
-    // Delete the used token
-    let _ = db_service.delete_password_reset_token(&req.token).await;
-    
-    info!("Password reset successful for user {}", user_id);
-    
-    Ok(HttpResponse::Ok().json(ApiResponse {
-        success: true,
-        data: None::<()>,
-        message: Some("Password reset successful. You can now log in with your new password.".to_string()),
         error: None,
     }))
 }
@@ -656,35 +515,10 @@ pub async fn update_current_user(
         Err(response) => return Ok(response),
     };
     
-    // Validate email if provided
-    if let Some(ref email) = body.email {
-        if let Err(msg) = validate_email(email) {
-            return Ok(HttpResponse::BadRequest().json(ErrorResponse {
-                success: false,
-                error: msg.to_string(),
-                message: Some("Invalid email".to_string()),
-            }));
-        }
-    }
-    
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
-    // Check if email is already taken by another user
-    if let Some(ref email) = body.email {
-        if let Ok(Some(existing)) = db_service.get_user_by_email(email).await {
-            if existing.id != auth_ctx.user_id {
-                return Ok(HttpResponse::Conflict().json(ErrorResponse {
-                    success: false,
-                    error: "Email already in use".to_string(),
-                    message: Some("This email is already associated with another account".to_string()),
-                }));
-            }
-        }
-    }
     
     match db_service.update_user_profile(
         auth_ctx.user_id,
-        body.email.as_deref(),
         body.full_name.as_deref(),
     ).await {
         Ok(Some(user)) => {
@@ -987,13 +821,6 @@ pub async fn admin_create_user(
             message: Some("Invalid username".to_string()),
         }));
     }
-    if let Err(msg) = validate_email(&body.email) {
-        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
-            success: false,
-            error: msg.to_string(),
-            message: Some("Invalid email".to_string()),
-        }));
-    }
     if let Err(msg) = validate_password(&body.password) {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
             success: false,
@@ -1009,15 +836,6 @@ pub async fn admin_create_user(
         return Ok(HttpResponse::Conflict().json(ErrorResponse {
             success: false,
             error: "Username already exists".to_string(),
-            message: None,
-        }));
-    }
-    
-    // Check if email already exists
-    if let Ok(Some(_)) = db_service.get_user_by_email(&body.email).await {
-        return Ok(HttpResponse::Conflict().json(ErrorResponse {
-            success: false,
-            error: "Email already exists".to_string(),
             message: None,
         }));
     }
@@ -1038,7 +856,6 @@ pub async fn admin_create_user(
     // Create user
     match db_service.create_user(
         &body.username,
-        &body.email,
         &body.full_name,
         &password_hash,
         body.is_admin,
@@ -1090,17 +907,6 @@ pub async fn admin_update_user(
                 success: false,
                 error: msg.to_string(),
                 message: Some("Invalid username".to_string()),
-            }));
-        }
-    }
-    
-    // Validate email if provided
-    if let Some(ref email) = body.email {
-        if let Err(msg) = validate_email(email) {
-            return Ok(HttpResponse::BadRequest().json(ErrorResponse {
-                success: false,
-                error: msg.to_string(),
-                message: Some("Invalid email".to_string()),
             }));
         }
     }
@@ -1267,16 +1073,9 @@ pub async fn get_inventory_shares(
     let inventory_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
     
-    // Check if user has permission to view shares (must be owner or have full access)
-    let permission = match db_service.get_user_permission_for_inventory(auth.user_id, inventory_id).await {
-        Ok(Some(p)) => p,
-        Ok(None) => {
-            return Ok(HttpResponse::Forbidden().json(ErrorResponse {
-                success: false,
-                error: "Access denied".to_string(),
-                message: Some("You don't have access to this inventory".to_string()),
-            }));
-        }
+    // Check if user has permission to view shares (must be owner or have All Access)
+    let effective_perms = match db_service.get_effective_permissions(auth.user_id, inventory_id).await {
+        Ok(p) => p,
         Err(e) => {
             error!("Error checking permission: {}", e);
             return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -1286,12 +1085,20 @@ pub async fn get_inventory_shares(
             }));
         }
     };
+
+    if effective_perms.permission_source == PermissionSource::None {
+        return Ok(HttpResponse::Forbidden().json(ErrorResponse {
+            success: false,
+            error: "Access denied".to_string(),
+            message: Some("You don't have access to this inventory".to_string()),
+        }));
+    }
     
-    if !permission.can_manage_sharing() && !auth.is_admin {
+    if !effective_perms.can_manage_sharing && !auth.is_admin {
         return Ok(HttpResponse::Forbidden().json(ErrorResponse {
             success: false,
             error: "Insufficient permissions".to_string(),
-            message: Some("You need full access to view shares".to_string()),
+            message: Some("Only inventory owners or users with All Access can manage shares".to_string()),
         }));
     }
     
@@ -1332,16 +1139,9 @@ pub async fn create_inventory_share(
     let inventory_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
     
-    // Check if user has permission to share (must be owner or have full access)
-    let permission = match db_service.get_user_permission_for_inventory(auth.user_id, inventory_id).await {
-        Ok(Some(p)) => p,
-        Ok(None) => {
-            return Ok(HttpResponse::Forbidden().json(ErrorResponse {
-                success: false,
-                error: "Access denied".to_string(),
-                message: Some("You don't have access to this inventory".to_string()),
-            }));
-        }
+    // Check if user has permission to share (must be owner or have All Access)
+    let effective_perms = match db_service.get_effective_permissions(auth.user_id, inventory_id).await {
+        Ok(p) => p,
         Err(e) => {
             error!("Error checking permission: {}", e);
             return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -1351,12 +1151,20 @@ pub async fn create_inventory_share(
             }));
         }
     };
+
+    if effective_perms.permission_source == PermissionSource::None {
+        return Ok(HttpResponse::Forbidden().json(ErrorResponse {
+            success: false,
+            error: "Access denied".to_string(),
+            message: Some("You don't have access to this inventory".to_string()),
+        }));
+    }
     
-    if !permission.can_manage_sharing() && !auth.is_admin {
+    if !effective_perms.can_manage_sharing && !auth.is_admin {
         return Ok(HttpResponse::Forbidden().json(ErrorResponse {
             success: false,
             error: "Insufficient permissions".to_string(),
-            message: Some("You need full access to share this inventory".to_string()),
+            message: Some("Only inventory owners or users with All Access can share this inventory".to_string()),
         }));
     }
     
@@ -1512,7 +1320,7 @@ pub async fn delete_inventory_share(
     }
 }
 
-/// Get inventories accessible to the current user (owned + shared)
+/// Get inventories accessible to the current user (owned + shared + all-access)
 #[get("/auth/inventories")]
 pub async fn get_my_inventories(
     pool: web::Data<Pool>,
@@ -1546,39 +1354,253 @@ pub async fn get_my_inventories(
     }
 }
 
-/// Create scope with all auth-related routes
-pub fn auth_scope() -> Scope {
-    web::scope("")
-        // Public endpoints
-        .service(get_setup_status)
-        .service(initial_setup)
-        .service(login)
-        .service(register)
-        .service(forgot_password)
-        .service(reset_password)
-        // Authenticated user endpoints
-        .service(get_current_user)
-        .service(update_current_user)
-        .service(change_password)
-        .service(get_user_settings)
-       .service(update_user_settings)
-        .service(get_my_inventories)
-        // Inventory sharing endpoints
-        .service(get_inventory_shares)
-        .service(create_inventory_share)
-        .service(update_inventory_share)
-        .service(delete_inventory_share)
-        // Admin endpoints
-        .service(admin_get_users)
-        .service(admin_get_user)
-        .service(admin_create_user)
-        .service(admin_update_user)
-        .service(admin_delete_user)
+// ==================== User Access Grant Endpoints (All Access Tier) ====================
+
+/// Get users who have All Access to my inventories (grants I've made)
+#[get("/auth/access-grants")]
+pub async fn get_my_access_grants(
+    pool: web::Data<Pool>,
+    req: HttpRequest,
+) -> Result<impl Responder> {
+    let auth = match get_auth_context_from_request(&req, pool.get_ref()).await {
+        Ok(a) => a,
+        Err(e) => return Ok(e),
+    };
+    
+    let db_service = DatabaseService::new(pool.get_ref().clone());
+    
+    match db_service.get_user_access_grants_by_grantor(auth.user_id).await {
+        Ok(grants) => {
+            info!("User {} retrieved {} access grants they've made", auth.username, grants.len());
+            Ok(HttpResponse::Ok().json(ApiResponse {
+                success: true,
+                data: Some(grants),
+                message: Some("Access grants retrieved successfully".to_string()),
+                error: None,
+            }))
+        }
+        Err(e) => {
+            error!("Error retrieving access grants: {}", e);
+            Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: format!("Database error: {}", e),
+                message: None,
+            }))
+        }
+    }
 }
 
-/// Default handler for unmatched routes in auth scope - returns 404
-/// This is needed so unmatched /api/* routes fall through to parent scope's default_service
-async fn auth_not_found() -> actix_web::Result<HttpResponse> {
-    // Return a 404 without content so parent's default_service can handle it
-    Err(actix_web::error::ErrorNotFound(""))
+/// Get users who have granted me All Access to their inventories
+#[get("/auth/access-grants/received")]
+pub async fn get_received_access_grants(
+    pool: web::Data<Pool>,
+    req: HttpRequest,
+) -> Result<impl Responder> {
+    let auth = match get_auth_context_from_request(&req, pool.get_ref()).await {
+        Ok(a) => a,
+        Err(e) => return Ok(e),
+    };
+    
+    let db_service = DatabaseService::new(pool.get_ref().clone());
+    
+    match db_service.get_user_access_grants_by_grantee(auth.user_id).await {
+        Ok(grants) => {
+            info!("User {} retrieved {} received access grants", auth.username, grants.len());
+            Ok(HttpResponse::Ok().json(ApiResponse {
+                success: true,
+                data: Some(grants),
+                message: Some("Received access grants retrieved successfully".to_string()),
+                error: None,
+            }))
+        }
+        Err(e) => {
+            error!("Error retrieving received access grants: {}", e);
+            Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: format!("Database error: {}", e),
+                message: None,
+            }))
+        }
+    }
 }
+
+/// Grant All Access to another user (gives them access to all my inventories)
+#[post("/auth/access-grants")]
+pub async fn create_access_grant(
+    pool: web::Data<Pool>,
+    req: HttpRequest,
+    body: web::Json<CreateUserAccessGrantRequest>,
+) -> Result<impl Responder> {
+    let auth = match get_auth_context_from_request(&req, pool.get_ref()).await {
+        Ok(a) => a,
+        Err(e) => return Ok(e),
+    };
+    
+    let db_service = DatabaseService::new(pool.get_ref().clone());
+    
+    // Find the user to grant access to
+    let target_user = match db_service.get_user_by_username_or_email(&body.grantee_username).await {
+        Ok(Some(u)) => u,
+        Ok(None) => {
+            return Ok(HttpResponse::NotFound().json(ErrorResponse {
+                success: false,
+                error: "User not found".to_string(),
+                message: Some(format!("No user found with username or email: {}", body.grantee_username)),
+            }));
+        }
+        Err(e) => {
+            error!("Error finding user: {}", e);
+            return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: format!("Database error: {}", e),
+                message: None,
+            }));
+        }
+    };
+    
+    // Don't allow granting access to self
+    if target_user.id == auth.user_id {
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: "Cannot grant access to yourself".to_string(),
+            message: None,
+        }));
+    }
+    
+    match db_service.create_user_access_grant(auth.user_id, target_user.id).await {
+        Ok(grant) => {
+            info!("User {} granted All Access to {} for all their inventories", 
+                auth.username, target_user.username);
+            Ok(HttpResponse::Created().json(ApiResponse {
+                success: true,
+                data: Some(grant),
+                message: Some(format!("{} now has All Access to all your inventories", target_user.username)),
+                error: None,
+            }))
+        }
+        Err(e) => {
+            // Check for duplicate grant
+            if e.to_string().contains("duplicate") || e.to_string().contains("unique") {
+                return Ok(HttpResponse::Conflict().json(ErrorResponse {
+                    success: false,
+                    error: "Already granted".to_string(),
+                    message: Some(format!("{} already has All Access to your inventories", target_user.username)),
+                }));
+            }
+            error!("Error creating access grant: {}", e);
+            Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: format!("Database error: {}", e),
+                message: None,
+            }))
+        }
+    }
+}
+
+/// Revoke All Access grant (remove someone's access to all my inventories)
+#[delete("/auth/access-grants/{grant_id}")]
+pub async fn delete_access_grant(
+    pool: web::Data<Pool>,
+    req: HttpRequest,
+    path: web::Path<Uuid>,
+) -> Result<impl Responder> {
+    let auth = match get_auth_context_from_request(&req, pool.get_ref()).await {
+        Ok(a) => a,
+        Err(e) => return Ok(e),
+    };
+    
+    let grant_id = path.into_inner();
+    let db_service = DatabaseService::new(pool.get_ref().clone());
+    
+    // Verify the grant belongs to the current user (as grantor)
+    let grant = match db_service.get_user_access_grant_by_id(grant_id).await {
+        Ok(Some(g)) => g,
+        Ok(None) => {
+            return Ok(HttpResponse::NotFound().json(ErrorResponse {
+                success: false,
+                error: "Access grant not found".to_string(),
+                message: None,
+            }));
+        }
+        Err(e) => {
+            error!("Error finding access grant: {}", e);
+            return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: format!("Database error: {}", e),
+                message: None,
+            }));
+        }
+    };
+    
+    // Only the grantor can revoke their own grants (or admin)
+    if grant.grantor_user_id != auth.user_id && !auth.is_admin {
+        return Ok(HttpResponse::Forbidden().json(ErrorResponse {
+            success: false,
+            error: "Access denied".to_string(),
+            message: Some("You can only revoke access grants you have made".to_string()),
+        }));
+    }
+    
+    match db_service.delete_user_access_grant(grant_id).await {
+        Ok(true) => {
+            info!("User {} revoked access grant {}", auth.username, grant_id);
+            Ok(HttpResponse::Ok().json(ApiResponse {
+                success: true,
+                data: None::<()>,
+                message: Some("All Access grant revoked successfully".to_string()),
+                error: None,
+            }))
+        }
+        Ok(false) => {
+            Ok(HttpResponse::NotFound().json(ErrorResponse {
+                success: false,
+                error: "Access grant not found".to_string(),
+                message: None,
+            }))
+        }
+        Err(e) => {
+            error!("Error deleting access grant: {}", e);
+            Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: format!("Database error: {}", e),
+                message: None,
+            }))
+        }
+    }
+}
+
+/// Get effective permissions for current user on a specific inventory
+#[get("/inventories/{id}/permissions")]
+pub async fn get_inventory_permissions(
+    pool: web::Data<Pool>,
+    req: HttpRequest,
+    path: web::Path<i32>,
+) -> Result<impl Responder> {
+    let auth = match get_auth_context_from_request(&req, pool.get_ref()).await {
+        Ok(a) => a,
+        Err(e) => return Ok(e),
+    };
+    
+    let inventory_id = path.into_inner();
+    let db_service = DatabaseService::new(pool.get_ref().clone());
+    
+    match db_service.get_effective_permissions(auth.user_id, inventory_id).await {
+        Ok(permissions) => {
+            Ok(HttpResponse::Ok().json(ApiResponse {
+                success: true,
+                data: Some(permissions),
+                message: None,
+                error: None,
+            }))
+        }
+        Err(e) => {
+            error!("Error retrieving permissions: {}", e);
+            Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: format!("Database error: {}", e),
+                message: None,
+            }))
+        }
+    }
+}
+

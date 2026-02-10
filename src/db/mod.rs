@@ -8,6 +8,9 @@ use crate::models::{
     User, UserResponse, AdminUpdateUserRequest,
     UserSettings, UpdateUserSettingsRequest,
     InventoryShare, InventoryShareWithUser, PermissionLevel,
+    // User Access Grant models (All Access tier)
+    UserAccessGrant, UserAccessGrantWithUsers,
+    EffectivePermissions, PermissionSource,
 };
 use chrono::{DateTime, Utc};
 use deadpool_postgres::{Config, ManagerConfig, Pool, RecyclingMethod};
@@ -370,7 +373,7 @@ impl DatabaseService {
 
         let rows = client
             .query(
-                "SELECT id, name, description, location, image_url, created_at, updated_at 
+                "SELECT id, name, description, location, image_url, user_id, created_at, updated_at 
                  FROM inventories ORDER BY name ASC",
                 &[],
             )
@@ -384,8 +387,9 @@ impl DatabaseService {
                 description: row.get(2),
                 location: row.get(3),
                 image_url: row.get(4),
-                created_at: row.get::<_, Option<DateTime<Utc>>>(5),
-                updated_at: row.get::<_, Option<DateTime<Utc>>>(6),
+                user_id: row.get(5),
+                created_at: row.get::<_, Option<DateTime<Utc>>>(6),
+                updated_at: row.get::<_, Option<DateTime<Utc>>>(7),
             };
             inventories.push(inventory);
         }
@@ -402,7 +406,7 @@ impl DatabaseService {
 
         let rows = client
             .query(
-                "SELECT id, name, description, location, image_url, created_at, updated_at 
+                "SELECT id, name, description, location, image_url, user_id, created_at, updated_at 
                  FROM inventories WHERE id = $1",
                 &[&id],
             )
@@ -415,8 +419,9 @@ impl DatabaseService {
                 description: row.get(2),
                 location: row.get(3),
                 image_url: row.get(4),
-                created_at: row.get::<_, Option<DateTime<Utc>>>(5),
-                updated_at: row.get::<_, Option<DateTime<Utc>>>(6),
+                user_id: row.get(5),
+                created_at: row.get::<_, Option<DateTime<Utc>>>(6),
+                updated_at: row.get::<_, Option<DateTime<Utc>>>(7),
             };
             Ok(Some(inventory))
         } else {
@@ -427,15 +432,16 @@ impl DatabaseService {
     pub async fn create_inventory(
         &self,
         request: CreateInventoryRequest,
+        user_id: uuid::Uuid,
     ) -> Result<Inventory, Box<dyn std::error::Error>> {
         let client = self.pool.get().await?;
 
         let row = client
             .query_one(
-                "INSERT INTO inventories (name, description, location, image_url) 
-                 VALUES ($1, $2, $3, $4) 
-                 RETURNING id, name, description, location, image_url, created_at, updated_at",
-                &[&request.name, &request.description, &request.location, &request.image_url],
+                "INSERT INTO inventories (name, description, location, image_url, user_id) 
+                 VALUES ($1, $2, $3, $4, $5) 
+                 RETURNING id, name, description, location, image_url, user_id, created_at, updated_at",
+                &[&request.name, &request.description, &request.location, &request.image_url, &user_id],
             )
             .await?;
 
@@ -445,8 +451,9 @@ impl DatabaseService {
             description: row.get(2),
             location: row.get(3),
             image_url: row.get(4),
-            created_at: row.get::<_, Option<DateTime<Utc>>>(5),
-            updated_at: row.get::<_, Option<DateTime<Utc>>>(6),
+            user_id: row.get(5),
+            created_at: row.get::<_, Option<DateTime<Utc>>>(6),
+            updated_at: row.get::<_, Option<DateTime<Utc>>>(7),
         };
 
         info!("Created new inventory: {} (ID: {:?})", inventory.name, inventory.id);
@@ -494,7 +501,7 @@ impl DatabaseService {
         values.push(&id);
 
         let query = format!(
-            "UPDATE inventories SET {} WHERE id = ${} RETURNING id, name, description, location, image_url, created_at, updated_at",
+            "UPDATE inventories SET {} WHERE id = ${} RETURNING id, name, description, location, image_url, user_id, created_at, updated_at",
             fields.join(", "),
             param_count
         );
@@ -508,8 +515,9 @@ impl DatabaseService {
                 description: row.get(2),
                 location: row.get(3),
                 image_url: row.get(4),
-                created_at: row.get::<_, Option<DateTime<Utc>>>(5),
-                updated_at: row.get::<_, Option<DateTime<Utc>>>(6),
+                user_id: row.get(5),
+                created_at: row.get::<_, Option<DateTime<Utc>>>(6),
+                updated_at: row.get::<_, Option<DateTime<Utc>>>(7),
             };
             info!("Updated inventory ID: {}", id);
             Ok(Some(inventory))
@@ -1077,7 +1085,7 @@ impl DatabaseService {
         let client = self.pool.get().await?;
         let rows = client
             .query(
-                "SELECT id, username, email, full_name, password_hash, is_admin, is_active, created_at, updated_at 
+                "SELECT id, username, full_name, password_hash, is_admin, is_active, created_at, updated_at 
                  FROM users WHERE id = $1",
                 &[&id],
             )
@@ -1087,13 +1095,12 @@ impl DatabaseService {
             Ok(Some(User {
                 id: row.get(0),
                 username: row.get(1),
-                email: row.get(2),
-                full_name: row.get(3),
-                password_hash: row.get(4),
-                is_admin: row.get(5),
-                is_active: row.get(6),
-                created_at: row.get(7),
-                updated_at: row.get(8),
+                full_name: row.get(2),
+                password_hash: row.get(3),
+                is_admin: row.get(4),
+                is_active: row.get(5),
+                created_at: row.get(6),
+                updated_at: row.get(7),
             }))
         } else {
             Ok(None)
@@ -1105,7 +1112,7 @@ impl DatabaseService {
         let client = self.pool.get().await?;
         let rows = client
             .query(
-                "SELECT id, username, email, full_name, password_hash, is_admin, is_active, created_at, updated_at 
+                "SELECT id, username, full_name, password_hash, is_admin, is_active, created_at, updated_at 
                  FROM users WHERE LOWER(username) = LOWER($1)",
                 &[&username],
             )
@@ -1115,54 +1122,25 @@ impl DatabaseService {
             Ok(Some(User {
                 id: row.get(0),
                 username: row.get(1),
-                email: row.get(2),
-                full_name: row.get(3),
-                password_hash: row.get(4),
-                is_admin: row.get(5),
-                is_active: row.get(6),
-                created_at: row.get(7),
-                updated_at: row.get(8),
+                full_name: row.get(2),
+                password_hash: row.get(3),
+                is_admin: row.get(4),
+                is_active: row.get(5),
+                created_at: row.get(6),
+                updated_at: row.get(7),
             }))
         } else {
             Ok(None)
         }
     }
 
-    /// Get a user by email
-    pub async fn get_user_by_email(&self, email: &str) -> Result<Option<User>, Box<dyn std::error::Error>> {
-        let client = self.pool.get().await?;
-        let rows = client
-            .query(
-                "SELECT id, username, email, full_name, password_hash, is_admin, is_active, created_at, updated_at 
-                 FROM users WHERE LOWER(email) = LOWER($1)",
-                &[&email],
-            )
-            .await?;
-
-        if let Some(row) = rows.first() {
-            Ok(Some(User {
-                id: row.get(0),
-                username: row.get(1),
-                email: row.get(2),
-                full_name: row.get(3),
-                password_hash: row.get(4),
-                is_admin: row.get(5),
-                is_active: row.get(6),
-                created_at: row.get(7),
-                updated_at: row.get(8),
-            }))
-        } else {
-            Ok(None)
-        }
-    }
-
-    /// Get a user by username or email (for login)
+    /// Get a user by username or email - now only checks username (for login)
     pub async fn get_user_by_username_or_email(&self, identifier: &str) -> Result<Option<User>, Box<dyn std::error::Error>> {
         let client = self.pool.get().await?;
         let rows = client
             .query(
-                "SELECT id, username, email, full_name, password_hash, is_admin, is_active, created_at, updated_at 
-                 FROM users WHERE LOWER(username) = LOWER($1) OR LOWER(email) = LOWER($1)",
+                "SELECT id, username, full_name, password_hash, is_admin, is_active, created_at, updated_at 
+                 FROM users WHERE LOWER(username) = LOWER($1)",
                 &[&identifier],
             )
             .await?;
@@ -1171,13 +1149,12 @@ impl DatabaseService {
             Ok(Some(User {
                 id: row.get(0),
                 username: row.get(1),
-                email: row.get(2),
-                full_name: row.get(3),
-                password_hash: row.get(4),
-                is_admin: row.get(5),
-                is_active: row.get(6),
-                created_at: row.get(7),
-                updated_at: row.get(8),
+                full_name: row.get(2),
+                password_hash: row.get(3),
+                is_admin: row.get(4),
+                is_active: row.get(5),
+                created_at: row.get(6),
+                updated_at: row.get(7),
             }))
         } else {
             Ok(None)
@@ -1189,7 +1166,7 @@ impl DatabaseService {
         let client = self.pool.get().await?;
         let rows = client
             .query(
-                "SELECT id, username, email, full_name, is_admin, is_active, created_at, updated_at 
+                "SELECT id, username, full_name, is_admin, is_active, created_at, updated_at 
                  FROM users ORDER BY created_at DESC",
                 &[],
             )
@@ -1200,12 +1177,11 @@ impl DatabaseService {
             .map(|row| UserResponse {
                 id: row.get(0),
                 username: row.get(1),
-                email: row.get(2),
-                full_name: row.get(3),
-                is_admin: row.get(4),
-                is_active: row.get(5),
-                created_at: row.get(6),
-                updated_at: row.get(7),
+                full_name: row.get(2),
+                is_admin: row.get(3),
+                is_active: row.get(4),
+                created_at: row.get(5),
+                updated_at: row.get(6),
             })
             .collect();
 
@@ -1216,7 +1192,6 @@ impl DatabaseService {
     pub async fn create_user(
         &self,
         username: &str,
-        email: &str,
         full_name: &str,
         password_hash: &str,
         is_admin: bool,
@@ -1226,23 +1201,22 @@ impl DatabaseService {
 
         let row = client
             .query_one(
-                "INSERT INTO users (username, email, full_name, password_hash, is_admin, is_active) 
-                 VALUES ($1, $2, $3, $4, $5, $6) 
-                 RETURNING id, username, email, full_name, password_hash, is_admin, is_active, created_at, updated_at",
-                &[&username, &email, &full_name, &password_hash, &is_admin, &is_active],
+                "INSERT INTO users (username, full_name, password_hash, is_admin, is_active) 
+                 VALUES ($1, $2, $3, $4, $5) 
+                 RETURNING id, username, full_name, password_hash, is_admin, is_active, created_at, updated_at",
+                &[&username, &full_name, &password_hash, &is_admin, &is_active],
             )
             .await?;
 
         let user = User {
             id: row.get(0),
             username: row.get(1),
-            email: row.get(2),
-            full_name: row.get(3),
-            password_hash: row.get(4),
-            is_admin: row.get(5),
-            is_active: row.get(6),
-            created_at: row.get(7),
-            updated_at: row.get(8),
+            full_name: row.get(2),
+            password_hash: row.get(3),
+            is_admin: row.get(4),
+            is_active: row.get(5),
+            created_at: row.get(6),
+            updated_at: row.get(7),
         };
 
         info!("Created new user: {} (ID: {})", user.username, user.id);
@@ -1253,7 +1227,6 @@ impl DatabaseService {
     pub async fn update_user_profile(
         &self,
         id: Uuid,
-        email: Option<&str>,
         full_name: Option<&str>,
     ) -> Result<Option<User>, Box<dyn std::error::Error>> {
         let client = self.pool.get().await?;
@@ -1262,11 +1235,6 @@ impl DatabaseService {
         let mut values: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = Vec::new();
         let mut param_count = 1;
 
-        if let Some(ref e) = email {
-            fields.push(format!("email = ${}", param_count));
-            values.push(e);
-            param_count += 1;
-        }
         if let Some(ref n) = full_name {
             fields.push(format!("full_name = ${}", param_count));
             values.push(n);
@@ -1282,7 +1250,7 @@ impl DatabaseService {
 
         let query = format!(
             "UPDATE users SET {} WHERE id = ${} 
-             RETURNING id, username, email, full_name, password_hash, is_admin, is_active, created_at, updated_at",
+             RETURNING id, username, full_name, password_hash, is_admin, is_active, created_at, updated_at",
             fields.join(", "),
             param_count
         );
@@ -1293,13 +1261,12 @@ impl DatabaseService {
             Ok(Some(User {
                 id: row.get(0),
                 username: row.get(1),
-                email: row.get(2),
-                full_name: row.get(3),
-                password_hash: row.get(4),
-                is_admin: row.get(5),
-                is_active: row.get(6),
-                created_at: row.get(7),
-                updated_at: row.get(8),
+                full_name: row.get(2),
+                password_hash: row.get(3),
+                is_admin: row.get(4),
+                is_active: row.get(5),
+                created_at: row.get(6),
+                updated_at: row.get(7),
             }))
         } else {
             Ok(None)
@@ -1321,11 +1288,6 @@ impl DatabaseService {
         if let Some(ref username) = request.username {
             fields.push(format!("username = ${}", param_count));
             values.push(username);
-            param_count += 1;
-        }
-        if let Some(ref email) = request.email {
-            fields.push(format!("email = ${}", param_count));
-            values.push(email);
             param_count += 1;
         }
         if let Some(ref full_name) = request.full_name {
@@ -1353,7 +1315,7 @@ impl DatabaseService {
 
         let query = format!(
             "UPDATE users SET {} WHERE id = ${} 
-             RETURNING id, username, email, full_name, password_hash, is_admin, is_active, created_at, updated_at",
+             RETURNING id, username, full_name, password_hash, is_admin, is_active, created_at, updated_at",
             fields.join(", "),
             param_count
         );
@@ -1364,13 +1326,12 @@ impl DatabaseService {
             Ok(Some(User {
                 id: row.get(0),
                 username: row.get(1),
-                email: row.get(2),
-                full_name: row.get(3),
-                password_hash: row.get(4),
-                is_admin: row.get(5),
-                is_active: row.get(6),
-                created_at: row.get(7),
-                updated_at: row.get(8),
+                full_name: row.get(2),
+                password_hash: row.get(3),
+                is_admin: row.get(4),
+                is_active: row.get(5),
+                created_at: row.get(6),
+                updated_at: row.get(7),
             }))
         } else {
             Ok(None)
@@ -1417,89 +1378,6 @@ impl DatabaseService {
             .query_one("SELECT COUNT(*) FROM users WHERE is_admin = true", &[])
             .await?;
         Ok(row.get(0))
-    }
-
-    // ==================== Password Reset Token Operations ====================
-
-    /// Create a password reset token
-    pub async fn create_password_reset_token(
-        &self,
-        user_id: Uuid,
-        token: &str,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let client = self.pool.get().await?;
-
-        // Delete any existing tokens for this user first
-        client
-            .execute(
-                "DELETE FROM password_reset_tokens WHERE user_id = $1",
-                &[&user_id],
-            )
-            .await?;
-
-        // Create new token
-        client
-            .execute(
-                "INSERT INTO password_reset_tokens (user_id, token) VALUES ($1, $2)",
-                &[&user_id, &token],
-            )
-            .await?;
-
-        info!("Created password reset token for user {}", user_id);
-        Ok(())
-    }
-
-    /// Get user ID from password reset token (valid for 30 minutes)
-    pub async fn get_user_id_from_reset_token(
-        &self,
-        token: &str,
-    ) -> Result<Option<Uuid>, Box<dyn std::error::Error>> {
-        let client = self.pool.get().await?;
-
-        let rows = client
-            .query(
-                "SELECT user_id FROM password_reset_tokens 
-                 WHERE token = $1 AND created_at > NOW() - INTERVAL '30 minutes'",
-                &[&token],
-            )
-            .await?;
-
-        if let Some(row) = rows.first() {
-            Ok(Some(row.get(0)))
-        } else {
-            Ok(None)
-        }
-    }
-
-    /// Delete password reset token
-    pub async fn delete_password_reset_token(&self, token: &str) -> Result<bool, Box<dyn std::error::Error>> {
-        let client = self.pool.get().await?;
-
-        let rows_affected = client
-            .execute(
-                "DELETE FROM password_reset_tokens WHERE token = $1",
-                &[&token],
-            )
-            .await?;
-
-        Ok(rows_affected > 0)
-    }
-
-    /// Clean up expired password reset tokens
-    pub async fn cleanup_expired_reset_tokens(&self) -> Result<u64, Box<dyn std::error::Error>> {
-        let client = self.pool.get().await?;
-
-        let rows_affected = client
-            .execute(
-                "DELETE FROM password_reset_tokens WHERE created_at < NOW() - INTERVAL '30 minutes'",
-                &[],
-            )
-            .await?;
-
-        if rows_affected > 0 {
-            info!("Cleaned up {} expired password reset tokens", rows_affected);
-        }
-        Ok(rows_affected)
     }
 
     // ==================== User Settings Operations ====================
@@ -1702,8 +1580,8 @@ impl DatabaseService {
             .query(
                 "SELECT 
                     s.id, s.inventory_id, s.permission_level, s.created_at, s.updated_at,
-                    sw.id, sw.username, sw.email, sw.full_name, sw.is_admin, sw.is_active, sw.created_at, sw.updated_at,
-                    sb.id, sb.username, sb.email, sb.full_name, sb.is_admin, sb.is_active, sb.created_at, sb.updated_at
+                    sw.id, sw.username, sw.full_name, sw.is_admin, sw.is_active, sw.created_at, sw.updated_at,
+                    sb.id, sb.username, sb.full_name, sb.is_admin, sb.is_active, sb.created_at, sb.updated_at
                  FROM inventory_shares s
                  JOIN users sw ON s.shared_with_user_id = sw.id
                  JOIN users sb ON s.shared_by_user_id = sb.id
@@ -1726,22 +1604,20 @@ impl DatabaseService {
                     shared_with_user: UserResponse {
                         id: row.get(5),
                         username: row.get(6),
-                        email: row.get(7),
-                        full_name: row.get(8),
-                        is_admin: row.get(9),
-                        is_active: row.get(10),
-                        created_at: row.get(11),
-                        updated_at: row.get(12),
+                        full_name: row.get(7),
+                        is_admin: row.get(8),
+                        is_active: row.get(9),
+                        created_at: row.get(10),
+                        updated_at: row.get(11),
                     },
                     shared_by_user: UserResponse {
-                        id: row.get(13),
-                        username: row.get(14),
-                        email: row.get(15),
-                        full_name: row.get(16),
-                        is_admin: row.get(17),
-                        is_active: row.get(18),
-                        created_at: row.get(19),
-                        updated_at: row.get(20),
+                        id: row.get(12),
+                        username: row.get(13),
+                        full_name: row.get(14),
+                        is_admin: row.get(15),
+                        is_active: row.get(16),
+                        created_at: row.get(17),
+                        updated_at: row.get(18),
                     },
                 }
             })
@@ -1750,12 +1626,12 @@ impl DatabaseService {
         Ok(shares)
     }
 
-    /// Get user's permission for an inventory
-    pub async fn get_user_permission_for_inventory(
+    /// Get comprehensive effective permissions for a user on an inventory
+    pub async fn get_effective_permissions(
         &self,
         user_id: Uuid,
         inventory_id: i32,
-    ) -> Result<Option<PermissionLevel>, Box<dyn std::error::Error>> {
+    ) -> Result<EffectivePermissions, Box<dyn std::error::Error>> {
         let client = self.pool.get().await?;
 
         // Check if user is the owner
@@ -1769,12 +1645,51 @@ impl DatabaseService {
         if let Some(row) = owner_rows.first() {
             let owner_id: Option<Uuid> = row.get(0);
             if owner_id == Some(user_id) {
-                return Ok(Some(PermissionLevel::Full)); // Owner has full access
+                return Ok(EffectivePermissions {
+                    can_view: true,
+                    can_edit_items: true,
+                    can_add_items: true,
+                    can_remove_items: true,
+                    can_edit_inventory: true,
+                    can_delete_inventory: true,
+                    can_manage_sharing: true,
+                    can_manage_organizers: true,
+                    is_owner: true,
+                    has_all_access: false,
+                    permission_source: PermissionSource::Owner,
+                });
+            }
+
+            // Check for All Access grant from the owner  
+            if let Some(owner_uuid) = owner_id {
+                let all_access_rows = client
+                    .query(
+                        "SELECT id FROM user_access_grants 
+                         WHERE grantor_user_id = $1 AND grantee_user_id = $2",
+                        &[&owner_uuid, &user_id],
+                    )
+                    .await?;
+
+                if !all_access_rows.is_empty() {
+                    return Ok(EffectivePermissions {
+                        can_view: true,
+                        can_edit_items: true,
+                        can_add_items: true,
+                        can_remove_items: true,
+                        can_edit_inventory: true,
+                        can_delete_inventory: true,
+                        can_manage_sharing: true,
+                        can_manage_organizers: true,
+                        is_owner: false,
+                        has_all_access: true,
+                        permission_source: PermissionSource::AllAccess,
+                    });
+                }
             }
         }
 
-        // Check for shared access
-        let rows = client
+        // Check for per-inventory share
+        let share_rows = client
             .query(
                 "SELECT permission_level FROM inventory_shares 
                  WHERE inventory_id = $1 AND shared_with_user_id = $2",
@@ -1782,12 +1697,39 @@ impl DatabaseService {
             )
             .await?;
 
-        if let Some(row) = rows.first() {
+        if let Some(row) = share_rows.first() {
             let perm_str: String = row.get(0);
-            Ok(Some(perm_str.parse().unwrap_or(PermissionLevel::View)))
-        } else {
-            Ok(None)
+            let permission = perm_str.parse().unwrap_or(PermissionLevel::View);
+            
+            return Ok(EffectivePermissions {
+                can_view: permission.can_view(),
+                can_edit_items: permission.can_edit_items(),
+                can_add_items: permission.can_add_items(),
+                can_remove_items: permission.can_remove_items(),
+                can_edit_inventory: permission.can_edit_inventory(),
+                can_delete_inventory: false, // Only owner or AllAccess can delete
+                can_manage_sharing: false,   // Only owner or AllAccess can manage sharing
+                can_manage_organizers: permission.can_manage_organizers(),
+                is_owner: false,
+                has_all_access: false,
+                permission_source: PermissionSource::InventoryShare,
+            });
         }
+
+        // No access
+        Ok(EffectivePermissions {
+            can_view: false,
+            can_edit_items: false,
+            can_add_items: false,
+            can_remove_items: false,
+            can_edit_inventory: false,
+            can_delete_inventory: false,
+            can_manage_sharing: false,
+            can_manage_organizers: false,
+            is_owner: false,
+            has_all_access: false,
+            permission_source: PermissionSource::None,
+        })
     }
 
     /// Update inventory share permission
@@ -1835,16 +1777,23 @@ impl DatabaseService {
         Ok(rows_affected > 0)
     }
 
-    /// Get inventories accessible to a user (owned or shared)
+    /// Get inventories accessible to a user (owned, shared via inventory_shares, or via All Access grants)
     pub async fn get_accessible_inventories(&self, user_id: Uuid) -> Result<Vec<Inventory>, Box<dyn std::error::Error>> {
         let client = self.pool.get().await?;
 
+        // Query includes:
+        // 1. Inventories owned by the user (i.user_id = $1)
+        // 2. Inventories shared directly with the user (inventory_shares)
+        // 3. Inventories owned by users who granted All Access to this user (user_access_grants)
         let rows = client
             .query(
-                "SELECT DISTINCT i.id, i.name, i.description, i.location, i.image_url, i.created_at, i.updated_at 
+                "SELECT DISTINCT i.id, i.name, i.description, i.location, i.image_url, i.user_id, i.created_at, i.updated_at 
                  FROM inventories i
-                 LEFT JOIN inventory_shares s ON i.id = s.inventory_id
-                 WHERE i.user_id = $1 OR s.shared_with_user_id = $1
+                 LEFT JOIN inventory_shares s ON i.id = s.inventory_id AND s.shared_with_user_id = $1
+                 LEFT JOIN user_access_grants g ON i.user_id = g.grantor_user_id AND g.grantee_user_id = $1
+                 WHERE i.user_id = $1 
+                    OR s.shared_with_user_id = $1
+                    OR g.grantee_user_id = $1
                  ORDER BY i.name ASC",
                 &[&user_id],
             )
@@ -1858,30 +1807,184 @@ impl DatabaseService {
                 description: row.get(2),
                 location: row.get(3),
                 image_url: row.get(4),
-                created_at: row.get::<_, Option<DateTime<Utc>>>(5),
-                updated_at: row.get::<_, Option<DateTime<Utc>>>(6),
+                user_id: row.get(5),
+                created_at: row.get::<_, Option<DateTime<Utc>>>(6),
+                updated_at: row.get::<_, Option<DateTime<Utc>>>(7),
             })
             .collect();
 
         Ok(inventories)
     }
 
-    /// Set inventory owner (for migrations or admin operations)
-    pub async fn set_inventory_owner(
+    // ==================== User Access Grant Operations (All Access Tier) ====================
+
+    /// Create a user access grant (All Access tier)
+    pub async fn create_user_access_grant(
         &self,
-        inventory_id: i32,
-        user_id: Uuid,
-    ) -> Result<bool, Box<dyn std::error::Error>> {
+        grantor_user_id: Uuid,
+        grantee_user_id: Uuid,
+    ) -> Result<UserAccessGrant, Box<dyn std::error::Error>> {
         let client = self.pool.get().await?;
 
-        let rows_affected = client
-            .execute(
-                "UPDATE inventories SET user_id = $1, updated_at = NOW() WHERE id = $2",
-                &[&user_id, &inventory_id],
+        let row = client
+            .query_one(
+                "INSERT INTO user_access_grants (grantor_user_id, grantee_user_id) 
+                 VALUES ($1, $2) 
+                 RETURNING id, grantor_user_id, grantee_user_id, created_at, updated_at",
+                &[&grantor_user_id, &grantee_user_id],
             )
             .await?;
 
+        Ok(UserAccessGrant {
+            id: row.get(0),
+            grantor_user_id: row.get(1),
+            grantee_user_id: row.get(2),
+            created_at: row.get(3),
+            updated_at: row.get(4),
+        })
+    }
+
+    /// Get all access grants where the user is the grantor (people who can access my inventories)
+    pub async fn get_user_access_grants_by_grantor(
+        &self,
+        grantor_user_id: Uuid,
+    ) -> Result<Vec<UserAccessGrantWithUsers>, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        let rows = client
+            .query(
+                "SELECT 
+                    g.id, g.created_at, g.updated_at,
+                    gr.id, gr.username, gr.full_name, gr.is_admin, gr.is_active, gr.created_at, gr.updated_at,
+                    ge.id, ge.username, ge.full_name, ge.is_admin, ge.is_active, ge.created_at, ge.updated_at
+                 FROM user_access_grants g
+                 JOIN users gr ON g.grantor_user_id = gr.id
+                 JOIN users ge ON g.grantee_user_id = ge.id
+                 WHERE g.grantor_user_id = $1
+                 ORDER BY g.created_at DESC",
+                &[&grantor_user_id],
+            )
+            .await?;
+
+        let grants = rows
+            .iter()
+            .map(|row| UserAccessGrantWithUsers {
+                id: row.get(0),
+                created_at: row.get(1),
+                updated_at: row.get(2),
+                grantor: UserResponse {
+                    id: row.get(3),
+                    username: row.get(4),
+                    full_name: row.get(5),
+                    is_admin: row.get(6),
+                    is_active: row.get(7),
+                    created_at: row.get(8),
+                    updated_at: row.get(9),
+                },
+                grantee: UserResponse {
+                    id: row.get(10),
+                    username: row.get(11),
+                    full_name: row.get(12),
+                    is_admin: row.get(13),
+                    is_active: row.get(14),
+                    created_at: row.get(15),
+                    updated_at: row.get(16),
+                },
+            })
+            .collect();
+
+        Ok(grants)
+    }
+
+    /// Get all access grants where the user is the grantee (users who gave me access)
+    pub async fn get_user_access_grants_by_grantee(
+        &self,
+        grantee_user_id: Uuid,
+    ) -> Result<Vec<UserAccessGrantWithUsers>, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        let rows = client
+            .query(
+                "SELECT 
+                    g.id, g.created_at, g.updated_at,
+                    gr.id, gr.username, gr.full_name, gr.is_admin, gr.is_active, gr.created_at, gr.updated_at,
+                    ge.id, ge.username, ge.full_name, ge.is_admin, ge.is_active, ge.created_at, ge.updated_at
+                 FROM user_access_grants g
+                 JOIN users gr ON g.grantor_user_id = gr.id
+                 JOIN users ge ON g.grantee_user_id = ge.id
+                 WHERE g.grantee_user_id = $1
+                 ORDER BY g.created_at DESC",
+                &[&grantee_user_id],
+            )
+            .await?;
+
+        let grants = rows
+            .iter()
+            .map(|row| UserAccessGrantWithUsers {
+                id: row.get(0),
+                created_at: row.get(1),
+                updated_at: row.get(2),
+                grantor: UserResponse {
+                    id: row.get(3),
+                    username: row.get(4),
+                    full_name: row.get(5),
+                    is_admin: row.get(6),
+                    is_active: row.get(7),
+                    created_at: row.get(8),
+                    updated_at: row.get(9),
+                },
+                grantee: UserResponse {
+                    id: row.get(10),
+                    username: row.get(11),
+                    full_name: row.get(12),
+                    is_admin: row.get(13),
+                    is_active: row.get(14),
+                    created_at: row.get(15),
+                    updated_at: row.get(16),
+                },
+            })
+            .collect();
+
+        Ok(grants)
+    }
+
+    /// Delete a user access grant
+    pub async fn delete_user_access_grant(&self, grant_id: Uuid) -> Result<bool, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        let rows_affected = client
+            .execute("DELETE FROM user_access_grants WHERE id = $1", &[&grant_id])
+            .await?;
+
         Ok(rows_affected > 0)
+    }
+
+    /// Get a user access grant by ID
+    pub async fn get_user_access_grant_by_id(
+        &self,
+        grant_id: Uuid,
+    ) -> Result<Option<UserAccessGrant>, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        let rows = client
+            .query(
+                "SELECT id, grantor_user_id, grantee_user_id, created_at, updated_at 
+                 FROM user_access_grants WHERE id = $1",
+                &[&grant_id],
+            )
+            .await?;
+
+        if let Some(row) = rows.first() {
+            Ok(Some(UserAccessGrant {
+                id: row.get(0),
+                grantor_user_id: row.get(1),
+                grantee_user_id: row.get(2),
+                created_at: row.get(3),
+                updated_at: row.get(4),
+            }))
+        } else {
+            Ok(None)
+        }
     }
 }
 

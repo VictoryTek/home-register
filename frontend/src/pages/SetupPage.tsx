@@ -11,7 +11,6 @@ export function SetupPage() {
   
   const [formData, setFormData] = useState({
     username: '',
-    email: '',
     full_name: '',
     password: '',
     confirmPassword: '',
@@ -31,14 +30,6 @@ export function SetupPage() {
     }
     if (formData.username.length < 3) {
       setError('Username must be at least 3 characters');
-      return false;
-    }
-    if (!formData.email.trim()) {
-      setError('Email is required');
-      return false;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      setError('Please enter a valid email address');
       return false;
     }
     if (!formData.full_name.trim()) {
@@ -85,7 +76,6 @@ export function SetupPage() {
     try {
       const result = await authApi.setup({
         username: formData.username,
-        email: formData.email,
         full_name: formData.full_name,
         password: formData.password,
         inventory_name: formData.inventory_name || undefined,
@@ -181,18 +171,6 @@ export function SetupPage() {
                   value={formData.username}
                   onChange={handleInputChange}
                   placeholder="Enter username"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="email">Email</label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="Enter email address"
                 />
               </div>
             </div>

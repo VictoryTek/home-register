@@ -12,7 +12,6 @@ export function RegisterPage() {
   
   const [formData, setFormData] = useState({
     username: '',
-    email: '',
     full_name: '',
     password: '',
     confirmPassword: '',
@@ -31,14 +30,6 @@ export function RegisterPage() {
     }
     if (formData.username.length < 3) {
       setError('Username must be at least 3 characters');
-      return false;
-    }
-    if (!formData.email.trim()) {
-      setError('Email is required');
-      return false;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      setError('Please enter a valid email address');
       return false;
     }
     if (!formData.full_name.trim()) {
@@ -71,7 +62,6 @@ export function RegisterPage() {
     try {
       const result = await authApi.register({
         username: formData.username,
-        email: formData.email,
         full_name: formData.full_name,
         password: formData.password,
       });
@@ -150,21 +140,6 @@ export function RegisterPage() {
                   placeholder="Choose a username"
                 />
               </div>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="email">
-                <i className="fas fa-envelope"></i>
-                Email
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                placeholder="Enter your email"
-              />
             </div>
 
             <div className="form-row">

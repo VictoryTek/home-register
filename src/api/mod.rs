@@ -59,11 +59,17 @@ pub async fn get_inventories(pool: web::Data<Pool>) -> Result<impl Responder> {
 #[post("/inventories")]
 pub async fn create_inventory(
     pool: web::Data<Pool>,
+    http_req: HttpRequest,
     req: web::Json<CreateInventoryRequest>
 ) -> Result<impl Responder> {
+    let auth = match auth::get_auth_context_from_request(&http_req, pool.get_ref()).await {
+        Ok(a) => a,
+        Err(e) => return Ok(e),
+    };
+    
     let db_service = DatabaseService::new(pool.get_ref().clone());
     
-    match db_service.create_inventory(req.into_inner()).await {
+    match db_service.create_inventory(req.into_inner(), auth.user_id).await {
         Ok(inventory) => {
             info!("Successfully created inventory: {}", inventory.name);
             Ok(HttpResponse::Created().json(ApiResponse {
@@ -837,8 +843,6 @@ pub fn api_scope() -> Scope {
         .service(auth::initial_setup)
         .service(auth::login)
         .service(auth::register)
-        .service(auth::forgot_password)
-        .service(auth::reset_password)
         .service(auth::get_current_user)
         .service(auth::update_current_user)  
         .service(auth::change_password)
@@ -849,6 +853,10 @@ pub fn api_scope() -> Scope {
         .service(auth::create_inventory_share)
         .service(auth::update_inventory_share)
         .service(auth::delete_inventory_share)
+        .service(auth::get_my_access_grants)
+        .service(auth::get_received_access_grants)
+        .service(auth::create_access_grant)
+        .service(auth::delete_access_grant)
         .service(auth::admin_get_users)
         .service(auth::admin_get_user)
         .service(auth::admin_create_user)

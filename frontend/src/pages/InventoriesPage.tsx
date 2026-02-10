@@ -9,7 +9,7 @@ import type { Inventory, Item } from '@/types';
 export function InventoriesPage() {
   const navigate = useNavigate();
   const { showToast, inventories, setInventories, setItems } = useApp();
-  const { settings } = useAuth();
+  const { settings, user } = useAuth();
   const [loading, setLoading] = useState(true);
   const hasAutoNavigated = useRef(false);
   const [itemCounts, setItemCounts] = useState<Record<number, number>>({});
@@ -269,6 +269,13 @@ export function InventoriesPage() {
                         <i className="fas fa-box"></i>
                         <span>{itemCounts[inventory.id!] || 0} items</span>
                       </div>
+                      {inventory.user_id && user?.id && inventory.user_id !== user.id && (
+                        <div className="stat-item" style={{ marginLeft: 'auto' }}>
+                          <span className="badge badge-shared">
+                            <i className="fas fa-share-alt"></i> Shared
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="inventory-card-footer">

@@ -82,7 +82,7 @@ export function UserMenu() {
               </div>
               <div className="menu-user-info">
                 <span className="menu-user-name">{user.full_name || user.username}</span>
-                <span className="menu-user-email">{user.email}</span>
+                <span className="menu-user-email">@{user.username}</span>
               </div>
             </div>
             

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Header, UserManagement } from '@/components';
+import { Header, UserManagement, AllAccessManagement } from '@/components';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import type { Inventory } from '@/types';
@@ -247,6 +247,23 @@ export function SettingsPage() {
               <UserManagement />
             </section>
           )}
+
+          {/* All Access Management */}
+          <section className="settings-section">
+            <div className="settings-section-header">
+              <div className="settings-section-icon">
+                <i className="fas fa-user-shield"></i>
+              </div>
+              <div>
+                <h2 className="settings-section-title">All Access (Tier 4)</h2>
+                <p className="settings-section-description">
+                  Grant or receive full access to all inventories
+                </p>
+              </div>
+            </div>
+            
+            <AllAccessManagement />
+          </section>
 
           {/* Save Button */}
           <div className="settings-actions">

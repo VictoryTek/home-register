@@ -8,6 +8,7 @@ pub struct Inventory {
     pub description: Option<String>,
     pub location: Option<String>,
     pub image_url: Option<String>,
+    pub user_id: Option<uuid::Uuid>,
     pub created_at: Option<DateTime<Utc>>,
     pub updated_at: Option<DateTime<Utc>>,
 }
@@ -140,6 +141,7 @@ pub struct CustomField {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[allow(dead_code)]
 pub struct CustomFieldValue {
     pub id: Option<i32>,
     pub item_id: i32,
@@ -151,6 +153,7 @@ pub struct CustomFieldValue {
 
 // Extended Item structure with relationships
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[allow(dead_code)]
 pub struct ItemWithRelations {
     pub id: Option<i32>,
     pub inventory_id: i32,
@@ -179,6 +182,7 @@ pub struct ItemWithRelations {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[allow(dead_code)]
 pub struct CustomFieldWithValue {
     pub field: CustomField,
     pub value: Option<String>,
@@ -288,7 +292,6 @@ use uuid::Uuid;
 pub struct User {
     pub id: Uuid,
     pub username: String,
-    pub email: String,
     pub full_name: String,
     #[serde(skip_serializing)]  // Never serialize password_hash
     pub password_hash: String,
@@ -303,7 +306,6 @@ pub struct User {
 pub struct UserResponse {
     pub id: Uuid,
     pub username: String,
-    pub email: String,
     pub full_name: String,
     pub is_admin: bool,
     pub is_active: bool,
@@ -316,7 +318,6 @@ impl From<User> for UserResponse {
         UserResponse {
             id: user.id,
             username: user.username,
-            email: user.email,
             full_name: user.full_name,
             is_admin: user.is_admin,
             is_active: user.is_active,
@@ -330,7 +331,6 @@ impl From<User> for UserResponse {
 #[derive(Deserialize, Debug)]
 pub struct CreateUserRequest {
     pub username: String,
-    pub email: String,
     pub full_name: String,
     pub password: String,
 }
@@ -339,7 +339,6 @@ pub struct CreateUserRequest {
 #[derive(Deserialize, Debug)]
 pub struct AdminCreateUserRequest {
     pub username: String,
-    pub email: String,
     pub full_name: String,
     pub password: String,
     #[serde(default)]
@@ -356,7 +355,6 @@ fn default_true() -> bool {
 #[derive(Deserialize, Debug)]
 pub struct AdminUpdateUserRequest {
     pub username: Option<String>,
-    pub email: Option<String>,
     pub full_name: Option<String>,
     pub is_admin: Option<bool>,
     pub is_active: Option<bool>,
@@ -379,7 +377,6 @@ pub struct LoginResponse {
 /// Request to update current user's profile
 #[derive(Deserialize, Debug)]
 pub struct UpdateProfileRequest {
-    pub email: Option<String>,
     pub full_name: Option<String>,
 }
 
@@ -391,18 +388,6 @@ pub struct ChangePasswordRequest {
 }
 
 /// Request to reset password with token
-#[derive(Deserialize, Debug)]
-pub struct ResetPasswordRequest {
-    pub token: String,
-    pub new_password: String,
-}
-
-/// Request to initiate password reset
-#[derive(Deserialize, Debug)]
-pub struct ForgotPasswordRequest {
-    pub email: String,
-}
-
 /// JWT Claims structure
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
@@ -415,30 +400,70 @@ pub struct Claims {
 
 // ==================== Permission Models ====================
 
-/// Permission levels for shared inventories
+/// Permission levels for shared inventories (per-inventory)
+/// The 4-tier system:
+/// 1. View - View shared inventory and its items
+/// 2. EditItems - View + Edit item details only (not add/remove)
+/// 3. EditInventory - EditItems + Edit inventory details, add/remove items
+/// 4. AllAccess - User-to-user grant via UserAccessGrant table (full access to ALL grantor's inventories)
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "snake_case")]
 pub enum PermissionLevel {
-    View,   // Can only view inventory and items
-    Edit,   // Can view, add, and edit items
-    Full,   // Full access: view, add, edit, delete items and manage sharing
+    View,           // Can only view inventory and items
+    EditItems,      // Can view and edit item details (not add/remove items)
+    EditInventory,  // Can view, edit items, add/remove items, edit inventory details
 }
 
 impl PermissionLevel {
+    /// Can view inventory and items
     pub fn can_view(&self) -> bool {
         true // All levels can view
     }
 
+    /// Can edit existing item details (name, description, etc.)
+    pub fn can_edit_items(&self) -> bool {
+        matches!(self, PermissionLevel::EditItems | PermissionLevel::EditInventory)
+    }
+
+    /// Can add new items to inventory
+    pub fn can_add_items(&self) -> bool {
+        matches!(self, PermissionLevel::EditInventory)
+    }
+
+    /// Can remove items from inventory
+    pub fn can_remove_items(&self) -> bool {
+        matches!(self, PermissionLevel::EditInventory)
+    }
+
+    /// Can edit inventory details (name, description, etc.)
+    pub fn can_edit_inventory(&self) -> bool {
+        matches!(self, PermissionLevel::EditInventory)
+    }
+
+    /// Can manage organizers for inventory
+    pub fn can_manage_organizers(&self) -> bool {
+        matches!(self, PermissionLevel::EditInventory)
+    }
+
+    // Legacy method - maps to can_edit_items for backward compatibility
+    #[deprecated(note = "Use can_edit_items() instead")]
+    #[allow(dead_code)]
     pub fn can_edit(&self) -> bool {
-        matches!(self, PermissionLevel::Edit | PermissionLevel::Full)
+        self.can_edit_items()
     }
 
+    // Legacy method - only owner or AllAccess users can delete inventory
+    #[deprecated(note = "Deletion requires ownership or AllAccess grant")]
+    #[allow(dead_code)]
     pub fn can_delete(&self) -> bool {
-        matches!(self, PermissionLevel::Full)
+        false // Per-inventory shares cannot delete - requires ownership or AllAccess
     }
 
+    // Legacy method - only owner or AllAccess users can manage sharing
+    #[deprecated(note = "Sharing management requires ownership or AllAccess grant")]
+    #[allow(dead_code)]
     pub fn can_manage_sharing(&self) -> bool {
-        matches!(self, PermissionLevel::Full)
+        false // Per-inventory shares cannot manage sharing - requires ownership or AllAccess
     }
 }
 
@@ -446,8 +471,8 @@ impl std::fmt::Display for PermissionLevel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             PermissionLevel::View => write!(f, "view"),
-            PermissionLevel::Edit => write!(f, "edit"),
-            PermissionLevel::Full => write!(f, "full"),
+            PermissionLevel::EditItems => write!(f, "edit_items"),
+            PermissionLevel::EditInventory => write!(f, "edit_inventory"),
         }
     }
 }
@@ -458,8 +483,11 @@ impl std::str::FromStr for PermissionLevel {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "view" => Ok(PermissionLevel::View),
-            "edit" => Ok(PermissionLevel::Edit),
-            "full" => Ok(PermissionLevel::Full),
+            "edit_items" => Ok(PermissionLevel::EditItems),
+            "edit_inventory" => Ok(PermissionLevel::EditInventory),
+            // Legacy value mappings for backward compatibility
+            "edit" => Ok(PermissionLevel::EditItems),
+            "full" => Ok(PermissionLevel::EditInventory),
             _ => Err(format!("Invalid permission level: {}", s)),
         }
     }
@@ -492,7 +520,7 @@ pub struct InventoryShareWithUser {
 /// Request to share an inventory
 #[derive(Deserialize, Debug)]
 pub struct CreateInventoryShareRequest {
-    pub shared_with_username: String,  // Username or email of user to share with
+    pub shared_with_username: String,  // Username of user to share with
     pub permission_level: PermissionLevel,
 }
 
@@ -500,6 +528,61 @@ pub struct CreateInventoryShareRequest {
 #[derive(Deserialize, Debug)]
 pub struct UpdateInventoryShareRequest {
     pub permission_level: PermissionLevel,
+}
+
+// ==================== User Access Grant Models (All Access Tier) ====================
+
+/// User access grant - grants a user full access to ALL inventories of another user
+/// This is the "All Access" tier of the 4-tier permission system
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct UserAccessGrant {
+    pub id: Uuid,
+    pub grantor_user_id: Uuid,  // User granting access
+    pub grantee_user_id: Uuid,  // User receiving access
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// User access grant with user details for API responses
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct UserAccessGrantWithUsers {
+    pub id: Uuid,
+    pub grantor: UserResponse,
+    pub grantee: UserResponse,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// Request to create a user access grant (All Access)
+#[derive(Deserialize, Debug)]
+pub struct CreateUserAccessGrantRequest {
+    pub grantee_username: String,  // Username of user to grant access to
+}
+
+/// Summary of effective permissions a user has for an inventory
+#[derive(Serialize, Debug, Clone)]
+pub struct EffectivePermissions {
+    pub can_view: bool,
+    pub can_edit_items: bool,
+    pub can_add_items: bool,
+    pub can_remove_items: bool,
+    pub can_edit_inventory: bool,
+    pub can_delete_inventory: bool,
+    pub can_manage_sharing: bool,
+    pub can_manage_organizers: bool,
+    pub is_owner: bool,
+    pub has_all_access: bool,  // Via UserAccessGrant
+    pub permission_source: PermissionSource,
+}
+
+/// Where the user's permissions come from
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PermissionSource {
+    Owner,           // User owns the inventory
+    AllAccess,       // Via UserAccessGrant from owner
+    InventoryShare,  // Via InventoryShare record
+    None,            // No access
 }
 
 // ==================== User Settings Models ====================
@@ -538,7 +621,6 @@ pub struct UpdateUserSettingsRequest {
 #[derive(Deserialize, Debug)]
 pub struct InitialSetupRequest {
     pub username: String,
-    pub email: String,
     pub full_name: String,
     pub password: String,
     pub inventory_name: Option<String>,  // Optional first inventory name

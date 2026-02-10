@@ -17,7 +17,6 @@ export function UserManagement() {
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({
     username: '',
-    email: '',
     full_name: '',
     password: '',
     is_admin: false,
@@ -47,7 +46,6 @@ export function UserManagement() {
   const openCreateModal = () => {
     setFormData({
       username: '',
-      email: '',
       full_name: '',
       password: '',
       is_admin: false,
@@ -60,7 +58,6 @@ export function UserManagement() {
     setEditingUser(user);
     setFormData({
       username: user.username,
-      email: user.email,
       full_name: user.full_name,
       password: '',
       is_admin: user.is_admin,
@@ -75,7 +72,7 @@ export function UserManagement() {
   };
 
   const handleCreateUser = async () => {
-    if (!formData.username.trim() || !formData.email.trim() || !formData.full_name.trim() || !formData.password) {
+    if (!formData.username.trim() || !formData.full_name.trim() || !formData.password) {
       showToast('Please fill in all required fields', 'error');
       return;
     }
@@ -88,7 +85,6 @@ export function UserManagement() {
     try {
       const createData: CreateUserRequest = {
         username: formData.username,
-        email: formData.email,
         full_name: formData.full_name,
         password: formData.password,
         is_admin: formData.is_admin,
@@ -111,7 +107,7 @@ export function UserManagement() {
   const handleUpdateUser = async () => {
     if (!editingUser) return;
 
-    if (!formData.email.trim() || !formData.full_name.trim()) {
+    if (!formData.full_name.trim()) {
       showToast('Please fill in all required fields', 'error');
       return;
     }
@@ -123,7 +119,6 @@ export function UserManagement() {
 
     try {
       const updateData: UpdateUserRequest = {
-        email: formData.email,
         full_name: formData.full_name,
         is_admin: formData.is_admin,
         is_active: formData.is_active,
@@ -194,9 +189,6 @@ export function UserManagement() {
                   <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                     @{user.username}
                   </div>
-                  <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                    {user.email}
-                  </div>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
@@ -264,17 +256,6 @@ export function UserManagement() {
             value={formData.username}
             onChange={(e) => setFormData({ ...formData, username: e.target.value })}
             autoFocus
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="form-label" htmlFor="create-email">Email *</label>
-          <input
-            type="email"
-            className="form-input"
-            id="create-email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
           />
         </div>
 
@@ -358,17 +339,6 @@ export function UserManagement() {
             style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)', cursor: 'not-allowed' }}
           />
           <p className="form-hint">Username cannot be changed</p>
-        </div>
-
-        <div className="form-group">
-          <label className="form-label" htmlFor="edit-email">Email *</label>
-          <input
-            type="email"
-            className="form-input"
-            id="edit-email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          />
         </div>
 
         <div className="form-group">

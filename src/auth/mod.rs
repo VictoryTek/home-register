@@ -2,7 +2,7 @@
 //! 
 //! Provides JWT token handling, password hashing with Argon2, and auth middleware for Actix-Web.
 
-use actix_web::{HttpMessage, HttpRequest};
+use actix_web::HttpRequest;
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Argon2,
@@ -207,18 +207,6 @@ pub async fn verify_password(password: String, hash_str: String) -> Result<bool,
     .map_err(|_| argon2::password_hash::Error::Algorithm)?
 }
 
-// ==================== Password Reset Token ====================
-
-/// Generate a random 64-character token for password reset
-pub fn generate_reset_token() -> String {
-    use rand::Rng;
-    rand::thread_rng()
-        .sample_iter(&rand::distributions::Alphanumeric)
-        .take(64)
-        .map(char::from)
-        .collect()
-}
-
 // ==================== Auth Context ====================
 
 /// Authentication context passed to handlers via request extensions
@@ -237,11 +225,6 @@ impl AuthContext {
             is_admin: claims.is_admin,
         })
     }
-}
-
-/// Extract AuthContext from request extensions
-pub fn get_auth_context(req: &HttpRequest) -> Option<AuthContext> {
-    req.extensions().get::<AuthContext>().cloned()
 }
 
 // ==================== Helper Functions ====================
@@ -272,17 +255,6 @@ pub fn validate_username(username: &str) -> Result<(), &'static str> {
     Ok(())
 }
 
-/// Validate email format (basic validation)
-pub fn validate_email(email: &str) -> Result<(), &'static str> {
-    if !email.contains('@') || !email.contains('.') {
-        return Err("Invalid email format");
-    }
-    if email.len() > 255 {
-        return Err("Email must be at most 255 characters long");
-    }
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -298,11 +270,5 @@ mod tests {
         assert!(validate_username("ab").is_err());
         assert!(validate_username("valid_user-123").is_ok());
         assert!(validate_username("invalid user").is_err());
-    }
-
-    #[test]
-    fn test_email_validation() {
-        assert!(validate_email("invalid").is_err());
-        assert!(validate_email("user@example.com").is_ok());
     }
 }

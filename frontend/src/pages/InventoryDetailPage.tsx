@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Header, LoadingState, EmptyState, Modal, WarrantyNotificationBanner } from '@/components';
+import { Header, LoadingState, EmptyState, Modal, WarrantyNotificationBanner, ShareInventoryModal } from '@/components';
 import { inventoryApi, itemApi, organizerApi } from '@/services/api';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
@@ -18,6 +18,7 @@ export function InventoryDetailPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [organizers, setOrganizers] = useState<OrganizerTypeWithOptions[]>([]);
   const [showAddItemModal, setShowAddItemModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [newItem, setNewItem] = useState<CreateItemRequest>({
     inventory_id: parseInt(id || '0'),
     name: '',
@@ -188,6 +189,10 @@ export function InventoryDetailPage() {
               Back to Inventories
             </button>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button className="btn btn-secondary" onClick={() => setShowShareModal(true)}>
+                <i className="fas fa-share-nodes"></i>
+                Share
+              </button>
               <button className="btn btn-secondary" onClick={() => navigate(`/inventory/${id}/organizers`)}>
                 <i className="fas fa-folder-tree"></i>
                 Organizers
@@ -474,6 +479,13 @@ export function InventoryDetailPage() {
           />
         </div>
       </Modal>
+
+      <ShareInventoryModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        inventoryId={parseInt(id || '0')}
+        inventoryName={inventory?.name || ''}
+      />
     </>
   );
 }

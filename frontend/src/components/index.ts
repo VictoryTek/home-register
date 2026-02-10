@@ -10,3 +10,5 @@ export { ChangePasswordModal } from './ChangePasswordModal';
 export { EditProfileModal } from './EditProfileModal';
 export { WarrantyNotificationBanner } from './WarrantyNotificationBanner';
 export { UserManagement } from './UserManagement';
+export { ShareInventoryModal } from './ShareInventoryModal';
+export { AllAccessManagement } from './AllAccessManagement';

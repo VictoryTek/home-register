@@ -14,7 +14,6 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
   const { user, refreshUser, settings } = useAuth();
   const [form, setForm] = useState({
     full_name: '',
-    email: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -23,7 +22,6 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
     if (user) {
       setForm({
         full_name: user.full_name || '',
-        email: user.email || '',
       });
     }
   }, [user]);
@@ -35,12 +33,6 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
       newErrors.full_name = 'Display name is required';
     } else if (form.full_name.trim().length < 2) {
       newErrors.full_name = 'Display name must be at least 2 characters';
-    }
-
-    if (!form.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      newErrors.email = 'Please enter a valid email address';
     }
 
     setErrors(newErrors);
@@ -56,7 +48,6 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
     try {
       const result = await authApi.updateProfile({
         full_name: form.full_name.trim(),
-        email: form.email.trim(),
       });
 
       if (result.success) {
@@ -64,12 +55,7 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
         showToast('Profile updated successfully', 'success');
         onClose();
       } else {
-        const errorMsg = result.error || 'Failed to update profile';
-        if (errorMsg.toLowerCase().includes('email')) {
-          setErrors({ email: errorMsg });
-        } else {
-          showToast(errorMsg, 'error');
-        }
+        showToast(result.error || 'Failed to update profile', 'error');
       }
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -93,8 +79,7 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
   };
 
   const hasChanges = user && (
-    form.full_name.trim() !== (user.full_name || '') ||
-    form.email.trim() !== (user.email || '')
+    form.full_name.trim() !== (user.full_name || '')
   );
 
   return (
@@ -159,21 +144,6 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
           />
           {errors.full_name && (
             <span className="form-error">{errors.full_name}</span>
-          )}
-        </div>
-
-        <div className={`form-group ${errors.email ? 'has-error' : ''}`}>
-          <label htmlFor="email">Email Address</label>
-          <input
-            type="email"
-            id="email"
-            value={form.email}
-            onChange={handleInputChange('email')}
-            placeholder="Enter your email address"
-            disabled={isLoading}
-          />
-          {errors.email && (
-            <span className="form-error">{errors.email}</span>
           )}
         </div>
 

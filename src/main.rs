@@ -1,4 +1,4 @@
-use actix_web::{web, App, HttpServer, Responder, HttpResponse, middleware::Logger, guard};
+use actix_web::{web, App, HttpServer, Responder, HttpResponse, middleware::Logger};
 use actix_files as fs;
 use dotenv::dotenv;
 use std::env;
