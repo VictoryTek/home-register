@@ -351,6 +351,20 @@ export interface CreateUserAccessGrantRequest {
   grantee_username: string;
 }
 
+// Ownership Transfer types
+export interface TransferOwnershipRequest {
+  new_owner_username: string;
+}
+
+export interface TransferOwnershipResponse {
+  inventory_id: number;
+  inventory_name: string;
+  previous_owner: User;
+  new_owner: User;
+  items_transferred: number;
+  shares_removed: number;
+}
+
 // Effective permissions for a user on an inventory
 export interface EffectivePermissions {
   can_view: boolean;

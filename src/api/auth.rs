@@ -20,7 +20,7 @@ use crate::models::{
     ChangePasswordRequest,
     UserResponse, SetupStatusResponse, InitialSetupRequest,
     UpdateUserSettingsRequest, CreateInventoryShareRequest, UpdateInventoryShareRequest,
-    CreateUserAccessGrantRequest, PermissionSource,
+    CreateUserAccessGrantRequest, PermissionSource, TransferOwnershipRequest, TransferOwnershipResponse,
 };
 
 // ==================== Helper Functions ====================
@@ -1604,3 +1604,166 @@ pub async fn get_inventory_permissions(
     }
 }
 
+// ==================== Ownership Transfer ====================
+
+/// Transfer ownership of an inventory to another user
+/// This action is irreversible - the original owner loses all access
+#[post("/inventories/{id}/transfer-ownership")]
+pub async fn transfer_inventory_ownership(
+    pool: web::Data<Pool>,
+    req: HttpRequest,
+    path: web::Path<i32>,
+    body: web::Json<TransferOwnershipRequest>,
+) -> Result<impl Responder> {
+    let auth = match get_auth_context_from_request(&req, pool.get_ref()).await {
+        Ok(a) => a,
+        Err(e) => return Ok(e),
+    };
+    
+    let inventory_id = path.into_inner();
+    let db_service = DatabaseService::new(pool.get_ref().clone());
+    
+    // Get the inventory to verify ownership and get details
+    let inventory = match db_service.get_inventory_by_id(inventory_id).await {
+        Ok(Some(inv)) => inv,
+        Ok(None) => {
+            return Ok(HttpResponse::NotFound().json(ErrorResponse {
+                success: false,
+                error: "Inventory not found".to_string(),
+                message: None,
+            }));
+        }
+        Err(e) => {
+            error!("Error retrieving inventory: {}", e);
+            return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: format!("Database error: {}", e),
+                message: None,
+            }));
+        }
+    };
+    
+    // Only the owner can transfer ownership (not even All Access users)
+    if inventory.user_id != Some(auth.user_id) {
+        return Ok(HttpResponse::Forbidden().json(ErrorResponse {
+            success: false,
+            error: "Only the owner can transfer ownership of an inventory".to_string(),
+            message: Some("You must be the owner to transfer this inventory".to_string()),
+        }));
+    }
+    
+    // Find the target user by username
+    let target_user = match db_service.get_user_by_username(&body.new_owner_username).await {
+        Ok(Some(user)) => user,
+        Ok(None) => {
+            return Ok(HttpResponse::NotFound().json(ErrorResponse {
+                success: false,
+                error: format!("User '{}' not found", body.new_owner_username),
+                message: None,
+            }));
+        }
+        Err(e) => {
+            error!("Error finding target user: {}", e);
+            return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: format!("Database error: {}", e),
+                message: None,
+            }));
+        }
+    };
+    
+    // Cannot transfer to yourself
+    if target_user.id == auth.user_id {
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: "Cannot transfer ownership to yourself".to_string(),
+            message: None,
+        }));
+    }
+    
+    // Check if target user is active
+    if !target_user.is_active {
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: "Cannot transfer ownership to an inactive user".to_string(),
+            message: None,
+        }));
+    }
+    
+    // Get current user details for response
+    let current_user = match db_service.get_user_by_id(auth.user_id).await {
+        Ok(Some(user)) => user,
+        Ok(None) => {
+            return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: "Current user not found".to_string(),
+                message: None,
+            }));
+        }
+        Err(e) => {
+            error!("Error finding current user: {}", e);
+            return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: format!("Database error: {}", e),
+                message: None,
+            }));
+        }
+    };
+    
+    // Perform the ownership transfer
+    match db_service.transfer_inventory_ownership(inventory_id, auth.user_id, target_user.id).await {
+        Ok((items_transferred, shares_removed)) => {
+            let target_full_name = target_user.full_name.clone();
+            let target_username = target_user.username.clone();
+            let inventory_name = inventory.name.clone();
+            
+            info!(
+                "User {} transferred ownership of inventory '{}' (ID: {}) to user {}",
+                auth.user_id, inventory_name, inventory_id, target_username
+            );
+            
+            Ok(HttpResponse::Ok().json(ApiResponse {
+                success: true,
+                data: Some(TransferOwnershipResponse {
+                    inventory_id,
+                    inventory_name: inventory.name,
+                    previous_owner: UserResponse {
+                        id: current_user.id,
+                        username: current_user.username,
+                        full_name: current_user.full_name,
+                        is_admin: current_user.is_admin,
+                        is_active: current_user.is_active,
+                        created_at: current_user.created_at,
+                        updated_at: current_user.updated_at,
+                    },
+                    new_owner: UserResponse {
+                        id: target_user.id,
+                        username: target_user.username,
+                        full_name: target_user.full_name,
+                        is_admin: target_user.is_admin,
+                        is_active: target_user.is_active,
+                        created_at: target_user.created_at,
+                        updated_at: target_user.updated_at,
+                    },
+                    items_transferred,
+                    shares_removed,
+                }),
+                message: Some(format!(
+                    "Ownership transferred successfully to {}. {} items transferred, {} shares removed.",
+                    target_full_name,
+                    items_transferred,
+                    shares_removed
+                )),
+                error: None,
+            }))
+        }
+        Err(e) => {
+            error!("Error transferring ownership: {}", e);
+            Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: format!("Failed to transfer ownership: {}", e),
+                message: None,
+            }))
+        }
+    }
+}

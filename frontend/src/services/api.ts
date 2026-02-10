@@ -36,6 +36,9 @@ import type {
   UserAccessGrantWithUsers,
   CreateUserAccessGrantRequest,
   EffectivePermissions,
+  // Transfer ownership types
+  TransferOwnershipRequest,
+  TransferOwnershipResponse,
 } from '@/types';
 
 const API_BASE = '/api';
@@ -497,6 +500,18 @@ export const authApi = {
       headers: getHeaders(),
     });
     return handleResponse<EffectivePermissions>(response);
+  },
+
+  // ==================== Ownership Transfer ====================
+
+  // Transfer ownership of an inventory to another user
+  async transferOwnership(inventoryId: number, data: TransferOwnershipRequest): Promise<ApiResponse<TransferOwnershipResponse>> {
+    const response = await fetch(`${API_BASE}/inventories/${inventoryId}/transfer-ownership`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<TransferOwnershipResponse>(response);
   },
 
   // ==================== User Access Grants (All Access) ====================

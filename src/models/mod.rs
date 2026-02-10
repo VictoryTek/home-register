@@ -559,6 +559,25 @@ pub struct CreateUserAccessGrantRequest {
     pub grantee_username: String,  // Username of user to grant access to
 }
 
+// ==================== Ownership Transfer Models ====================
+
+/// Request to transfer inventory ownership to another user
+#[derive(Deserialize, Debug)]
+pub struct TransferOwnershipRequest {
+    pub new_owner_username: String,  // Username of user to transfer ownership to
+}
+
+/// Response for ownership transfer operation
+#[derive(Serialize, Debug)]
+pub struct TransferOwnershipResponse {
+    pub inventory_id: i32,
+    pub inventory_name: String,
+    pub previous_owner: UserResponse,
+    pub new_owner: UserResponse,
+    pub items_transferred: i64,
+    pub shares_removed: i64,
+}
+
 /// Summary of effective permissions a user has for an inventory
 #[derive(Serialize, Debug, Clone)]
 pub struct EffectivePermissions {

@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { ConfirmModal } from '@/components';
 import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 import type { UserAccessGrantWithUsers, CreateUserAccessGrantRequest, User } from '@/types';
 import { authApi } from '@/services/api';
 
 export function AllAccessManagement() {
   const { showToast } = useApp();
+  const { user: currentUser } = useAuth();
   const [grantsGiven, setGrantsGiven] = useState<UserAccessGrantWithUsers[]>([]);
   const [grantsReceived, setGrantsReceived] = useState<UserAccessGrantWithUsers[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -18,8 +20,11 @@ export function AllAccessManagement() {
 
   useEffect(() => {
     loadGrants();
-    loadUsers();
-  }, []);
+    // Only load users list if current user is admin
+    if (currentUser?.is_admin) {
+      loadUsers();
+    }
+  }, [currentUser?.is_admin]);
 
   const loadUsers = async () => {
     try {
@@ -119,20 +124,30 @@ export function AllAccessManagement() {
                 <h4 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Grant All Access</h4>
                 <div className="form-group">
                   <label className="form-label">Username</label>
-                  <select
-                    className="form-select"
-                    value={newGrant.grantee_username}
-                    onChange={(e) => setNewGrant({ grantee_username: e.target.value })}
-                  >
-                    <option value="">Select a user...</option>
-                    {users
-                      .filter(user => !grantsGiven.some(grant => grant.grantee.username === user.username))
-                      .map((user) => (
-                        <option key={user.id} value={user.username}>
-                          {user.full_name} (@{user.username})
-                        </option>
-                      ))}
-                  </select>
+                  {currentUser?.is_admin ? (
+                    <select
+                      className="form-select"
+                      value={newGrant.grantee_username}
+                      onChange={(e) => setNewGrant({ grantee_username: e.target.value })}
+                    >
+                      <option value="">Select a user...</option>
+                      {users
+                        .filter(user => !grantsGiven.some(grant => grant.grantee.username === user.username))
+                        .map((user) => (
+                          <option key={user.id} value={user.username}>
+                            {user.full_name} (@{user.username})
+                          </option>
+                        ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={newGrant.grantee_username}
+                      onChange={(e) => setNewGrant({ grantee_username: e.target.value })}
+                      placeholder="Enter username..."
+                    />
+                  )}
                   <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
                     This user will have full access to all your current and future inventories.
                   </p>

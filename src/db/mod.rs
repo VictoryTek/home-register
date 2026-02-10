@@ -368,36 +368,6 @@ impl DatabaseService {
     }
 
     // Inventory operations
-    pub async fn get_all_inventories(&self) -> Result<Vec<Inventory>, Box<dyn std::error::Error>> {
-        let client = self.pool.get().await?;
-
-        let rows = client
-            .query(
-                "SELECT id, name, description, location, image_url, user_id, created_at, updated_at 
-                 FROM inventories ORDER BY name ASC",
-                &[],
-            )
-            .await?;
-
-        let mut inventories = Vec::new();
-        for row in rows {
-            let inventory = Inventory {
-                id: Some(row.get(0)),
-                name: row.get(1),
-                description: row.get(2),
-                location: row.get(3),
-                image_url: row.get(4),
-                user_id: row.get(5),
-                created_at: row.get::<_, Option<DateTime<Utc>>>(6),
-                updated_at: row.get::<_, Option<DateTime<Utc>>>(7),
-            };
-            inventories.push(inventory);
-        }
-
-        info!("Retrieved {} inventories from database", inventories.len());
-        Ok(inventories)
-    }
-
     pub async fn get_inventory_by_id(
         &self,
         id: i32,
@@ -1985,6 +1955,84 @@ impl DatabaseService {
         } else {
             Ok(None)
         }
+    }
+
+    // ==================== Ownership Transfer Operations ====================
+
+    /// Transfer ownership of an inventory from one user to another
+    /// This operation:
+    /// 1. Updates the inventory's user_id to the new owner
+    /// 2. Removes all existing shares for the inventory (new owner controls sharing)
+    /// 3. The previous owner loses all access
+    pub async fn transfer_inventory_ownership(
+        &self,
+        inventory_id: i32,
+        from_user_id: Uuid,
+        to_user_id: Uuid,
+    ) -> Result<(i64, i64), Box<dyn std::error::Error>> {
+        let mut client = self.pool.get().await?;
+        
+        // Start a transaction for atomic operation
+        let transaction = client.transaction().await?;
+
+        // Verify the inventory exists and is owned by from_user_id
+        let verify_result = transaction
+            .query_opt(
+                "SELECT id FROM inventories WHERE id = $1 AND user_id = $2",
+                &[&inventory_id, &from_user_id],
+            )
+            .await?;
+
+        if verify_result.is_none() {
+            return Err("Inventory not found or you are not the owner".into());
+        }
+
+        // Verify the target user exists
+        let target_user = transaction
+            .query_opt(
+                "SELECT id FROM users WHERE id = $1 AND is_active = true",
+                &[&to_user_id],
+            )
+            .await?;
+
+        if target_user.is_none() {
+            return Err("Target user not found or is inactive".into());
+        }
+
+        // Count items that will be transferred (for reporting)
+        let items_count: i64 = transaction
+            .query_one(
+                "SELECT COUNT(*) FROM items WHERE inventory_id = $1",
+                &[&inventory_id],
+            )
+            .await?
+            .get(0);
+
+        // Transfer ownership by updating user_id
+        transaction
+            .execute(
+                "UPDATE inventories SET user_id = $1, updated_at = NOW() WHERE id = $2",
+                &[&to_user_id, &inventory_id],
+            )
+            .await?;
+
+        // Remove all existing shares for this inventory (new owner will manage sharing)
+        let shares_removed = transaction
+            .execute(
+                "DELETE FROM inventory_shares WHERE inventory_id = $1",
+                &[&inventory_id],
+            )
+            .await?;
+
+        // Commit the transaction
+        transaction.commit().await?;
+
+        info!(
+            "Transferred ownership of inventory {} from {:?} to {:?}. Items: {}, Shares removed: {}",
+            inventory_id, from_user_id, to_user_id, items_count, shares_removed
+        );
+
+        Ok((items_count, shares_removed as i64))
     }
 }
 

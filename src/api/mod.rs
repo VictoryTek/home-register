@@ -32,12 +32,20 @@ pub async fn api_health() -> impl Responder {
 
 // Inventories API endpoints
 #[get("/inventories")]
-pub async fn get_inventories(pool: web::Data<Pool>) -> Result<impl Responder> {
+pub async fn get_inventories(
+    pool: web::Data<Pool>,
+    req: HttpRequest,
+) -> Result<impl Responder> {
+    let auth = match auth::get_auth_context_from_request(&req, pool.get_ref()).await {
+        Ok(a) => a,
+        Err(e) => return Ok(e),
+    };
+    
     let db_service = DatabaseService::new(pool.get_ref().clone());
     
-    match db_service.get_all_inventories().await {
+    match db_service.get_accessible_inventories(auth.user_id).await {
         Ok(inventories) => {
-            info!("Successfully retrieved {} inventories from database", inventories.len());
+            info!("Successfully retrieved {} inventories for user {}", inventories.len(), auth.username);
             Ok(HttpResponse::Ok().json(ApiResponse {
                 success: true,
                 data: Some(inventories.clone()),
@@ -853,6 +861,8 @@ pub fn api_scope() -> Scope {
         .service(auth::create_inventory_share)
         .service(auth::update_inventory_share)
         .service(auth::delete_inventory_share)
+        .service(auth::transfer_inventory_ownership)
+        .service(auth::get_inventory_permissions)
         .service(auth::get_my_access_grants)
         .service(auth::get_received_access_grants)
         .service(auth::create_access_grant)
