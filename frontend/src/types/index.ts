@@ -379,3 +379,33 @@ export interface EffectivePermissions {
   has_all_access: boolean;
   permission_source: PermissionSource;
 }
+
+// Recovery Codes types
+export interface RecoveryCodesResponse {
+  codes: string[];
+  generated_at: string;
+  message: string;
+}
+
+export interface RecoveryCodesStatus {
+  has_codes: boolean;
+  codes_confirmed: boolean;
+  unused_count: number;
+  generated_at: string | null;
+}
+
+export interface ConfirmRecoveryCodesRequest {
+  confirmed: boolean;
+}
+
+export interface UseRecoveryCodeRequest {
+  username: string;
+  recovery_code: string;
+  new_password: string;
+}
+
+export interface RecoveryCodeUsedResponse {
+  success: boolean;
+  message: string;
+  remaining_codes: number;
+}

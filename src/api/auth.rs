@@ -21,6 +21,9 @@ use crate::models::{
     UserResponse, SetupStatusResponse, InitialSetupRequest,
     UpdateUserSettingsRequest, CreateInventoryShareRequest, UpdateInventoryShareRequest,
     CreateUserAccessGrantRequest, PermissionSource, TransferOwnershipRequest, TransferOwnershipResponse,
+    // Recovery codes models
+    RecoveryCodesResponse, RecoveryCodesStatus, ConfirmRecoveryCodesRequest, 
+    UseRecoveryCodeRequest, RecoveryCodeUsedResponse,
 };
 
 // ==================== Helper Functions ====================
@@ -227,8 +230,22 @@ pub async fn initial_setup(
     // Optionally create first inventory
     if let Some(inventory_name) = &req.inventory_name {
         if !inventory_name.is_empty() {
-            // Note: This would need to set user_id on the inventory
-            // For now, we'll skip this as inventories need migration
+            let inventory_request = crate::models::CreateInventoryRequest {
+                name: inventory_name.clone(),
+                description: Some("Initial inventory created during setup".to_string()),
+                location: None,
+                image_url: None,
+            };
+            
+            match db_service.create_inventory(inventory_request, user.id).await {
+                Ok(inventory) => {
+                    info!("Created initial inventory: {} (ID: {:?}) for user {}", 
+                          inventory.name, inventory.id, user.username);
+                }
+                Err(e) => {
+                    warn!("Failed to create initial inventory: {}", e);
+                }
+            }
         }
     }
     
@@ -1766,4 +1783,316 @@ pub async fn transfer_inventory_ownership(
             }))
         }
     }
+}
+
+// ==================== Recovery Codes Endpoints ====================
+
+/// Generate 10 new recovery codes for the authenticated user
+/// Any existing codes are replaced
+#[post("/auth/recovery-codes/generate")]
+pub async fn generate_recovery_codes(
+    req: HttpRequest,
+    pool: web::Data<Pool>,
+) -> Result<impl Responder> {
+    let auth = match get_auth_context_from_request(&req, pool.get_ref()).await {
+        Ok(a) => a,
+        Err(e) => return Ok(e),
+    };
+
+    let db_service = DatabaseService::new(pool.get_ref().clone());
+    
+    // Generate 10 random recovery codes
+    use rand::Rng;
+    use rand::distributions::Alphanumeric;
+    
+    let mut rng = rand::thread_rng();
+    let mut plain_codes: Vec<String> = Vec::with_capacity(10);
+    let mut code_hashes: Vec<String> = Vec::with_capacity(10);
+    
+    for _ in 0..10 {
+        // Generate code in format: XXXX-XXXX-XXXX (12 alphanumeric chars with dashes)
+        let code: String = (&mut rng)
+            .sample_iter(&Alphanumeric)
+            .take(12)
+            .map(char::from)
+            .collect::<String>()
+            .to_uppercase();
+        
+        // Format with dashes for readability
+        let formatted_code = format!("{}-{}-{}", &code[0..4], &code[4..8], &code[8..12]);
+        
+        // Hash the code for storage
+        let hash = match hash_password(formatted_code.clone()).await {
+            Ok(h) => h,
+            Err(e) => {
+                error!("Error hashing recovery code: {}", e);
+                return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                    success: false,
+                    error: "Failed to generate recovery codes".to_string(),
+                    message: None,
+                }));
+            }
+        };
+        
+        plain_codes.push(formatted_code);
+        code_hashes.push(hash);
+    }
+    
+    // Store the hashed codes
+    if let Err(e) = db_service.store_recovery_codes(auth.user_id, code_hashes).await {
+        error!("Error storing recovery codes: {}", e);
+        return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+            success: false,
+            error: "Failed to store recovery codes".to_string(),
+            message: None,
+        }));
+    }
+    
+    info!("Generated 10 recovery codes for user {}", auth.user_id);
+    
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        success: true,
+        data: Some(RecoveryCodesResponse {
+            codes: plain_codes,
+            generated_at: chrono::Utc::now(),
+            message: "Save these codes in a safe place. Each code can only be used once. You won't be able to see these codes again!".to_string(),
+        }),
+        message: Some("Recovery codes generated successfully".to_string()),
+        error: None,
+    }))
+}
+
+/// Get the status of the user's recovery codes (not the codes themselves)
+#[get("/auth/recovery-codes/status")]
+pub async fn get_recovery_codes_status(
+    req: HttpRequest,
+    pool: web::Data<Pool>,
+) -> Result<impl Responder> {
+    let auth = match get_auth_context_from_request(&req, pool.get_ref()).await {
+        Ok(a) => a,
+        Err(e) => return Ok(e),
+    };
+
+    let db_service = DatabaseService::new(pool.get_ref().clone());
+    
+    match db_service.get_recovery_codes_status(auth.user_id).await {
+        Ok((has_codes, confirmed, unused_count, generated_at)) => {
+            Ok(HttpResponse::Ok().json(ApiResponse {
+                success: true,
+                data: Some(RecoveryCodesStatus {
+                    has_codes,
+                    codes_confirmed: confirmed,
+                    unused_count,
+                    generated_at,
+                }),
+                message: None,
+                error: None,
+            }))
+        }
+        Err(e) => {
+            error!("Error getting recovery codes status: {}", e);
+            Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: "Failed to get recovery codes status".to_string(),
+                message: None,
+            }))
+        }
+    }
+}
+
+/// Confirm that the user has saved their recovery codes
+#[post("/auth/recovery-codes/confirm")]
+pub async fn confirm_recovery_codes(
+    req: HttpRequest,
+    pool: web::Data<Pool>,
+    body: web::Json<ConfirmRecoveryCodesRequest>,
+) -> Result<impl Responder> {
+    let auth = match get_auth_context_from_request(&req, pool.get_ref()).await {
+        Ok(a) => a,
+        Err(e) => return Ok(e),
+    };
+
+    if !body.confirmed {
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: "You must confirm that you have saved the codes".to_string(),
+            message: Some("Please save your recovery codes before confirming".to_string()),
+        }));
+    }
+
+    let db_service = DatabaseService::new(pool.get_ref().clone());
+    
+    // Check if user has codes to confirm
+    match db_service.get_unused_recovery_codes_count(auth.user_id).await {
+        Ok(count) if count == 0 => {
+            return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+                success: false,
+                error: "No recovery codes to confirm".to_string(),
+                message: Some("Please generate recovery codes first".to_string()),
+            }));
+        }
+        Err(e) => {
+            error!("Error checking recovery codes: {}", e);
+            return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: "Failed to check recovery codes".to_string(),
+                message: None,
+            }));
+        }
+        _ => {}
+    }
+    
+    if let Err(e) = db_service.confirm_recovery_codes(auth.user_id).await {
+        error!("Error confirming recovery codes: {}", e);
+        return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+            success: false,
+            error: "Failed to confirm recovery codes".to_string(),
+            message: None,
+        }));
+    }
+    
+    info!("User {} confirmed saving their recovery codes", auth.user_id);
+    
+    Ok(HttpResponse::Ok().json(ApiResponse::<()> {
+        success: true,
+        data: None,
+        message: Some("Recovery codes confirmed. You can now use them to recover your account if needed.".to_string()),
+        error: None,
+    }))
+}
+
+/// Use a recovery code to reset password (no authentication required)
+#[post("/auth/recovery-codes/use")]
+pub async fn use_recovery_code(
+    pool: web::Data<Pool>,
+    body: web::Json<UseRecoveryCodeRequest>,
+) -> Result<impl Responder> {
+    let db_service = DatabaseService::new(pool.get_ref().clone());
+    
+    // Validate new password
+    if let Err(msg) = validate_password(&body.new_password) {
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: msg.to_string(),
+            message: Some("Invalid new password".to_string()),
+        }));
+    }
+    
+    // Find user by username
+    let user = match db_service.get_user_by_username(&body.username).await {
+        Ok(Some(u)) => u,
+        Ok(None) => {
+            // Don't reveal if user exists
+            warn!("Recovery code attempt for non-existent user: {}", body.username);
+            return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+                success: false,
+                error: "Invalid username or recovery code".to_string(),
+                message: None,
+            }));
+        }
+        Err(e) => {
+            error!("Error finding user: {}", e);
+            return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: "An error occurred".to_string(),
+                message: None,
+            }));
+        }
+    };
+    
+    if !user.is_active {
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: "Invalid username or recovery code".to_string(),
+            message: None,
+        }));
+    }
+    
+    // Get unused recovery codes for this user
+    let codes = match db_service.get_unused_recovery_codes(user.id).await {
+        Ok(c) => c,
+        Err(e) => {
+            error!("Error getting recovery codes: {}", e);
+            return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: "An error occurred".to_string(),
+                message: None,
+            }));
+        }
+    };
+    
+    if codes.is_empty() {
+        // Don't reveal that user has no codes
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: "Invalid username or recovery code".to_string(),
+            message: None,
+        }));
+    }
+    
+    // Check each code to find a match
+    let mut matched_code_id: Option<Uuid> = None;
+    for (code_id, code_hash) in &codes {
+        if verify_password(body.recovery_code.clone(), code_hash.clone()).await.unwrap_or(false) {
+            matched_code_id = Some(*code_id);
+            break;
+        }
+    }
+    
+    let code_id = match matched_code_id {
+        Some(id) => id,
+        None => {
+            warn!("Invalid recovery code attempt for user {}", user.username);
+            return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+                success: false,
+                error: "Invalid username or recovery code".to_string(),
+                message: None,
+            }));
+        }
+    };
+    
+    // Hash new password
+    let new_password_hash = match hash_password(body.new_password.clone()).await {
+        Ok(h) => h,
+        Err(e) => {
+            error!("Error hashing new password: {}", e);
+            return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: "Failed to reset password".to_string(),
+                message: None,
+            }));
+        }
+    };
+    
+    // Update password
+    if let Err(e) = db_service.update_user_password(user.id, &new_password_hash).await {
+        error!("Error updating password: {}", e);
+        return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+            success: false,
+            error: "Failed to reset password".to_string(),
+            message: None,
+        }));
+    }
+    
+    // Mark recovery code as used
+    if let Err(e) = db_service.mark_recovery_code_used(code_id).await {
+        error!("Error marking recovery code as used: {}", e);
+        // Don't fail the request - password was already changed
+    }
+    
+    // Get remaining codes count
+    let remaining = db_service.get_unused_recovery_codes_count(user.id).await.unwrap_or(0);
+    
+    info!("User {} reset password using recovery code. {} codes remaining.", user.username, remaining);
+    
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        success: true,
+        data: Some(RecoveryCodeUsedResponse {
+            success: true,
+            message: "Password reset successfully. You can now log in with your new password.".to_string(),
+            remaining_codes: remaining,
+        }),
+        message: Some(format!("Password reset successfully. You have {} recovery codes remaining.", remaining)),
+        error: None,
+    }))
 }

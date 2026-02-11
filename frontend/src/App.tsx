@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from
 import { AppProvider } from '@/context/AppContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { Sidebar, Toast } from '@/components';
-import { InventoriesPage, InventoryDetailPage, OrganizersPage, SettingsPage, SetupPage, LoginPage, RegisterPage } from '@/pages';
+import { InventoriesPage, InventoryDetailPage, OrganizersPage, SettingsPage, SetupPage, LoginPage, RegisterPage, RecoveryPage } from '@/pages';
 import '@/styles/index.css';
 
 // Loading spinner component
@@ -68,7 +68,7 @@ function AppContent() {
   }
 
   // Auth pages (no sidebar)
-  if (location.pathname === '/setup' || location.pathname === '/login' || location.pathname === '/register') {
+  if (location.pathname === '/setup' || location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/recover') {
     return (
       <Routes>
         <Route path="/setup" element={
@@ -81,6 +81,10 @@ function AppContent() {
         <Route path="/register" element={
           needsSetup ? <Navigate to="/setup" replace /> : 
           isAuthenticated ? <Navigate to="/" replace /> : <RegisterPage />
+        } />
+        <Route path="/recover" element={
+          needsSetup ? <Navigate to="/setup" replace /> : 
+          isAuthenticated ? <Navigate to="/" replace /> : <RecoveryPage />
         } />
       </Routes>
     );

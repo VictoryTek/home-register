@@ -12,3 +12,4 @@ export { WarrantyNotificationBanner } from './WarrantyNotificationBanner';
 export { UserManagement } from './UserManagement';
 export { ShareInventoryModal } from './ShareInventoryModal';
 export { AllAccessManagement } from './AllAccessManagement';
+export { RecoveryCodesSection } from './RecoveryCodesSection';

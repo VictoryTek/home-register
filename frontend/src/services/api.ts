@@ -39,6 +39,10 @@ import type {
   // Transfer ownership types
   TransferOwnershipRequest,
   TransferOwnershipResponse,
+  // Recovery codes types
+  RecoveryCodesResponse,
+  RecoveryCodesStatus,
+  RecoveryCodeUsedResponse,
 } from '@/types';
 
 const API_BASE = '/api';
@@ -549,5 +553,48 @@ export const authApi = {
       headers: getHeaders(),
     });
     return handleResponse<void>(response);
+  },
+
+  // ==================== Recovery Codes ====================
+
+  // Generate new recovery codes (replaces any existing codes)
+  async generateRecoveryCodes(): Promise<ApiResponse<RecoveryCodesResponse>> {
+    const response = await fetch(`${API_BASE}/auth/recovery-codes/generate`, {
+      method: 'POST',
+      headers: getHeaders(),
+    });
+    return handleResponse<RecoveryCodesResponse>(response);
+  },
+
+  // Get recovery codes status (not the codes themselves)
+  async getRecoveryCodesStatus(): Promise<ApiResponse<RecoveryCodesStatus>> {
+    const response = await fetch(`${API_BASE}/auth/recovery-codes/status`, {
+      headers: getHeaders(),
+    });
+    return handleResponse<RecoveryCodesStatus>(response);
+  },
+
+  // Confirm that user has saved recovery codes
+  async confirmRecoveryCodes(): Promise<ApiResponse<void>> {
+    const response = await fetch(`${API_BASE}/auth/recovery-codes/confirm`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ confirmed: true }),
+    });
+    return handleResponse<void>(response);
+  },
+
+  // Use a recovery code to reset password (no auth required)
+  async useRecoveryCode(username: string, recoveryCode: string, newPassword: string): Promise<ApiResponse<RecoveryCodeUsedResponse>> {
+    const response = await fetch(`${API_BASE}/auth/recovery-codes/use`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username,
+        recovery_code: recoveryCode,
+        new_password: newPassword,
+      }),
+    });
+    return handleResponse<RecoveryCodeUsedResponse>(response);
   },
 };

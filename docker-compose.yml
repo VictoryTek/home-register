@@ -15,6 +15,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
   app:
     build: .
     depends_on:
@@ -31,7 +32,7 @@ services:
     volumes:
       - appdata:/app/data  # Persist JWT secret and other app data
     command: ["./home-registry"]
-    restart: on-failure
+    restart: unless-stopped
 volumes:
   pgdata:
   appdata:

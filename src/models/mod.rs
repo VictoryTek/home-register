@@ -299,6 +299,10 @@ pub struct User {
     pub is_active: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub recovery_codes_generated_at: Option<DateTime<Utc>>,
+    #[serde(default)]
+    pub recovery_codes_confirmed: bool,
 }
 
 /// User response without sensitive data (for API responses)
@@ -650,4 +654,57 @@ pub struct InitialSetupRequest {
 pub struct SetupStatusResponse {
     pub needs_setup: bool,
     pub user_count: i64,
+}
+
+// ==================== Recovery Codes Models ====================
+
+/// Recovery code stored in database (hashed)
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct RecoveryCode {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub code_hash: String,
+    pub is_used: bool,
+    pub used_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+}
+
+/// Response when generating recovery codes (contains plaintext codes - only shown once!)
+#[derive(Serialize, Debug)]
+pub struct RecoveryCodesResponse {
+    pub codes: Vec<String>,
+    pub generated_at: DateTime<Utc>,
+    pub message: String,
+}
+
+/// Request to confirm recovery codes have been saved
+#[derive(Deserialize, Debug)]
+pub struct ConfirmRecoveryCodesRequest {
+    pub confirmed: bool,
+}
+
+/// Request to use a recovery code to reset password
+#[derive(Deserialize, Debug)]
+pub struct UseRecoveryCodeRequest {
+    pub username: String,
+    pub recovery_code: String,
+    pub new_password: String,
+}
+
+/// Response after successfully using a recovery code
+#[derive(Serialize, Debug)]
+pub struct RecoveryCodeUsedResponse {
+    pub success: bool,
+    pub message: String,
+    pub remaining_codes: i32,
+}
+
+/// Status of user's recovery codes
+#[derive(Serialize, Debug)]
+pub struct RecoveryCodesStatus {
+    pub has_codes: bool,
+    pub codes_confirmed: bool,
+    pub unused_count: i32,
+    pub generated_at: Option<DateTime<Utc>>,
 }

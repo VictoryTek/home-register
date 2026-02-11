@@ -134,6 +134,9 @@ export function LoginPage() {
 
           <div className="auth-footer">
             <p>Don't have an account? <Link to="/register" className="auth-link">Create one</Link></p>
+            <p style={{ marginTop: '0.5rem' }}>
+              <Link to="/recover" className="auth-link">Forgot your password?</Link>
+            </p>
           </div>
         </div>
       </div>

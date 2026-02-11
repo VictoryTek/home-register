@@ -854,6 +854,11 @@ pub fn api_scope() -> Scope {
         .service(auth::get_current_user)
         .service(auth::update_current_user)  
         .service(auth::change_password)
+        // Recovery codes endpoints
+        .service(auth::generate_recovery_codes)
+        .service(auth::get_recovery_codes_status)
+        .service(auth::confirm_recovery_codes)
+        .service(auth::use_recovery_code)
         .service(auth::get_user_settings)
         .service(auth::update_user_settings)
         .service(auth::get_my_inventories)

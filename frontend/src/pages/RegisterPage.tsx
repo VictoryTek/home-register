@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authApi } from '@/services/api';
 import '@/styles/auth.css';
@@ -9,6 +9,10 @@ export function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showRecoveryCodes, setShowRecoveryCodes] = useState(false);
+  const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
+  const [codesConfirmed, setCodesConfirmed] = useState(false);
+  const codesRef = useRef<HTMLDivElement>(null);
   
   const [formData, setFormData] = useState({
     username: '',
@@ -67,11 +71,18 @@ export function RegisterPage() {
       });
 
       if (result.success && result.data) {
-        // Store auth data and redirect
+        // Store auth data
         localStorage.setItem('home_registry_token', result.data.token);
         localStorage.setItem('home_registry_user', JSON.stringify(result.data.user));
-        navigate('/');
-        window.location.reload();
+        
+        // Generate recovery codes
+        const codesResponse = await authApi.generateRecoveryCodes();
+        if (codesResponse.success && codesResponse.data) {
+          setRecoveryCodes(codesResponse.data.codes);
+          setShowRecoveryCodes(true);
+        } else {
+          setError(codesResponse.error || 'Failed to generate recovery codes');
+        }
       } else {
         setError(result.error || 'Registration failed. Please try again.');
       }
@@ -80,6 +91,90 @@ export function RegisterPage() {
       setError('Network error. Please check your connection and try again.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleCompleteRegistration = async () => {
+    if (!codesConfirmed) {
+      setError('Please confirm you have saved your recovery codes');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await authApi.confirmRecoveryCodes();
+      
+      // Redirect to app
+      navigate('/');
+      window.location.reload();
+    } catch (err: any) {
+      setError('Failed to complete registration');
+      setIsLoading(false);
+    }
+  };
+
+  const downloadCodes = () => {
+    if (!recoveryCodes) return;
+    
+    const content = `Home Registry Recovery Codes\n\nUsername: ${formData.username}\nGenerated: ${new Date().toLocaleString()}\n\nSave these codes in a secure location. Each code can only be used once.\n\n${recoveryCodes.join('\n')}\n`;
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `recovery-codes-${formData.username}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const printCodes = () => {
+    if (!codesRef.current) return;
+    
+    const printWindow = window.open('', '', 'width=800,height=600');
+    if (!printWindow) return;
+    
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Recovery Codes</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h1 { font-size: 24px; margin-bottom: 10px; }
+            .info { margin-bottom: 20px; color: #666; }
+            .codes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .code { font-family: monospace; font-size: 14px; padding: 8px; border: 1px solid #ddd; }
+            .warning { margin-top: 20px; padding: 10px; background: #fff3cd; border: 1px solid #ffc107; }
+          </style>
+        </head>
+        <body>
+          <h1>Home Registry Recovery Codes</h1>
+          <div class="info">
+            <p><strong>Username:</strong> ${formData.username}</p>
+            <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+          </div>
+          <div class="codes">
+            ${recoveryCodes!.map(code => `<div class="code">${code}</div>`).join('')}
+          </div>
+          <div class="warning">
+            <strong>Important:</strong> Each code can only be used once. Store these in a secure location.
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  };
+
+  const copyCodes = async () => {
+    if (!recoveryCodes) return;
+    
+    try {
+      await navigator.clipboard.writeText(recoveryCodes.join('\n'));
+    } catch (err) {
+      console.error('Failed to copy codes:', err);
     }
   };
 
@@ -92,7 +187,7 @@ export function RegisterPage() {
       </div>
       
       <div className="auth-container">
-        <div className="auth-card auth-card-register">
+        <div className={`auth-card ${showRecoveryCodes ? 'setup-card wide' : 'auth-card-register'}`}>
           <div className="auth-header">
             <div className="auth-logo">
               <img src="/logo_full.png" alt="Home Registry" className="auth-logo-img" />
@@ -108,6 +203,8 @@ export function RegisterPage() {
             </div>
           )}
 
+          {!showRecoveryCodes ? (
+          <>
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="form-row">
               <div className="form-group">
@@ -212,6 +309,73 @@ export function RegisterPage() {
           <div className="auth-footer">
             <p>Already have an account? <Link to="/login" className="auth-link">Sign in</Link></p>
           </div>
+          </>
+          ) : (
+          <div className="auth-step">
+            <h2 style={{ marginBottom: '0.5rem' }}>Save Your Recovery Codes</h2>
+            <p className="step-description" style={{ marginBottom: '0.75rem', fontSize: '0.9rem' }}>
+              These codes can be used to recover your account if you forget your password. Each code can only be used once.
+            </p>
+            
+            <div className="recovery-codes-display" ref={codesRef}>
+              <div className="codes-grid">
+                {recoveryCodes && recoveryCodes.map((code, index) => (
+                  <div key={index} className="code-item">
+                    {code}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="recovery-actions">
+              <button type="button" className="btn-secondary" onClick={downloadCodes}>
+                📥 Download
+              </button>
+              <button type="button" className="btn-secondary" onClick={copyCodes}>
+                📋 Copy All
+              </button>
+              <button type="button" className="btn-secondary" onClick={printCodes}>
+                🖨️ Print
+              </button>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={codesConfirmed}
+                  onChange={(e) => setCodesConfirmed(e.target.checked)}
+                />
+                <span>I have saved these recovery codes in a secure location</span>
+              </label>
+            </div>
+
+            <div className="auth-warning">
+              <strong>⚠️ Important:</strong> You will not be able to see these codes again. 
+              Make sure to save them before continuing.
+            </div>
+
+            <button 
+              type="button" 
+              className="auth-submit-btn" 
+              onClick={handleCompleteRegistration}
+              disabled={isLoading || !codesConfirmed}
+              style={{ marginTop: '1rem' }}
+            >
+              {isLoading ? (
+                <>
+                  <span className="btn-spinner"></span>
+                  Finishing...
+                </>
+              ) : (
+                <>
+                  <i className="fas fa-check"></i>
+                  Continue to Home Registry
+                </>
+              )}
+            </button>
+          </div>
+          )}
         </div>
       </div>
     </div>

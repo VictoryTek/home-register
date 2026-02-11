@@ -1055,7 +1055,8 @@ impl DatabaseService {
         let client = self.pool.get().await?;
         let rows = client
             .query(
-                "SELECT id, username, full_name, password_hash, is_admin, is_active, created_at, updated_at 
+                "SELECT id, username, full_name, password_hash, is_admin, is_active, created_at, updated_at,
+                        recovery_codes_generated_at, COALESCE(recovery_codes_confirmed, false)
                  FROM users WHERE id = $1",
                 &[&id],
             )
@@ -1071,6 +1072,8 @@ impl DatabaseService {
                 is_active: row.get(5),
                 created_at: row.get(6),
                 updated_at: row.get(7),
+                recovery_codes_generated_at: row.get(8),
+                recovery_codes_confirmed: row.get(9),
             }))
         } else {
             Ok(None)
@@ -1082,7 +1085,8 @@ impl DatabaseService {
         let client = self.pool.get().await?;
         let rows = client
             .query(
-                "SELECT id, username, full_name, password_hash, is_admin, is_active, created_at, updated_at 
+                "SELECT id, username, full_name, password_hash, is_admin, is_active, created_at, updated_at,
+                        recovery_codes_generated_at, COALESCE(recovery_codes_confirmed, false)
                  FROM users WHERE LOWER(username) = LOWER($1)",
                 &[&username],
             )
@@ -1098,6 +1102,8 @@ impl DatabaseService {
                 is_active: row.get(5),
                 created_at: row.get(6),
                 updated_at: row.get(7),
+                recovery_codes_generated_at: row.get(8),
+                recovery_codes_confirmed: row.get(9),
             }))
         } else {
             Ok(None)
@@ -1109,7 +1115,8 @@ impl DatabaseService {
         let client = self.pool.get().await?;
         let rows = client
             .query(
-                "SELECT id, username, full_name, password_hash, is_admin, is_active, created_at, updated_at 
+                "SELECT id, username, full_name, password_hash, is_admin, is_active, created_at, updated_at,
+                        recovery_codes_generated_at, COALESCE(recovery_codes_confirmed, false)
                  FROM users WHERE LOWER(username) = LOWER($1)",
                 &[&identifier],
             )
@@ -1125,6 +1132,8 @@ impl DatabaseService {
                 is_active: row.get(5),
                 created_at: row.get(6),
                 updated_at: row.get(7),
+                recovery_codes_generated_at: row.get(8),
+                recovery_codes_confirmed: row.get(9),
             }))
         } else {
             Ok(None)
@@ -1187,6 +1196,8 @@ impl DatabaseService {
             is_active: row.get(5),
             created_at: row.get(6),
             updated_at: row.get(7),
+            recovery_codes_generated_at: None,
+            recovery_codes_confirmed: false,
         };
 
         info!("Created new user: {} (ID: {})", user.username, user.id);
@@ -1220,7 +1231,8 @@ impl DatabaseService {
 
         let query = format!(
             "UPDATE users SET {} WHERE id = ${} 
-             RETURNING id, username, full_name, password_hash, is_admin, is_active, created_at, updated_at",
+             RETURNING id, username, full_name, password_hash, is_admin, is_active, created_at, updated_at,
+                       recovery_codes_generated_at, COALESCE(recovery_codes_confirmed, false)",
             fields.join(", "),
             param_count
         );
@@ -1237,6 +1249,8 @@ impl DatabaseService {
                 is_active: row.get(5),
                 created_at: row.get(6),
                 updated_at: row.get(7),
+                recovery_codes_generated_at: row.get(8),
+                recovery_codes_confirmed: row.get(9),
             }))
         } else {
             Ok(None)
@@ -1285,7 +1299,8 @@ impl DatabaseService {
 
         let query = format!(
             "UPDATE users SET {} WHERE id = ${} 
-             RETURNING id, username, full_name, password_hash, is_admin, is_active, created_at, updated_at",
+             RETURNING id, username, full_name, password_hash, is_admin, is_active, created_at, updated_at,
+                       recovery_codes_generated_at, COALESCE(recovery_codes_confirmed, false)",
             fields.join(", "),
             param_count
         );
@@ -1302,6 +1317,8 @@ impl DatabaseService {
                 is_active: row.get(5),
                 created_at: row.get(6),
                 updated_at: row.get(7),
+                recovery_codes_generated_at: row.get(8),
+                recovery_codes_confirmed: row.get(9),
             }))
         } else {
             Ok(None)
@@ -2034,5 +2051,136 @@ impl DatabaseService {
 
         Ok((items_count, shares_removed as i64))
     }
-}
 
+    // ==================== Recovery Codes Methods ====================
+
+    /// Store recovery codes for a user (deletes any existing codes first)
+    pub async fn store_recovery_codes(
+        &self,
+        user_id: Uuid,
+        code_hashes: Vec<String>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+        
+        // Delete any existing recovery codes for this user
+        client
+            .execute(
+                "DELETE FROM recovery_codes WHERE user_id = $1",
+                &[&user_id],
+            )
+            .await?;
+
+        // Insert new codes
+        for code_hash in code_hashes {
+            client
+                .execute(
+                    "INSERT INTO recovery_codes (user_id, code_hash) VALUES ($1, $2)",
+                    &[&user_id, &code_hash],
+                )
+                .await?;
+        }
+
+        // Update user's recovery codes timestamp and reset confirmation
+        client
+            .execute(
+                "UPDATE users SET recovery_codes_generated_at = NOW(), recovery_codes_confirmed = false WHERE id = $1",
+                &[&user_id],
+            )
+            .await?;
+
+        info!("Stored {} recovery codes for user {}", 10, user_id);
+        Ok(())
+    }
+
+    /// Confirm that user has saved their recovery codes
+    pub async fn confirm_recovery_codes(&self, user_id: Uuid) -> Result<(), Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+        
+        client
+            .execute(
+                "UPDATE users SET recovery_codes_confirmed = true WHERE id = $1",
+                &[&user_id],
+            )
+            .await?;
+
+        info!("User {} confirmed saving recovery codes", user_id);
+        Ok(())
+    }
+
+    /// Get all unused recovery code hashes for a user (for verification)
+    pub async fn get_unused_recovery_codes(&self, user_id: Uuid) -> Result<Vec<(Uuid, String)>, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+        
+        let rows = client
+            .query(
+                "SELECT id, code_hash FROM recovery_codes WHERE user_id = $1 AND is_used = false",
+                &[&user_id],
+            )
+            .await?;
+
+        let codes: Vec<(Uuid, String)> = rows
+            .iter()
+            .map(|row| (row.get(0), row.get(1)))
+            .collect();
+
+        Ok(codes)
+    }
+
+    /// Mark a recovery code as used
+    pub async fn mark_recovery_code_used(&self, code_id: Uuid) -> Result<(), Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+        
+        client
+            .execute(
+                "UPDATE recovery_codes SET is_used = true, used_at = NOW() WHERE id = $1",
+                &[&code_id],
+            )
+            .await?;
+
+        info!("Marked recovery code {} as used", code_id);
+        Ok(())
+    }
+
+    /// Get count of unused recovery codes for a user
+    pub async fn get_unused_recovery_codes_count(&self, user_id: Uuid) -> Result<i32, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+        
+        let row = client
+            .query_one(
+                "SELECT COUNT(*)::int4 FROM recovery_codes WHERE user_id = $1 AND is_used = false",
+                &[&user_id],
+            )
+            .await?;
+
+        Ok(row.get(0))
+    }
+
+    /// Get recovery codes status for a user
+    pub async fn get_recovery_codes_status(&self, user_id: Uuid) -> Result<(bool, bool, i32, Option<DateTime<Utc>>), Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+        
+        // Get user info
+        let user_row = client
+            .query_one(
+                "SELECT recovery_codes_generated_at, COALESCE(recovery_codes_confirmed, false) FROM users WHERE id = $1",
+                &[&user_id],
+            )
+            .await?;
+
+        let generated_at: Option<DateTime<Utc>> = user_row.get(0);
+        let confirmed: bool = user_row.get(1);
+
+        // Get unused count
+        let count_row = client
+            .query_one(
+                "SELECT COUNT(*)::int4 FROM recovery_codes WHERE user_id = $1 AND is_used = false",
+                &[&user_id],
+            )
+            .await?;
+
+        let unused_count: i32 = count_row.get(0);
+        let has_codes = unused_count > 0;
+
+        Ok((has_codes, confirmed, unused_count, generated_at))
+    }
+}
