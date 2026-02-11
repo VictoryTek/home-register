@@ -37,7 +37,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading, needsSetup, user, logout } = useAuth();
+  const { isAuthenticated, isLoading, needsSetup } = useAuth();
 
   const getCurrentPage = () => {
     if (location.pathname === '/settings') return 'settings';

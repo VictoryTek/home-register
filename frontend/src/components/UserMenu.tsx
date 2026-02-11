@@ -7,8 +7,10 @@ import { EditProfileModal } from './EditProfileModal';
 function getInitials(name: string): string {
   if (!name) return '?';
   const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  const first = parts[0];
+  const last = parts[parts.length - 1];
+  if (parts.length >= 2 && first && last) {
+    return ((first[0] ?? '') + (last[0] ?? '')).toUpperCase();
   }
   return name.substring(0, 2).toUpperCase();
 }
@@ -32,6 +34,7 @@ export function UserMenu() {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
+    return undefined;
   }, [isOpen]);
 
   // Close on escape key
@@ -46,6 +49,7 @@ export function UserMenu() {
       document.addEventListener('keydown', handleEscape);
       return () => document.removeEventListener('keydown', handleEscape);
     }
+    return undefined;
   }, [isOpen]);
 
   if (!user) return null;

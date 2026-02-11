@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
-import type { RecoveryCodesStatus, RecoveryCodesResponse } from '@/types';
+import type { RecoveryCodesStatus } from '@/types';
 import { authApi } from '@/services/api';
 import { escapeHtml } from '@/utils/security';
 

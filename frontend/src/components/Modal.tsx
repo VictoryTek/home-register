@@ -20,6 +20,7 @@ export function Modal({ isOpen, onClose, title, subtitle, children, footer, maxW
         document.body.style.overflow = '';
       };
     }
+    return undefined;
   }, [isOpen]);
 
   if (!isOpen) return null;

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import type { User, UserSettings, SetupStatusResponse, ApiResponse } from '@/types';
+import type { User, UserSettings, SetupStatusResponse } from '@/types';
 import { authApi } from '@/services/api';
 
 // Storage keys - similar to Humidor
