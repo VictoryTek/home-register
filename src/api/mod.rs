@@ -11,6 +11,7 @@ use crate::models::{
 };
 use deadpool_postgres::Pool;
 use log::{error, info};
+use validator::Validate;
 
 #[get("/")]
 pub async fn index() -> impl Responder {
@@ -57,7 +58,7 @@ pub async fn get_inventories(
             error!("Error retrieving inventories: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to retrieve inventories".to_string()),
             }))
         }
@@ -75,6 +76,15 @@ pub async fn create_inventory(
         Err(e) => return Ok(e),
     };
     
+    // Validate input before processing
+    if let Err(validation_errors) = req.validate() {
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: "Validation failed".to_string(),
+            message: Some(validation_errors.to_string()),
+        }));
+    }
+    
     let db_service = DatabaseService::new(pool.get_ref().clone());
     
     match db_service.create_inventory(req.into_inner(), auth.user_id).await {
@@ -91,7 +101,7 @@ pub async fn create_inventory(
             error!("Error creating inventory: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to create inventory".to_string()),
             }))
         }
@@ -127,7 +137,7 @@ pub async fn get_inventory(
             error!("Error retrieving inventory: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to retrieve inventory".to_string()),
             }))
         }
@@ -156,7 +166,7 @@ pub async fn get_inventory_items(
             error!("Error retrieving items for inventory {}: {}", inventory_id, e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to retrieve inventory items".to_string()),
             }))
         }
@@ -169,6 +179,15 @@ pub async fn update_inventory(
     path: web::Path<i32>,
     req: web::Json<UpdateInventoryRequest>
 ) -> Result<impl Responder> {
+    // Validate input before processing
+    if let Err(validation_errors) = req.validate() {
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: "Validation failed".to_string(),
+            message: Some(validation_errors.to_string()),
+        }));
+    }
+    
     let inventory_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
     
@@ -193,7 +212,7 @@ pub async fn update_inventory(
             error!("Error updating inventory: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to update inventory".to_string()),
             }))
         }
@@ -229,7 +248,7 @@ pub async fn delete_inventory(
             error!("Error deleting inventory: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to delete inventory".to_string()),
             }))
         }
@@ -255,7 +274,7 @@ pub async fn get_items(pool: web::Data<Pool>) -> Result<impl Responder> {
             error!("Error retrieving items: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to retrieve items".to_string()),
             }))
         }
@@ -291,7 +310,7 @@ pub async fn get_item(
             error!("Error retrieving item: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to retrieve item".to_string()),
             }))
         }
@@ -303,6 +322,15 @@ pub async fn create_item(
     pool: web::Data<Pool>,
     req: web::Json<CreateItemRequest>
 ) -> Result<impl Responder> {
+    // Validate input before processing
+    if let Err(validation_errors) = req.validate() {
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: "Validation failed".to_string(),
+            message: Some(validation_errors.to_string()),
+        }));
+    }
+    
     let db_service = DatabaseService::new(pool.get_ref().clone());
     
     match db_service.create_item(req.into_inner()).await {
@@ -319,7 +347,7 @@ pub async fn create_item(
             error!("Error creating item: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to create item".to_string()),
             }))
         }
@@ -332,6 +360,15 @@ pub async fn update_item(
     path: web::Path<i32>,
     req: web::Json<UpdateItemRequest>
 ) -> Result<impl Responder> {
+    // Validate input before processing
+    if let Err(validation_errors) = req.validate() {
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: "Validation failed".to_string(),
+            message: Some(validation_errors.to_string()),
+        }));
+    }
+    
     let item_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
     
@@ -359,7 +396,7 @@ pub async fn update_item(
             error!("Error updating item: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to update item".to_string()),
             }))
         }
@@ -395,7 +432,7 @@ pub async fn delete_item(
             error!("Error deleting item: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to delete item".to_string()),
             }))
         }
@@ -424,7 +461,7 @@ pub async fn search_items(
             error!("Error searching items: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to search items".to_string()),
             }))
         }
@@ -455,7 +492,7 @@ pub async fn get_inventory_organizers(
             error!("Error retrieving organizers: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to retrieve organizers".to_string()),
             }))
         }
@@ -485,7 +522,7 @@ pub async fn create_organizer_type(
             error!("Error creating organizer type: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to create organizer type".to_string()),
             }))
         }
@@ -521,7 +558,7 @@ pub async fn get_organizer_type(
             error!("Error retrieving organizer type: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to retrieve organizer type".to_string()),
             }))
         }
@@ -558,7 +595,7 @@ pub async fn update_organizer_type(
             error!("Error updating organizer type: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to update organizer type".to_string()),
             }))
         }
@@ -594,7 +631,7 @@ pub async fn delete_organizer_type(
             error!("Error deleting organizer type: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to delete organizer type".to_string()),
             }))
         }
@@ -625,7 +662,7 @@ pub async fn get_organizer_options(
             error!("Error retrieving organizer options: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to retrieve organizer options".to_string()),
             }))
         }
@@ -655,7 +692,7 @@ pub async fn create_organizer_option(
             error!("Error creating organizer option: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to create organizer option".to_string()),
             }))
         }
@@ -692,7 +729,7 @@ pub async fn update_organizer_option(
             error!("Error updating organizer option: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to update organizer option".to_string()),
             }))
         }
@@ -728,7 +765,7 @@ pub async fn delete_organizer_option(
             error!("Error deleting organizer option: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to delete organizer option".to_string()),
             }))
         }
@@ -759,7 +796,7 @@ pub async fn get_item_organizer_values(
             error!("Error retrieving item organizer values: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to retrieve item organizer values".to_string()),
             }))
         }
@@ -789,7 +826,7 @@ pub async fn set_item_organizer_values(
             error!("Error setting item organizer values: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to set item organizer values".to_string()),
             }))
         }
@@ -825,7 +862,7 @@ pub async fn delete_item_organizer_value(
             error!("Error deleting item organizer value: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to delete item organizer value".to_string()),
             }))
         }

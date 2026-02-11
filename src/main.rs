@@ -1,4 +1,6 @@
-use actix_web::{web, App, HttpServer, Responder, HttpResponse, middleware::Logger};
+use actix_web::{web, App, HttpServer, Responder, HttpResponse, middleware::{Logger, DefaultHeaders}};
+use actix_cors::Cors;
+use actix_governor::{Governor, GovernorConfigBuilder};
 use actix_files as fs;
 use dotenv::dotenv;
 use std::env;
@@ -12,7 +14,7 @@ async fn health() -> impl Responder {
     HttpResponse::Ok().json(serde_json::json!({
         "status": "healthy",
         "service": "home-registry",
-        "version": "0.1.0",
+        "version": env!("CARGO_PKG_VERSION"),
         "timestamp": chrono::Utc::now()
     }))
 }
@@ -37,15 +39,62 @@ async fn main() -> std::io::Result<()> {
     let _ = auth::get_or_init_jwt_secret();
     log::info!("JWT token lifetime: {} hours", auth::jwt_token_lifetime_hours());
     
-    // Initialize database pool
-    let pool = db::get_pool().await;
-    log::info!("Database pool initialized successfully");
+    // Initialize database pool with proper error handling (no panics)
+    let pool = match db::get_pool().await {
+        Ok(p) => {
+            log::info!("Database pool initialized successfully");
+            p
+        }
+        Err(e) => {
+            log::error!("Failed to initialize database pool: {}", e);
+            std::process::exit(1);
+        }
+    };
+
+    // Rate limiting configuration: 1 request every 100ms (10 per second), burst of 30
+    let governor_conf = GovernorConfigBuilder::default()
+        .seconds_per_request(1)
+        .burst_size(30)
+        .finish()
+        .expect("Failed to build rate limiter configuration");
     
     HttpServer::new(move || {
+        // Configure CORS
+        let cors = Cors::default()
+            .allowed_origin_fn(|origin, _req_head| {
+                // Allow requests with no origin (same-origin requests)
+                // Allow localhost in development
+                let origin_str = origin.to_str().unwrap_or("");
+                origin_str.starts_with("http://localhost")
+                    || origin_str.starts_with("https://localhost")
+                    || origin_str.starts_with("http://127.0.0.1")
+                    || origin_str.starts_with("https://127.0.0.1")
+            })
+            .allowed_methods(vec!["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+            .allowed_headers(vec![
+                actix_web::http::header::AUTHORIZATION,
+                actix_web::http::header::CONTENT_TYPE,
+                actix_web::http::header::ACCEPT,
+            ])
+            .supports_credentials()
+            .max_age(3600);
+
         App::new()
             .app_data(web::Data::new(pool.clone()))
+            // Security headers
+            .wrap(DefaultHeaders::new()
+                .add(("X-Frame-Options", "DENY"))
+                .add(("X-Content-Type-Options", "nosniff"))
+                .add(("X-XSS-Protection", "1; mode=block"))
+                .add(("Referrer-Policy", "strict-origin-when-cross-origin"))
+                .add(("Permissions-Policy", "geolocation=(), microphone=(), camera=()"))
+                .add(("Content-Security-Policy", 
+                      "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'")))
+            .wrap(cors)
             .wrap(Logger::default())
-            // API routes - MUST come first
+            // Global rate limiting
+            .wrap(Governor::new(&governor_conf))
+            // API routes
             .service(api::init_routes())
             .route("/health", web::get().to(health))
             // Serve static assets (js, css, images, etc.)

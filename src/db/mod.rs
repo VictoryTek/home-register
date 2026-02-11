@@ -14,20 +14,30 @@ use crate::models::{
 };
 use chrono::{DateTime, Utc};
 use deadpool_postgres::{Config, ManagerConfig, Pool, RecyclingMethod};
-use log::info;
+use log::{info, error};
 use std::env;
 use tokio_postgres::NoTls;
 use uuid::Uuid;
 
-pub async fn get_pool() -> Pool {
-    let db_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+/// Escape special characters in SQL LIKE patterns to prevent injection
+fn escape_like_pattern(input: &str) -> String {
+    input
+        .replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_")
+}
+
+pub async fn get_pool() -> Result<Pool, Box<dyn std::error::Error + Send + Sync>> {
+    let db_url = env::var("DATABASE_URL")
+        .map_err(|_| "DATABASE_URL environment variable must be set")?;
 
     // Parse DATABASE_URL: postgres://user:password@host:port/database
-    let url = db_url.strip_prefix("postgres://").unwrap_or(&db_url);
+    let url = db_url.strip_prefix("postgres://")
+        .ok_or("Invalid DATABASE_URL format: must start with postgres://")?;
+    
     let parts: Vec<&str> = url.split('@').collect();
-
     if parts.len() != 2 {
-        panic!("Invalid DATABASE_URL format");
+        return Err("Invalid DATABASE_URL format: expected postgres://user:password@host/database".into());
     }
 
     let auth_parts: Vec<&str> = parts[0].split(':').collect();
@@ -51,7 +61,7 @@ pub async fn get_pool() -> Pool {
     });
 
     cfg.create_pool(None, NoTls)
-        .expect("Failed to create database pool")
+        .map_err(|e| format!("Failed to create database pool: {}", e).into())
 }
 
 pub struct DatabaseService {
@@ -332,12 +342,17 @@ impl DatabaseService {
     ) -> Result<Vec<Item>, Box<dyn std::error::Error>> {
         let client = self.pool.get().await?;
 
-        let search_pattern = format!("%{}%", query.to_lowercase());
+        // Escape SQL LIKE wildcards to prevent pattern injection
+        let escaped_query = escape_like_pattern(&query.to_lowercase());
+        let search_pattern = format!("%{}%", escaped_query);
         let rows = client
             .query(
                 "SELECT id, inventory_id, name, description, category, location, purchase_date::text, purchase_price::float8, warranty_expiry::text, notes, quantity, created_at, updated_at 
              FROM items 
-             WHERE LOWER(name) LIKE $1 OR LOWER(description) LIKE $1 OR LOWER(category) LIKE $1 OR LOWER(location) LIKE $1
+             WHERE LOWER(name) LIKE $1 ESCAPE '\\' 
+                OR LOWER(description) LIKE $1 ESCAPE '\\' 
+                OR LOWER(category) LIKE $1 ESCAPE '\\' 
+                OR LOWER(location) LIKE $1 ESCAPE '\\'
              ORDER BY created_at DESC",
                 &[&search_pattern],
             )
@@ -592,7 +607,13 @@ impl DatabaseService {
         let mut result = Vec::new();
         for organizer_type in organizer_types {
             let options = if organizer_type.input_type == "select" {
-                self.get_organizer_options(organizer_type.id.unwrap()).await?
+                match organizer_type.id {
+                    Some(id) => self.get_organizer_options(id).await?,
+                    None => {
+                        error!("Organizer type missing ID for inventory {}", inventory_id);
+                        Vec::new()
+                    }
+                }
             } else {
                 Vec::new()
             };

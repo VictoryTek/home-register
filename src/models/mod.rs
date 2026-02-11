@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
+use validator::Validate;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Inventory {
@@ -30,46 +31,68 @@ pub struct Item {
     pub updated_at: Option<DateTime<Utc>>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Validate)]
 pub struct CreateInventoryRequest {
+    #[validate(length(min = 1, max = 255, message = "Name must be 1-255 characters"))]
     pub name: String,
+    #[validate(length(max = 5000, message = "Description must be under 5000 characters"))]
     pub description: Option<String>,
+    #[validate(length(max = 500, message = "Location must be under 500 characters"))]
     pub location: Option<String>,
+    #[validate(length(max = 2000, message = "Image URL must be under 2000 characters"))]
     pub image_url: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Validate)]
 pub struct UpdateInventoryRequest {
+    #[validate(length(min = 1, max = 255, message = "Name must be 1-255 characters"))]
     pub name: Option<String>,
+    #[validate(length(max = 5000, message = "Description must be under 5000 characters"))]
     pub description: Option<String>,
+    #[validate(length(max = 500, message = "Location must be under 500 characters"))]
     pub location: Option<String>,
+    #[validate(length(max = 2000, message = "Image URL must be under 2000 characters"))]
     pub image_url: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Validate)]
 pub struct CreateItemRequest {
     pub inventory_id: Option<i32>,
+    #[validate(length(min = 1, max = 255, message = "Name must be 1-255 characters"))]
     pub name: String,
+    #[validate(length(max = 5000, message = "Description must be under 5000 characters"))]
     pub description: Option<String>,
+    #[validate(length(max = 255, message = "Category must be under 255 characters"))]
     pub category: Option<String>,
+    #[validate(length(max = 500, message = "Location must be under 500 characters"))]
     pub location: Option<String>,
     pub purchase_date: Option<String>,
+    #[validate(range(min = 0.0, max = 1_000_000_000.0, message = "Price must be between 0 and 1 billion"))]
     pub purchase_price: Option<f64>,
     pub warranty_expiry: Option<String>,
+    #[validate(length(max = 10000, message = "Notes must be under 10000 characters"))]
     pub notes: Option<String>,
+    #[validate(range(min = 0, max = 1_000_000, message = "Quantity must be between 0 and 1 million"))]
     pub quantity: Option<i32>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Validate)]
 pub struct UpdateItemRequest {
+    #[validate(length(min = 1, max = 255, message = "Name must be 1-255 characters"))]
     pub name: Option<String>,
+    #[validate(length(max = 5000, message = "Description must be under 5000 characters"))]
     pub description: Option<String>,
+    #[validate(length(max = 255, message = "Category must be under 255 characters"))]
     pub category: Option<String>,
+    #[validate(length(max = 500, message = "Location must be under 500 characters"))]
     pub location: Option<String>,
     pub purchase_date: Option<String>,
+    #[validate(range(min = 0.0, max = 1_000_000_000.0, message = "Price must be between 0 and 1 billion"))]
     pub purchase_price: Option<f64>,
     pub warranty_expiry: Option<String>,
+    #[validate(length(max = 10000, message = "Notes must be under 10000 characters"))]
     pub notes: Option<String>,
+    #[validate(range(min = 0, max = 1_000_000, message = "Quantity must be between 0 and 1 million"))]
     pub quantity: Option<i32>,
     pub inventory_id: Option<i32>,
 }

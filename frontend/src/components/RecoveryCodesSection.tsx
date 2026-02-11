@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import type { RecoveryCodesStatus, RecoveryCodesResponse } from '@/types';
 import { authApi } from '@/services/api';
+import { escapeHtml } from '@/utils/security';
 
 interface RecoveryCodesSectionProps {
   onCodesGenerated?: () => void;
@@ -120,38 +121,45 @@ export function RecoveryCodesSection({ onCodesGenerated }: RecoveryCodesSectionP
   };
 
   const handlePrint = () => {
-    if (!codesRef.current) return;
-    const printContent = codesRef.current.innerHTML;
+    if (!codes) return;
+    
     const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Recovery Codes - Home Registry</title>
-            <style>
-              body { font-family: monospace; padding: 20px; }
-              h2 { margin-bottom: 10px; }
-              .warning { color: #dc3545; font-weight: bold; margin-bottom: 20px; }
-              .code { 
-                font-size: 18px; 
-                padding: 8px 16px; 
-                margin: 4px 0;
-                background: #f5f5f5;
-                border-radius: 4px;
-              }
-            </style>
-          </head>
-          <body>
-            <h2>Home Registry - Recovery Codes</h2>
-            <p class="warning">IMPORTANT: Keep these codes safe! Each code can only be used once.</p>
-            ${printContent}
-            <p style="margin-top: 20px; color: #666;">Generated: ${new Date().toLocaleString()}</p>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
-    }
+    if (!printWindow) return;
+    
+    // Build document safely without using innerHTML
+    const doc = printWindow.document;
+    doc.open();
+    
+    // Create safe HTML with escaped content - build from data, not DOM
+    const safeCodes = codes.map(code => `<div class="code">${escapeHtml(code)}</div>`).join('');
+    
+    doc.write(`
+      <html>
+        <head>
+          <title>Recovery Codes - Home Registry</title>
+          <style>
+            body { font-family: monospace; padding: 20px; }
+            h2 { margin-bottom: 10px; }
+            .warning { color: #dc3545; font-weight: bold; margin-bottom: 20px; }
+            .code { 
+              font-size: 18px; 
+              padding: 8px 16px; 
+              margin: 4px 0;
+              background: #f5f5f5;
+              border-radius: 4px;
+            }
+          </style>
+        </head>
+        <body>
+          <h2>Home Registry - Recovery Codes</h2>
+          <p class="warning">IMPORTANT: Keep these codes safe! Each code can only be used once.</p>
+          <div class="codes">${safeCodes}</div>
+          <p style="margin-top: 20px; color: #666;">Generated: ${escapeHtml(new Date().toLocaleString())}</p>
+        </body>
+      </html>
+    `);
+    doc.close();
+    printWindow.print();
   };
 
   if (loading) {

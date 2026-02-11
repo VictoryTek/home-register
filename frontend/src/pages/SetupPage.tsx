@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authApi } from '@/services/api';
+import { escapeHtml } from '@/utils/security';
 import '@/styles/auth.css';
 
 export function SetupPage() {
@@ -155,12 +156,20 @@ export function SetupPage() {
   };
 
   const printCodes = () => {
-    if (!codesRef.current) return;
+    if (!recoveryCodes) return;
     
     const printWindow = window.open('', '', 'width=800,height=600');
     if (!printWindow) return;
     
-    printWindow.document.write(`
+    // Build document safely without using document.write with user content
+    const doc = printWindow.document;
+    doc.open();
+    
+    // Create safe HTML with escaped user content
+    const safeUsername = escapeHtml(formData.username);
+    const safeCodes = recoveryCodes.map(code => `<div class="code">${escapeHtml(code)}</div>`).join('');
+    
+    doc.write(`
       <html>
         <head>
           <title>Recovery Codes</title>
@@ -176,11 +185,11 @@ export function SetupPage() {
         <body>
           <h1>Home Registry Recovery Codes</h1>
           <div class="info">
-            <p><strong>Username:</strong> ${formData.username}</p>
-            <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+            <p><strong>Username:</strong> ${safeUsername}</p>
+            <p><strong>Generated:</strong> ${escapeHtml(new Date().toLocaleString())}</p>
           </div>
           <div class="codes">
-            ${recoveryCodes!.map(code => `<div class="code">${code}</div>`).join('')}
+            ${safeCodes}
           </div>
           <div class="warning">
             <strong>Important:</strong> Each code can only be used once. Store these in a secure location.
@@ -188,7 +197,7 @@ export function SetupPage() {
         </body>
       </html>
     `);
-    printWindow.document.close();
+    doc.close();
     printWindow.focus();
     printWindow.print();
     printWindow.close();

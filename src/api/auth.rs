@@ -139,7 +139,7 @@ pub async fn get_setup_status(pool: web::Data<Pool>) -> Result<impl Responder> {
             error!("Error checking setup status: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to check setup status".to_string()),
             }))
         }
@@ -167,7 +167,7 @@ pub async fn initial_setup(
             error!("Error checking user count: {}", e);
             return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to check setup status".to_string()),
             }));
         }
@@ -441,7 +441,7 @@ pub async fn register(
             error!("Error creating user: {}", e);
             return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: Some("Failed to create account".to_string()),
             }));
         }
@@ -513,7 +513,7 @@ pub async fn get_current_user(
             error!("Error getting user profile: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: None,
             }))
         }
@@ -558,7 +558,7 @@ pub async fn update_current_user(
             error!("Error updating user profile: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: None,
             }))
         }
@@ -690,7 +690,7 @@ pub async fn get_user_settings(
             error!("Error getting user settings: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: None,
             }))
         }
@@ -734,7 +734,7 @@ pub async fn update_user_settings(
             error!("Error updating user settings: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: None,
             }))
         }
@@ -769,7 +769,7 @@ pub async fn admin_get_users(
             error!("Error getting users: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: None,
             }))
         }
@@ -811,7 +811,7 @@ pub async fn admin_get_user(
             error!("Error getting user: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: None,
             }))
         }
@@ -1097,7 +1097,7 @@ pub async fn get_inventory_shares(
             error!("Error checking permission: {}", e);
             return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: None,
             }));
         }
@@ -1133,7 +1133,7 @@ pub async fn get_inventory_shares(
             error!("Error retrieving shares: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: None,
             }))
         }
@@ -1163,7 +1163,7 @@ pub async fn create_inventory_share(
             error!("Error checking permission: {}", e);
             return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: None,
             }));
         }
@@ -1199,7 +1199,7 @@ pub async fn create_inventory_share(
             error!("Error finding user: {}", e);
             return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: None,
             }));
         }
@@ -1242,7 +1242,7 @@ pub async fn create_inventory_share(
             error!("Error creating share: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: None,
             }))
         }
@@ -1287,7 +1287,7 @@ pub async fn update_inventory_share(
             error!("Error updating share: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: None,
             }))
         }
@@ -1330,7 +1330,7 @@ pub async fn delete_inventory_share(
             error!("Error deleting share: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: None,
             }))
         }
@@ -1364,7 +1364,7 @@ pub async fn get_my_inventories(
             error!("Error retrieving inventories: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: None,
             }))
         }
@@ -1400,7 +1400,7 @@ pub async fn get_my_access_grants(
             error!("Error retrieving access grants: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: None,
             }))
         }
@@ -1434,7 +1434,7 @@ pub async fn get_received_access_grants(
             error!("Error retrieving received access grants: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: None,
             }))
         }
@@ -1469,7 +1469,7 @@ pub async fn create_access_grant(
             error!("Error finding user: {}", e);
             return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: None,
             }));
         }
@@ -1507,7 +1507,7 @@ pub async fn create_access_grant(
             error!("Error creating access grant: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: None,
             }))
         }
@@ -1543,7 +1543,7 @@ pub async fn delete_access_grant(
             error!("Error finding access grant: {}", e);
             return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: None,
             }));
         }
@@ -1579,7 +1579,7 @@ pub async fn delete_access_grant(
             error!("Error deleting access grant: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: None,
             }))
         }
@@ -1614,7 +1614,7 @@ pub async fn get_inventory_permissions(
             error!("Error retrieving permissions: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: None,
             }))
         }
@@ -1654,7 +1654,7 @@ pub async fn transfer_inventory_ownership(
             error!("Error retrieving inventory: {}", e);
             return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: None,
             }));
         }
@@ -1683,7 +1683,7 @@ pub async fn transfer_inventory_ownership(
             error!("Error finding target user: {}", e);
             return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: None,
             }));
         }
@@ -1721,7 +1721,7 @@ pub async fn transfer_inventory_ownership(
             error!("Error finding current user: {}", e);
             return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Database error: {}", e),
+                error: "An internal error occurred".to_string(),
                 message: None,
             }));
         }
