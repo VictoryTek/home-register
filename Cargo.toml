@@ -2,6 +2,24 @@
 name = "home-registry"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.75.0"  # MSRV - Minimum Supported Rust Version
+license = "MIT"
+repository = "https://github.com/your-org/home-registry"
+readme = "README.md"
+
+# Lint configuration - deny warnings in CI
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+# Lint groups - set lower priority so individual overrides work
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+# Allow these specific lints from pedantic
+module_name_repetitions = "allow"
+too_many_lines = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
 
 [dependencies]
 # Web framework - pinned versions for supply chain security

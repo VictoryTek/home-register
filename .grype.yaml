@@ -1,0 +1,46 @@
+# Grype vulnerability scanner configuration
+# Run with: grype . --config .grype.yaml
+# https://github.com/anchore/grype
+
+# Check configuration
+check-for-app-update: false
+
+# Fail on specific severity levels
+fail-on-severity: "high"
+
+# Output format
+output: "table"
+
+# Ignore specific vulnerabilities (with reasons)
+ignore:
+  # Example: ignore a specific CVE
+  # - vulnerability: CVE-2021-12345
+  #   reason: "False positive - not applicable to our use case"
+
+# Match configuration
+match:
+  # Package matching
+  packages:
+    # Use CPE for matching
+    using-cpes: true
+  
+  # Java-specific
+  java:
+    using-cpes: true
+
+# Database options
+db:
+  auto-update: true
+  validate-by-hash-on-start: true
+
+# Source configuration
+scope: "all-layers"
+
+# Distro detection
+distro: ""
+
+# Exclusions
+exclude:
+  - "**/node_modules/**"
+  - "**/target/debug/**"
+  - "**/.git/**"

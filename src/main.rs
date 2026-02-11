@@ -1,3 +1,11 @@
+//! Home Registry - A home inventory management system
+//!
+//! This is the main entry point for the Home Registry server.
+
+#![deny(unsafe_code)]
+#![warn(clippy::all, clippy::pedantic)]
+#![allow(clippy::module_name_repetitions)]
+
 use actix_web::{web, App, HttpServer, Responder, HttpResponse, middleware::{Logger, DefaultHeaders}};
 use actix_cors::Cors;
 use actix_governor::{Governor, GovernorConfigBuilder};

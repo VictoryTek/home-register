@@ -1,0 +1,31 @@
+# Rustfmt configuration
+# Run with: cargo fmt
+# Check with: cargo fmt -- --check
+
+# Stable options
+edition = "2021"
+max_width = 100
+tab_spaces = 4
+newline_style = "Unix"
+use_small_heuristics = "Default"
+
+# Import formatting
+imports_granularity = "Module"
+group_imports = "StdExternalCrate"
+reorder_imports = true
+reorder_modules = true
+
+# Function formatting
+fn_params_layout = "Tall"
+
+# Control flow
+match_block_trailing_comma = true
+
+# Comments
+normalize_comments = false
+wrap_comments = false
+
+# Miscellaneous
+format_code_in_doc_comments = true
+format_macro_matchers = false
+format_strings = false

@@ -1,0 +1,39 @@
+# Clippy configuration
+# Run with: cargo clippy -- -D warnings
+# https://rust-lang.github.io/rust-clippy/
+
+# Maximum cognitive complexity for functions
+cognitive-complexity-threshold = 25
+
+# Maximum lines in a function
+too-many-lines-threshold = 200
+
+# Maximum arguments for a function
+too-many-arguments-threshold = 7
+
+# Maximum type complexity
+type-complexity-threshold = 250
+
+# Minimum length for a variable name
+min-ident-chars-threshold = 1
+
+# Allowed names that would otherwise trigger lints
+allowed-idents-below-min-chars = ["i", "j", "k", "n", "x", "y", "z", "id", "db", "fs", "io"]
+
+# Large types threshold for stack allocation
+trivial-copy-size-limit = 8
+
+# Threshold for large futures (in bytes)
+future-size-threshold = 16384
+
+# MSRV for lint suggestions
+msrv = "1.75.0"
+
+# Disallowed methods (add security-sensitive methods here)
+disallowed-methods = [
+    { path = "std::env::set_var", reason = "Environment mutation is not thread-safe" },
+    { path = "std::env::remove_var", reason = "Environment mutation is not thread-safe" },
+]
+
+# Disallowed types
+disallowed-types = []

@@ -1,0 +1,43 @@
+# cargo-tarpaulin configuration
+# Run with: cargo tarpaulin
+# https://github.com/xd009642/tarpaulin
+
+[default]
+# Output formats
+out = ["Html", "Lcov", "Json"]
+output-dir = "coverage"
+
+# Test configuration
+all-features = true
+workspace = true
+timeout = "300s"
+jobs = 4
+
+# Coverage scope
+skip-clean = false
+ignore-tests = false
+follow-exec = true
+
+# Exclude patterns
+exclude-files = [
+    "tests/*",
+    "target/*",
+]
+
+# Exclude from coverage (test/bench code, build scripts)
+exclude = []
+
+# Line coverage threshold (fail if below)
+fail-under = 0
+
+# Ignore lines marked with specific patterns
+ignore-panics = false
+
+# Engine (default: auto-detect)
+# engine = "llvm"
+
+[ci]
+# Stricter settings for CI
+fail-under = 50
+out = ["Lcov", "Json"]
+verbose = true

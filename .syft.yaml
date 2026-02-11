@@ -1,0 +1,61 @@
+# Syft SBOM Configuration
+# Generate SBOM with: syft . -o spdx-json=sbom.spdx.json
+# https://github.com/anchore/syft
+
+# Output format options: spdx-json, cyclonedx-json, syft-json
+output:
+  - "spdx-json=sbom.spdx.json"
+  - "cyclonedx-json=sbom.cyclonedx.json"
+
+# Cataloger configuration
+catalogers:
+  # Enable all relevant catalogers
+  enabled:
+    - "rust-cargo-lock-cataloger"
+    - "javascript-package-cataloger"
+    - "javascript-lock-cataloger"
+    - "binary-cataloger"
+    - "file-classifier-cataloger"
+  
+  # Cataloger-specific settings
+  javascript:
+    search-remote-licenses: false
+    npm-base-url: "https://registry.npmjs.org"
+  
+  rust:
+    search-remote-licenses: true
+
+# File selection
+file:
+  selection: "owned-by-package"
+  metadata:
+    selection: "all"
+    digests:
+      - "sha256"
+
+# Package configuration
+package:
+  search-indexed-archives: true
+  search-unindexed-archives: false
+
+# Source configuration
+source:
+  # Metadata to include about the scanned source
+  name: "home-registry"
+  version: "0.1.0"
+  
+# Exclude paths from scanning
+exclude:
+  - "**/node_modules/**"
+  - "**/target/debug/**"
+  - "**/.git/**"
+  - "**/dist/**"
+  - "**/coverage/**"
+
+# Parallelism for scanning
+parallelism: 4
+
+# Log level
+log:
+  verbosity: 0
+  level: "warn"

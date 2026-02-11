@@ -1,0 +1,38 @@
+# Cargo configuration
+# https://doc.rust-lang.org/cargo/reference/config.html
+
+[alias]
+# Lint with all warnings as errors
+lint = "clippy --all-targets --all-features -- -D warnings"
+# Format check (CI mode)
+fmt-check = "fmt -- --check"
+# Run all checks
+check-all = "check --all-targets --all-features"
+# Audit dependencies
+audit = "deny check"
+
+[build]
+# Enable incremental compilation for faster dev builds
+incremental = true
+
+[target.x86_64-unknown-linux-gnu]
+# Use mold linker if available for faster linking (optional)
+# linker = "clang"
+# rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+
+[env]
+# Ensure RUST_BACKTRACE is available in builds
+RUST_BACKTRACE = { value = "1", force = false }
+
+[profile.dev]
+# Faster dev builds with some optimization
+opt-level = 0
+debug = true
+
+[profile.release]
+# Optimized release builds
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = true
+debug = false
