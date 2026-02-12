@@ -10,8 +10,6 @@ newline_style = "Unix"
 use_small_heuristics = "Default"
 
 # Import formatting
-imports_granularity = "Module"
-group_imports = "StdExternalCrate"
 reorder_imports = true
 reorder_modules = true
 
@@ -20,12 +18,3 @@ fn_params_layout = "Tall"
 
 # Control flow
 match_block_trailing_comma = true
-
-# Comments
-normalize_comments = false
-wrap_comments = false
-
-# Miscellaneous
-format_code_in_doc_comments = true
-format_macro_matchers = false
-format_strings = false

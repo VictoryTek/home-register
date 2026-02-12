@@ -2165,7 +2165,10 @@ impl DatabaseService {
         );
 
         // Safe cast: shares_removed is clamped to i64::MAX, preventing wrap
-        #[allow(clippy::cast_possible_wrap, reason = "Value is clamped to i64::MAX preventing wrap")]
+        #[allow(
+            clippy::cast_possible_wrap,
+            reason = "Value is clamped to i64::MAX preventing wrap"
+        )]
         let shares_removed_i64 = shares_removed.min(i64::MAX as u64) as i64;
         Ok((items_count, shares_removed_i64))
     }

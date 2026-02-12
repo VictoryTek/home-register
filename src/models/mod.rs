@@ -632,7 +632,10 @@ pub struct TransferOwnershipResponse {
 
 /// Summary of effective permissions a user has for an inventory.
 /// This is a data transfer object (DTO) for API responses.
-#[allow(clippy::struct_excessive_bools, reason = "DTO for API responses where explicit booleans improve clarity")]
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "DTO for API responses where explicit booleans improve clarity"
+)]
 #[derive(Serialize, Debug, Clone)]
 pub struct EffectivePermissions {
     pub can_view: bool,

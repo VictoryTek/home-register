@@ -142,7 +142,10 @@ pub fn generate_token(user: &User) -> Result<String, jsonwebtoken::errors::Error
     let now = Utc::now();
     let token_lifetime_hours = jwt_token_lifetime_hours();
     // Safe cast: Unix timestamps are always positive, max(0) ensures non-negative
-    #[allow(clippy::cast_sign_loss, reason = "Unix timestamps are always positive; max(0) ensures safety")]
+    #[allow(
+        clippy::cast_sign_loss,
+        reason = "Unix timestamps are always positive; max(0) ensures safety"
+    )]
     let expiration = (now + chrono::Duration::hours(token_lifetime_hours))
         .timestamp()
         .max(0) as u64;
@@ -152,7 +155,10 @@ pub fn generate_token(user: &User) -> Result<String, jsonwebtoken::errors::Error
         username: user.username.clone(),
         is_admin: user.is_admin,
         exp: expiration,
-        #[allow(clippy::cast_sign_loss, reason = "Unix timestamps are always positive; max(0) ensures safety")]
+        #[allow(
+            clippy::cast_sign_loss,
+            reason = "Unix timestamps are always positive; max(0) ensures safety"
+        )]
         iat: now.timestamp().max(0) as u64,
     };
 
