@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (storedToken && storedUser) {
         try {
-          const parsedUser = JSON.parse(storedUser);
+          const parsedUser = JSON.parse(storedUser) as User;
           setToken(storedToken);
           setUser(parsedUser);
           
@@ -68,7 +68,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     };
 
-    initAuth();
+    void initAuth();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkSetupStatus = useCallback(async (): Promise<SetupStatusResponse | null> => {
@@ -107,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         return { success: true };
       } else {
-        return { success: false, error: result.error || 'Login failed' };
+        return { success: false, error: result.error ?? 'Login failed' };
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -124,7 +125,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshUser = useCallback(async () => {
-    if (!token) return;
+    if (!token) {
+      return;
+    }
     
     try {
       const result = await authApi.getProfile(token);
@@ -138,7 +141,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [token]);
 
   const refreshSettings = useCallback(async () => {
-    if (!token) return;
+    if (!token) {
+      return;
+    }
     
     try {
       const result = await authApi.getSettings(token);
@@ -151,7 +156,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [token]);
 
   const updateSettings = useCallback(async (newSettings: Partial<UserSettings>): Promise<boolean> => {
-    if (!token) return false;
+    if (!token) {
+      return false;
+    }
     
     try {
       const result = await authApi.updateSettings(token, newSettings);
@@ -187,6 +194,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -196,11 +204,13 @@ export function useAuth() {
 }
 
 // Helper function to get the current token for API calls
+// eslint-disable-next-line react-refresh/only-export-components
 export function getAuthToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
 
 // Helper function to get auth headers for fetch calls
+// eslint-disable-next-line react-refresh/only-export-components
 export function getAuthHeaders(): Record<string, string> {
   const token = getAuthToken();
   if (token) {

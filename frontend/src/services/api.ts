@@ -62,7 +62,7 @@ function getHeaders(includeAuth = true): Record<string, string> {
   if (includeAuth) {
     const token = getToken();
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+      headers.Authorization = `Bearer ${token}`;
     }
   }
   
@@ -82,26 +82,26 @@ async function handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
   
   // Check if response is JSON
   const contentType = response.headers.get('content-type');
-  if (!contentType || !contentType.includes('application/json')) {
+  if (!contentType?.includes('application/json')) {
     // Not JSON - probably an HTML error page
     const text = await response.text();
     console.error('Received non-JSON response:', text.substring(0, 200));
     return {
       success: false,
-      error: `Server error (${response.status}): Expected JSON but received ${contentType || 'unknown content type'}`,
-      data: undefined as any,
+      error: `Server error (${response.status}): Expected JSON but received ${contentType ?? 'unknown content type'}`,
+      data: undefined,
     };
   }
   
   try {
-    const data = await response.json();
-    return data as ApiResponse<T>;
-  } catch (error) {
-    console.error('Failed to parse JSON response:', error);
+    const data = await response.json() as ApiResponse<T>;
+    return data;
+  } catch {
+    console.error('Failed to parse JSON response');
     return {
       success: false,
       error: 'Invalid JSON response from server',
-      data: undefined as any,
+      data: undefined,
     };
   }
 }
@@ -147,12 +147,12 @@ export const inventoryApi = {
     return handleResponse<Item[]>(response);
   },
 
-  async delete(id: number): Promise<ApiResponse<void>> {
+  async delete(id: number): Promise<ApiResponse<Record<string, never>>> {
     const response = await fetch(`${API_BASE}/inventories/${id}`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
-    return handleResponse<void>(response);
+    return handleResponse<Record<string, never>>(response);
   },
 };
 
@@ -257,12 +257,12 @@ export const organizerApi = {
     return handleResponse<OrganizerType>(response);
   },
 
-  async deleteType(id: number): Promise<ApiResponse<void>> {
+  async deleteType(id: number): Promise<ApiResponse<Record<string, never>>> {
     const response = await fetch(`${API_BASE}/organizers/${id}`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
-    return handleResponse<void>(response);
+    return handleResponse<Record<string, never>>(response);
   },
 
   // Organizer Options
@@ -291,12 +291,12 @@ export const organizerApi = {
     return handleResponse<OrganizerOption>(response);
   },
 
-  async deleteOption(optionId: number): Promise<ApiResponse<void>> {
+  async deleteOption(optionId: number): Promise<ApiResponse<Record<string, never>>> {
     const response = await fetch(`${API_BASE}/organizer-options/${optionId}`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
-    return handleResponse<void>(response);
+    return handleResponse<Record<string, never>>(response);
   },
 };
 
@@ -349,11 +349,11 @@ export const authApi = {
   async getProfile(token?: string): Promise<ApiResponse<User>> {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+      headers.Authorization = `Bearer ${token}`;
     } else {
       const storedToken = getToken();
       if (storedToken) {
-        headers['Authorization'] = `Bearer ${storedToken}`;
+        headers.Authorization = `Bearer ${storedToken}`;
       }
     }
     
@@ -387,11 +387,11 @@ export const authApi = {
   async getSettings(token?: string): Promise<ApiResponse<UserSettings>> {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+      headers.Authorization = `Bearer ${token}`;
     } else {
       const storedToken = getToken();
       if (storedToken) {
-        headers['Authorization'] = `Bearer ${storedToken}`;
+        headers.Authorization = `Bearer ${storedToken}`;
       }
     }
     
@@ -490,12 +490,12 @@ export const authApi = {
   },
 
   // Remove a share
-  async removeInventoryShare(shareId: string): Promise<ApiResponse<void>> {
+  async removeInventoryShare(shareId: string): Promise<ApiResponse<Record<string, never>>> {
     const response = await fetch(`${API_BASE}/shares/${shareId}`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
-    return handleResponse<void>(response);
+    return handleResponse<Record<string, never>>(response);
   },
 
   // Get effective permissions for current user on an inventory
@@ -547,12 +547,12 @@ export const authApi = {
   },
 
   // Revoke All Access from a user
-  async revokeAccessGrant(grantId: string): Promise<ApiResponse<void>> {
+  async revokeAccessGrant(grantId: string): Promise<ApiResponse<Record<string, never>>> {
     const response = await fetch(`${API_BASE}/auth/access-grants/${grantId}`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
-    return handleResponse<void>(response);
+    return handleResponse<Record<string, never>>(response);
   },
 
   // ==================== Recovery Codes ====================
@@ -575,13 +575,13 @@ export const authApi = {
   },
 
   // Confirm that user has saved recovery codes
-  async confirmRecoveryCodes(): Promise<ApiResponse<void>> {
+  async confirmRecoveryCodes(): Promise<ApiResponse<Record<string, never>>> {
     const response = await fetch(`${API_BASE}/auth/recovery-codes/confirm`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ confirmed: true }),
     });
-    return handleResponse<void>(response);
+    return handleResponse<Record<string, never>>(response);
   },
 
   // Use a recovery code to reset password (no auth required)

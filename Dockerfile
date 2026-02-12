@@ -32,7 +32,7 @@ RUN npm run build
 # ------------------------------------------------------------------------------
 # Stage 2: Build Rust Backend
 # ------------------------------------------------------------------------------
-FROM rust:1.83-bookworm AS backend-builder
+FROM rust:1.84-bookworm AS backend-builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \

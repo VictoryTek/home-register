@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header, LoadingState, EmptyState, Modal, ConfirmModal, WarrantyNotificationBanner } from '@/components';
 import { inventoryApi } from '@/services/api';
@@ -28,8 +28,8 @@ export function InventoriesPage() {
   const [imagePreview, setImagePreview] = useState<string>('');
 
   useEffect(() => {
-    loadInventories();
-  }, []);
+    void loadInventories();
+  }, [loadInventories]);
 
   // Auto-navigate to default inventory if set
   useEffect(() => {
@@ -43,7 +43,7 @@ export function InventoriesPage() {
     }
   }, [loading, settings, inventories, navigate]);
 
-  const loadInventories = async () => {
+  const loadInventories = useCallback(async () => {
     setLoading(true);
     try {
       const result = await inventoryApi.getAll();
@@ -69,14 +69,14 @@ export function InventoriesPage() {
         setItemCounts(counts);
         setItems(allItems); // Update global items state for notifications
       } else {
-        showToast(result.error || 'Failed to load inventories', 'error');
+        showToast(result.error ?? 'Failed to load inventories', 'error');
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to load inventories', 'error');
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast, setItems, setInventories]);
 
   const handleCreateInventory = async () => {
     if (!formData.name.trim()) {
@@ -90,11 +90,11 @@ export function InventoriesPage() {
         showToast('Inventory created successfully!', 'success');
         setShowCreateModal(false);
         resetForm();
-        loadInventories();
+        void loadInventories();
       } else {
-        showToast(result.error || 'Failed to create inventory', 'error');
+        showToast(result.error ?? 'Failed to create inventory', 'error');
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to create inventory', 'error');
     }
   };
@@ -105,7 +105,9 @@ export function InventoriesPage() {
       return;
     }
 
-    if (!editingInventory?.id) return;
+    if (!editingInventory?.id) {
+      return;
+    }
 
     try {
       const result = await inventoryApi.update(editingInventory.id, formData);
@@ -113,27 +115,29 @@ export function InventoriesPage() {
         showToast('Inventory updated successfully!', 'success');
         setShowEditModal(false);
         resetForm();
-        loadInventories();
+        void loadInventories();
       } else {
-        showToast(result.error || 'Failed to update inventory', 'error');
+        showToast(result.error ?? 'Failed to update inventory', 'error');
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to update inventory', 'error');
     }
   };
 
   const handleDeleteInventory = async () => {
-    if (!deletingInventory?.id) return;
+    if (!deletingInventory?.id) {
+      return;
+    }
 
     try {
       const result = await inventoryApi.delete(deletingInventory.id);
       if (result.success) {
         showToast('Inventory deleted successfully!', 'success');
-        loadInventories();
+        void loadInventories();
       } else {
-        showToast(result.error || 'Failed to delete inventory', 'error');
+        showToast(result.error ?? 'Failed to delete inventory', 'error');
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to delete inventory', 'error');
     }
   };
@@ -143,11 +147,11 @@ export function InventoriesPage() {
     setEditingInventory(inventory);
     setFormData({
       name: inventory.name,
-      description: inventory.description || '',
-      location: inventory.location || '',
-      image_url: inventory.image_url || ''
+      description: inventory.description ?? '',
+      location: inventory.location ?? '',
+      image_url: inventory.image_url ?? ''
     });
-    setImagePreview(inventory.image_url || '');
+    setImagePreview(inventory.image_url ?? '');
     setImageOption(inventory.image_url?.startsWith('data:') ? 'upload' : 'url');
     setShowEditModal(true);
   };
@@ -256,7 +260,7 @@ export function InventoriesPage() {
                   <div className="inventory-card-body">
                     <h3 className="inventory-card-title">{inventory.name}</h3>
                     <p className="inventory-card-description">
-                      {inventory.description || 'No description'}
+                      {inventory.description ?? 'No description'}
                     </p>
                     {inventory.location && (
                       <p className="inventory-card-location">
@@ -267,7 +271,7 @@ export function InventoriesPage() {
                     <div className="inventory-card-stats">
                       <div className="stat-item">
                         <i className="fas fa-box"></i>
-                        <span>{itemCounts[inventory.id!] || 0} items</span>
+                        <span>{itemCounts[inventory.id ?? 0] ?? 0} items</span>
                       </div>
                       {inventory.user_id && user?.id && inventory.user_id !== user.id && (
                         <div className="stat-item" style={{ marginLeft: 'auto' }}>

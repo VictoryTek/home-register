@@ -44,7 +44,7 @@ fn escape_like_pattern(input: &str) -> String {
         .replace('_', "\\_")
 }
 
-pub async fn get_pool() -> Result<Pool, Box<dyn std::error::Error + Send + Sync>> {
+pub fn get_pool() -> Result<Pool, Box<dyn std::error::Error + Send + Sync>> {
     let db_url =
         env::var("DATABASE_URL").map_err(|_| "DATABASE_URL environment variable must be set")?;
 
@@ -85,7 +85,7 @@ pub async fn get_pool() -> Result<Pool, Box<dyn std::error::Error + Send + Sync>
     });
 
     cfg.create_pool(None, NoTls)
-        .map_err(|e| format!("Failed to create database pool: {}", e).into())
+        .map_err(|e| format!("Failed to create database pool: {e}").into())
 }
 
 pub struct DatabaseService {
@@ -243,42 +243,42 @@ impl DatabaseService {
         let mut param_count = 1;
 
         if let Some(ref name) = request.name {
-            fields.push(format!("name = ${}", param_count));
+            fields.push(format!("name = ${param_count}"));
             values.push(name);
             param_count += 1;
         }
         if let Some(ref description) = request.description {
-            fields.push(format!("description = ${}", param_count));
+            fields.push(format!("description = ${param_count}"));
             values.push(description);
             param_count += 1;
         }
         if let Some(ref category) = request.category {
-            fields.push(format!("category = ${}", param_count));
+            fields.push(format!("category = ${param_count}"));
             values.push(category);
             param_count += 1;
         }
         if let Some(ref location) = request.location {
-            fields.push(format!("location = ${}", param_count));
+            fields.push(format!("location = ${param_count}"));
             values.push(location);
             param_count += 1;
         }
         if let Some(ref purchase_price) = request.purchase_price {
-            fields.push(format!("purchase_price = ${}", param_count));
+            fields.push(format!("purchase_price = ${param_count}"));
             values.push(purchase_price);
             param_count += 1;
         }
         if let Some(ref quantity) = request.quantity {
-            fields.push(format!("quantity = ${}", param_count));
+            fields.push(format!("quantity = ${param_count}"));
             values.push(quantity);
             param_count += 1;
         }
         if let Some(ref notes) = request.notes {
-            fields.push(format!("notes = ${}", param_count));
+            fields.push(format!("notes = ${param_count}"));
             values.push(notes);
             param_count += 1;
         }
         if let Some(ref inventory_id) = request.inventory_id {
-            fields.push(format!("inventory_id = ${}", param_count));
+            fields.push(format!("inventory_id = ${param_count}"));
             values.push(inventory_id);
             param_count += 1;
         }
@@ -292,7 +292,7 @@ impl DatabaseService {
             } else {
                 chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d").ok()
             };
-            fields.push(format!("purchase_date = ${}", param_count));
+            fields.push(format!("purchase_date = ${param_count}"));
             values.push(&purchase_date_val);
             param_count += 1;
         }
@@ -305,7 +305,7 @@ impl DatabaseService {
             } else {
                 chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d").ok()
             };
-            fields.push(format!("warranty_expiry = ${}", param_count));
+            fields.push(format!("warranty_expiry = ${param_count}"));
             values.push(&warranty_expiry_val);
             param_count += 1;
         }
@@ -367,7 +367,7 @@ impl DatabaseService {
 
         // Escape SQL LIKE wildcards to prevent pattern injection
         let escaped_query = escape_like_pattern(&query.to_lowercase());
-        let search_pattern = format!("%{}%", escaped_query);
+        let search_pattern = format!("%{escaped_query}%");
         let rows = client
             .query(
                 "SELECT id, inventory_id, name, description, category, location, purchase_date::text, purchase_price::float8, warranty_expiry::text, notes, quantity, created_at, updated_at 
@@ -488,22 +488,22 @@ impl DatabaseService {
         let mut param_count = 1;
 
         if let Some(ref name) = request.name {
-            fields.push(format!("name = ${}", param_count));
+            fields.push(format!("name = ${param_count}"));
             values.push(name);
             param_count += 1;
         }
         if let Some(ref description) = request.description {
-            fields.push(format!("description = ${}", param_count));
+            fields.push(format!("description = ${param_count}"));
             values.push(description);
             param_count += 1;
         }
         if let Some(ref location) = request.location {
-            fields.push(format!("location = ${}", param_count));
+            fields.push(format!("location = ${param_count}"));
             values.push(location);
             param_count += 1;
         }
         if let Some(ref image_url) = request.image_url {
-            fields.push(format!("image_url = ${}", param_count));
+            fields.push(format!("image_url = ${param_count}"));
             values.push(image_url);
             param_count += 1;
         }
@@ -748,22 +748,22 @@ impl DatabaseService {
         let mut param_count = 1;
 
         if let Some(ref name) = request.name {
-            fields.push(format!("name = ${}", param_count));
+            fields.push(format!("name = ${param_count}"));
             values.push(name);
             param_count += 1;
         }
         if let Some(ref input_type) = request.input_type {
-            fields.push(format!("input_type = ${}", param_count));
+            fields.push(format!("input_type = ${param_count}"));
             values.push(input_type);
             param_count += 1;
         }
         if let Some(ref is_required) = request.is_required {
-            fields.push(format!("is_required = ${}", param_count));
+            fields.push(format!("is_required = ${param_count}"));
             values.push(is_required);
             param_count += 1;
         }
         if let Some(ref display_order) = request.display_order {
-            fields.push(format!("display_order = ${}", param_count));
+            fields.push(format!("display_order = ${param_count}"));
             values.push(display_order);
             param_count += 1;
         }
@@ -927,12 +927,12 @@ impl DatabaseService {
         let mut param_count = 1;
 
         if let Some(ref name) = request.name {
-            fields.push(format!("name = ${}", param_count));
+            fields.push(format!("name = ${param_count}"));
             values.push(name);
             param_count += 1;
         }
         if let Some(ref display_order) = request.display_order {
-            fields.push(format!("display_order = ${}", param_count));
+            fields.push(format!("display_order = ${param_count}"));
             values.push(display_order);
             param_count += 1;
         }
@@ -1314,7 +1314,7 @@ impl DatabaseService {
         let mut param_count = 1;
 
         if let Some(ref n) = full_name {
-            fields.push(format!("full_name = ${}", param_count));
+            fields.push(format!("full_name = ${param_count}"));
             values.push(n);
             param_count += 1;
         }
@@ -1367,22 +1367,22 @@ impl DatabaseService {
         let mut param_count = 1;
 
         if let Some(ref username) = request.username {
-            fields.push(format!("username = ${}", param_count));
+            fields.push(format!("username = ${param_count}"));
             values.push(username);
             param_count += 1;
         }
         if let Some(ref full_name) = request.full_name {
-            fields.push(format!("full_name = ${}", param_count));
+            fields.push(format!("full_name = ${param_count}"));
             values.push(full_name);
             param_count += 1;
         }
         if let Some(ref is_admin) = request.is_admin {
-            fields.push(format!("is_admin = ${}", param_count));
+            fields.push(format!("is_admin = ${param_count}"));
             values.push(is_admin);
             param_count += 1;
         }
         if let Some(ref is_active) = request.is_active {
-            fields.push(format!("is_active = ${}", param_count));
+            fields.push(format!("is_active = ${param_count}"));
             values.push(is_active);
             param_count += 1;
         }
@@ -1545,37 +1545,37 @@ impl DatabaseService {
         let mut param_count = 1;
 
         if let Some(ref theme) = request.theme {
-            fields.push(format!("theme = ${}", param_count));
+            fields.push(format!("theme = ${param_count}"));
             values.push(theme);
             param_count += 1;
         }
         if let Some(ref default_inventory_id) = request.default_inventory_id {
-            fields.push(format!("default_inventory_id = ${}", param_count));
+            fields.push(format!("default_inventory_id = ${param_count}"));
             values.push(default_inventory_id);
             param_count += 1;
         }
         if let Some(ref items_per_page) = request.items_per_page {
-            fields.push(format!("items_per_page = ${}", param_count));
+            fields.push(format!("items_per_page = ${param_count}"));
             values.push(items_per_page);
             param_count += 1;
         }
         if let Some(ref date_format) = request.date_format {
-            fields.push(format!("date_format = ${}", param_count));
+            fields.push(format!("date_format = ${param_count}"));
             values.push(date_format);
             param_count += 1;
         }
         if let Some(ref currency) = request.currency {
-            fields.push(format!("currency = ${}", param_count));
+            fields.push(format!("currency = ${param_count}"));
             values.push(currency);
             param_count += 1;
         }
         if let Some(ref notifications_enabled) = request.notifications_enabled {
-            fields.push(format!("notifications_enabled = ${}", param_count));
+            fields.push(format!("notifications_enabled = ${param_count}"));
             values.push(notifications_enabled);
             param_count += 1;
         }
         if let Some(ref settings_json) = request.settings_json {
-            fields.push(format!("settings_json = ${}", param_count));
+            fields.push(format!("settings_json = ${param_count}"));
             values.push(settings_json);
             param_count += 1;
         }

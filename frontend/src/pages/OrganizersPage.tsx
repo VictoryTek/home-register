@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import { organizerApi, inventoryApi } from '@/services/api';
@@ -42,31 +42,54 @@ export function OrganizersPage() {
   const [typeIsRequired, setTypeIsRequired] = useState(false);
   const [optionName, setOptionName] = useState('');
 
-  useEffect(() => {
-    if (inventoryId) {
-      loadData();
-    } else {
-      loadInventories();
+  const loadData = useCallback(async () => {
+    if (!inventoryId) {return;}
+    setLoading(true);
+    setError(null);
+    try {
+      const [invResult, orgResult] = await Promise.all([
+        inventoryApi.getById(inventoryId),
+        organizerApi.getByInventory(inventoryId),
+      ]);
+      if (invResult.success && invResult.data) {
+        setInventory(invResult.data);
+      } else {
+        setError('Inventory not found');
+      }
+      if (orgResult.success && orgResult.data) {
+        setOrganizers(orgResult.data);
+      }
+    } catch {
+      setError('Failed to load organizers');
+    } finally {
+      setLoading(false);
     }
   }, [inventoryId]);
 
-  const loadInventories = async () => {
+  const loadInventories = useCallback(async () => {
     setLoading(true);
     try {
       const res = await inventoryApi.getAll();
       if (res.success && res.data) {
         setInventories(res.data);
       }
-    } catch (err) {
+    } catch {
       setError('Failed to load inventories');
-      console.error(err);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (inventoryId) {
+      void loadData();
+    } else {
+      void loadInventories();
+    }
+  }, [inventoryId, loadData, loadInventories]);
 
   const loadData = async () => {
-    if (!inventoryId) return;
+    if (!inventoryId) {return;}
     setLoading(true);
     setError(null);
     try {
@@ -130,22 +153,24 @@ export function OrganizersPage() {
     }
 
     try {
-      if (editingType) {
+      if (editingType?.id) {
         // Update existing type
-        const res = await organizerApi.updateType(editingType.id!, {
+        const res = await organizerApi.updateType(editingType.id, {
           name: typeName,
           input_type: typeInputType,
           is_required: typeIsRequired,
         });
         if (res.success) {
           showToast('Organizer updated successfully', 'success');
-          loadData();
+          void loadData();
         } else {
-          showToast(res.error || 'Failed to update organizer', 'error');
+          showToast(res.error ?? 'Failed to update organizer', 'error');
         }
       } else {
         // Create new type
-        if (!inventoryId) return;
+        if (!inventoryId) {
+          return;
+        }
         const data: CreateOrganizerTypeRequest = {
           name: typeName,
           input_type: typeInputType,
@@ -154,9 +179,9 @@ export function OrganizersPage() {
         const res = await organizerApi.createType(inventoryId, data);
         if (res.success) {
           showToast('Organizer created successfully', 'success');
-          loadData();
+          void loadData();
         } else {
-          showToast(res.error || 'Failed to create organizer', 'error');
+          showToast(res.error ?? 'Failed to create organizer', 'error');
         }
       }
       setShowTypeModal(false);
@@ -173,24 +198,24 @@ export function OrganizersPage() {
     }
 
     try {
-      if (editingOption) {
+      if (editingOption?.id) {
         // Update existing option
-        const res = await organizerApi.updateOption(editingOption.id!, { name: optionName });
+        const res = await organizerApi.updateOption(editingOption.id, { name: optionName });
         if (res.success) {
           showToast('Option updated successfully', 'success');
-          loadData();
+          void loadData();
         } else {
-          showToast(res.error || 'Failed to update option', 'error');
+          showToast(res.error ?? 'Failed to update option', 'error');
         }
       } else {
         // Create new option
         const data: CreateOrganizerOptionRequest = { name: optionName };
-        const res = await organizerApi.createOption(selectedTypeForOption.id!, data);
+        const res = await organizerApi.createOption(selectedTypeForOption.id, data);
         if (res.success) {
           showToast('Option created successfully', 'success');
-          loadData();
+          void loadData();
         } else {
-          showToast(res.error || 'Failed to create option', 'error');
+          showToast(res.error ?? 'Failed to create option', 'error');
         }
       }
       setShowOptionModal(false);
@@ -206,15 +231,17 @@ export function OrganizersPage() {
   };
 
   const handleDeleteType = async () => {
-    if (!typeToDelete) return;
+    if (!typeToDelete?.id) {
+      return;
+    }
     
     try {
-      const res = await organizerApi.deleteType(typeToDelete.id!);
+      const res = await organizerApi.deleteType(typeToDelete.id);
       if (res.success) {
         showToast('Organizer deleted successfully', 'success');
-        loadData();
+        void loadData();
       } else {
-        showToast(res.error || 'Failed to delete organizer', 'error');
+        showToast(res.error ?? 'Failed to delete organizer', 'error');
       }
     } catch (err) {
       showToast('An error occurred', 'error');
@@ -231,15 +258,17 @@ export function OrganizersPage() {
   };
 
   const handleDeleteOption = async () => {
-    if (!optionToDelete) return;
+    if (!optionToDelete?.option.id) {
+      return;
+    }
     
     try {
-      const res = await organizerApi.deleteOption(optionToDelete.option.id!);
+      const res = await organizerApi.deleteOption(optionToDelete.option.id);
       if (res.success) {
         showToast('Option deleted successfully', 'success');
-        loadData();
+        void loadData();
       } else {
-        showToast(res.error || 'Failed to delete option', 'error');
+        showToast(res.error ?? 'Failed to delete option', 'error');
       }
     } catch (err) {
       showToast('An error occurred', 'error');
@@ -309,7 +338,7 @@ export function OrganizersPage() {
         <EmptyState
           icon="fas fa-exclamation-triangle"
           title="Error"
-          text={error || 'Failed to load inventory'}
+          text={error ?? 'Failed to load inventory'}
           action={
             <button className="btn btn-primary" onClick={() => navigate('/')}>
               Go Back

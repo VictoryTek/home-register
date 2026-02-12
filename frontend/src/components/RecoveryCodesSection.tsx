@@ -19,7 +19,7 @@ export function RecoveryCodesSection({ onCodesGenerated }: RecoveryCodesSectionP
   const codesRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    loadStatus();
+    void loadStatus();
   }, []);
 
   const loadStatus = async () => {
@@ -54,12 +54,12 @@ export function RecoveryCodesSection({ onCodesGenerated }: RecoveryCodesSectionP
         setCodes(result.data.codes);
         showToast('Recovery codes generated! Save them now.', 'success');
         // Reload status (codes are unconfirmed)
-        await loadStatus();
+        void loadStatus();
         onCodesGenerated?.();
       } else {
-        showToast(result.error || 'Failed to generate recovery codes', 'error');
+        showToast(result.error ?? 'Failed to generate recovery codes', 'error');
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to generate recovery codes', 'error');
     } finally {
       setGenerating(false);
@@ -73,11 +73,11 @@ export function RecoveryCodesSection({ onCodesGenerated }: RecoveryCodesSectionP
       if (result.success) {
         showToast('Recovery codes confirmed!', 'success');
         setCodes(null); // Hide codes after confirmation
-        await loadStatus();
+        void loadStatus();
       } else {
-        showToast(result.error || 'Failed to confirm recovery codes', 'error');
+        showToast(result.error ?? 'Failed to confirm recovery codes', 'error');
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to confirm recovery codes', 'error');
     } finally {
       setConfirming(false);
@@ -85,17 +85,17 @@ export function RecoveryCodesSection({ onCodesGenerated }: RecoveryCodesSectionP
   };
 
   const handleCopyAll = async () => {
-    if (!codes) return;
+    if (!codes) {return;}
     try {
       await navigator.clipboard.writeText(codes.join('\n'));
       showToast('Codes copied to clipboard!', 'success');
-    } catch (error) {
+    } catch {
       showToast('Failed to copy codes', 'error');
     }
   };
 
   const handleDownload = () => {
-    if (!codes) return;
+    if (!codes) {return;}
     const content = [
       'Home Registry - Recovery Codes',
       '================================',
@@ -121,10 +121,10 @@ export function RecoveryCodesSection({ onCodesGenerated }: RecoveryCodesSectionP
   };
 
   const handlePrint = () => {
-    if (!codes) return;
+    if (!codes) {return;}
     
     const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
+    if (!printWindow) {return;}
     
     // Build document safely without using innerHTML
     const doc = printWindow.document;

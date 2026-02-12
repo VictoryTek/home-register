@@ -82,9 +82,9 @@ export function RecoveryPage() {
         setRemainingCodes(result.data.remaining_codes);
         setStep('success');
       } else {
-        setError(result.error || 'Failed to reset password. Please check your credentials.');
+        setError(result.error ?? 'Failed to reset password. Please check your credentials.');
       }
-    } catch (err) {
+    } catch {
       setError('An error occurred. Please try again.');
     }
     

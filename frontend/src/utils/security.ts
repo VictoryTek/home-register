@@ -24,7 +24,9 @@ export function createSafePrintWindow(
   contentBuilder: (doc: Document) => void
 ): void {
   const printWindow = window.open('', '', 'width=800,height=600');
-  if (!printWindow) return;
+  if (!printWindow) {
+    return;
+  }
 
   // Build document structure safely
   printWindow.document.title = title;

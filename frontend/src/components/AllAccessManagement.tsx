@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ConfirmModal } from '@/components';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
@@ -18,28 +18,20 @@ export function AllAccessManagement() {
   });
   const [grantToRevoke, setGrantToRevoke] = useState<UserAccessGrantWithUsers | null>(null);
 
-  useEffect(() => {
-    loadGrants();
-    // Only load users list if current user is admin
-    if (currentUser?.is_admin) {
-      loadUsers();
-    }
-  }, [currentUser?.is_admin]);
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       const result = await authApi.getAllUsers();
       if (result.success && result.data) {
         setUsers(result.data);
       } else {
-        showToast(result.error || 'Failed to load users', 'error');
+        showToast(result.error ?? 'Failed to load users', 'error');
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to load users', 'error');
     }
-  };
+  }, [showToast]);
 
-  const loadGrants = async () => {
+  const loadGrants = useCallback(async () => {
     setLoading(true);
     try {
       const [givenResult, receivedResult] = await Promise.all([
@@ -53,12 +45,20 @@ export function AllAccessManagement() {
       if (receivedResult.success && receivedResult.data) {
         setGrantsReceived(receivedResult.data);
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to load access grants', 'error');
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
+
+  useEffect(() => {
+    void loadGrants();
+    // Only load users list if current user is admin
+    if (currentUser?.is_admin) {
+      void loadUsers();
+    }
+  }, [currentUser?.is_admin, loadGrants, loadUsers]);
 
   const handleGrantAccess = async () => {
     if (!newGrant.grantee_username.trim()) {
@@ -72,28 +72,30 @@ export function AllAccessManagement() {
         showToast('All Access granted successfully', 'success');
         setNewGrant({ grantee_username: '' });
         setShowAddForm(false);
-        loadGrants();
+        void loadGrants();
       } else {
-        showToast(result.error || 'Failed to grant access', 'error');
+        showToast(result.error ?? 'Failed to grant access', 'error');
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to grant access', 'error');
     }
   };
 
   const handleRevokeAccess = async () => {
-    if (!grantToRevoke) return;
+    if (!grantToRevoke) {
+      return;
+    }
 
     try {
       const result = await authApi.revokeAccessGrant(grantToRevoke.id);
       if (result.success) {
         showToast('All Access revoked successfully', 'success');
         setGrantToRevoke(null);
-        loadGrants();
+        void loadGrants();
       } else {
-        showToast(result.error || 'Failed to revoke access', 'error');
+        showToast(result.error ?? 'Failed to revoke access', 'error');
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to revoke access', 'error');
     }
   };

@@ -40,9 +40,15 @@ function AppContent() {
   const { isAuthenticated, isLoading, needsSetup } = useAuth();
 
   const getCurrentPage = () => {
-    if (location.pathname === '/settings') return 'settings';
-    if (location.pathname.includes('/organizers')) return 'organizers';
-    if (location.pathname.startsWith('/inventory/')) return 'inventories';
+    if (location.pathname === '/settings') {
+      return 'settings';
+    }
+    if (location.pathname.includes('/organizers')) {
+      return 'organizers';
+    }
+    if (location.pathname.startsWith('/inventory/')) {
+      return 'inventories';
+    }
     return 'inventories';
   };
 

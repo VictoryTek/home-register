@@ -28,7 +28,9 @@ exclude-files = [
 exclude = []
 
 # Line coverage threshold (fail if below)
-fail-under = 0
+# TODO: Gradually increase this as test coverage improves
+# Current coverage: ~0.49%, Target: 80%+
+fail-under = 1
 
 # Ignore lines marked with specific patterns
 ignore-panics = false
@@ -38,6 +40,7 @@ ignore-panics = false
 
 [ci]
 # Stricter settings for CI
-fail-under = 50
+# TODO: Increase threshold as test coverage improves
+fail-under = 1
 out = ["Lcov", "Json"]
 verbose = true

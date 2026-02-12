@@ -534,7 +534,7 @@ impl std::str::FromStr for PermissionLevel {
             // Legacy value mappings for backward compatibility
             "edit" => Ok(PermissionLevel::EditItems),
             "full" => Ok(PermissionLevel::EditInventory),
-            _ => Err(format!("Invalid permission level: {}", s)),
+            _ => Err(format!("Invalid permission level: {s}")),
         }
     }
 }

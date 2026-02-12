@@ -19,7 +19,9 @@ export function ConfirmModal({
   confirmButtonClass = 'btn-danger',
   icon = 'fas fa-exclamation-triangle'
 }: ConfirmModalProps) {
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const handleConfirm = () => {
     onConfirm();
@@ -27,7 +29,7 @@ export function ConfirmModal({
   };
 
   return (
-    <div className={`modal-overlay ${isOpen ? 'active' : ''}`} onClick={onClose}>
+    <div className="modal-overlay active" onClick={onClose}>
       <div 
         className="modal-content" 
         style={{ maxWidth: '400px' }}

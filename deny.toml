@@ -26,7 +26,11 @@ unmaintained = "all"
 # Threshold for yanked crates
 yanked = "deny"
 # List of ignored advisories (add with reason if needed)
-ignore = []
+ignore = [
+    # RUSTSEC-2026-0003: cmov advisory uses CVSS 4.0 which cargo-deny doesn't support yet
+    # TODO: Remove this when cargo-deny supports CVSS 4.0
+    "RUSTSEC-2026-0003",
+]
 
 # ------------------------------------------------------------------------------
 # LICENSES - Ensure dependencies use acceptable licenses
@@ -70,8 +74,6 @@ license-files = [
 multiple-versions = "warn"
 # How to handle wildcard dependencies
 wildcards = "deny"
-# Allow build dependencies to have duplicate versions
-allow-build-scripts = ["*"]
 # Deny certain crates
 deny = [
     # Prefer rustls over OpenSSL for TLS
@@ -81,6 +83,11 @@ deny = [
 # Skip duplicate version warnings for these crates
 skip = []
 skip-tree = []
+
+# Build script configuration
+[bans.build]
+# Allow all crates to use build scripts
+allow-build-scripts = ["*"]
 
 # ------------------------------------------------------------------------------
 # SOURCES - Restrict where crates can be fetched from

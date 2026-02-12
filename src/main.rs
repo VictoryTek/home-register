@@ -57,7 +57,7 @@ async fn main() -> std::io::Result<()> {
     );
 
     // Initialize database pool with proper error handling (no panics)
-    let pool = match db::get_pool().await {
+    let pool = match db::get_pool() {
         Ok(p) => {
             log::info!("Database pool initialized successfully");
             p
@@ -142,13 +142,13 @@ async fn main() -> std::io::Result<()> {
             }))
             .route("/workbox-{filename:.*}.js", web::get().to(|path: web::Path<String>| async move {
                 let filename = path.into_inner();
-                fs::NamedFile::open_async(format!("static/workbox-{}", filename)).await
+                fs::NamedFile::open_async(format!("static/workbox-{filename}")).await
             }))
             // Catch-all for SPA client-side routing - serve index.html for everything else
             // This comes last so API and static routes are handled first
             .route("/{path:.*}", web::get().to(spa_fallback))
     })
-    .bind(format!("{}:{}", host, port))?
+    .bind(format!("{host}:{port}"))?
     .run()
     .await
 }

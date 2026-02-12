@@ -74,6 +74,7 @@ jobs:
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@76071ef0d7ec797419534a183b498b4d6366cf37 # 0.31.0
+        id: trivy
         continue-on-error: true
         with:
           image-ref: home-registry:scan
@@ -84,7 +85,7 @@ jobs:
 
       - name: Upload Trivy scan results
         uses: github/codeql-action/upload-sarif@ff0a06e83cb2de871e5a09832bc6a81e7276941f # v3.28.18
-        if: always()
+        if: success() || steps.trivy.outcome == 'success'
         with:
           sarif_file: trivy-results.sarif
 

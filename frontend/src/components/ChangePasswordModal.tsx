@@ -50,7 +50,9 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -63,7 +65,7 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
         showToast('Password changed successfully', 'success');
         onClose();
       } else {
-        const errorMsg = result.error || 'Failed to change password';
+        const errorMsg = result.error ?? 'Failed to change password';
         if (errorMsg.toLowerCase().includes('current password') || errorMsg.toLowerCase().includes('incorrect')) {
           setErrors({ currentPassword: 'Current password is incorrect' });
         } else {
@@ -85,8 +87,7 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => {
-        const next = { ...prev };
-        delete next[field];
+        const { [field]: _removed, ...next } = prev;
         return next;
       });
     }

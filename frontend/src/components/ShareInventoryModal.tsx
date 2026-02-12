@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Modal, ConfirmModal } from '@/components';
 import { useApp } from '@/context/AppContext';
@@ -49,41 +49,41 @@ export function ShareInventoryModal({ isOpen, onClose, inventoryId, inventoryNam
   const [showTransferConfirm, setShowTransferConfirm] = useState(false);
   const [isTransferring, setIsTransferring] = useState(false);
 
-  useEffect(() => {
-    if (isOpen) {
-      loadShares();
-      loadUsers();
-    }
-  }, [isOpen, inventoryId]);
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       const result = await authApi.getAllUsers();
       if (result.success && result.data) {
         setUsers(result.data);
       } else {
-        showToast(result.error || 'Failed to load users', 'error');
+        showToast(result.error ?? 'Failed to load users', 'error');
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to load users', 'error');
     }
-  };
+  }, [showToast]);
 
-  const loadShares = async () => {
+  const loadShares = useCallback(async () => {
     setLoading(true);
     try {
       const result = await authApi.getInventoryShares(inventoryId);
       if (result.success && result.data) {
         setShares(result.data);
       } else {
-        showToast(result.error || 'Failed to load shares', 'error');
+        showToast(result.error ?? 'Failed to load shares', 'error');
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to load shares', 'error');
     } finally {
       setLoading(false);
     }
-  };
+  }, [inventoryId, showToast]);
+
+  useEffect(() => {
+    if (isOpen) {
+      void loadShares();
+      void loadUsers();
+    }
+  }, [isOpen, loadShares, loadUsers]);
 
   const handleAddShare = async () => {
     if (!newShare.shared_with_username.trim()) {
@@ -97,11 +97,11 @@ export function ShareInventoryModal({ isOpen, onClose, inventoryId, inventoryNam
         showToast('Inventory shared successfully', 'success');
         setNewShare({ shared_with_username: '', permission_level: 'view' });
         setShowAddForm(false);
-        loadShares();
+        void loadShares();
       } else {
-        showToast(result.error || 'Failed to share inventory', 'error');
+        showToast(result.error ?? 'Failed to share inventory', 'error');
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to share inventory', 'error');
     }
   };
@@ -112,28 +112,28 @@ export function ShareInventoryModal({ isOpen, onClose, inventoryId, inventoryNam
       if (result.success) {
         showToast('Permission updated successfully', 'success');
         setEditingShareId(null);
-        loadShares();
+        void loadShares();
       } else {
-        showToast(result.error || 'Failed to update permission', 'error');
+        showToast(result.error ?? 'Failed to update permission', 'error');
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to update permission', 'error');
     }
   };
 
   const handleDeleteShare = async () => {
-    if (!shareToDelete) return;
+    if (!shareToDelete) {return;}
 
     try {
       const result = await authApi.removeInventoryShare(shareToDelete.id);
       if (result.success) {
         showToast('Share removed successfully', 'success');
         setShareToDelete(null);
-        loadShares();
+        void loadShares();
       } else {
-        showToast(result.error || 'Failed to remove share', 'error');
+        showToast(result.error ?? 'Failed to remove share', 'error');
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to remove share', 'error');
     }
   };
@@ -159,9 +159,9 @@ export function ShareInventoryModal({ isOpen, onClose, inventoryId, inventoryNam
         // Navigate away since user no longer has access
         navigate('/');
       } else {
-        showToast(result.error || 'Failed to transfer ownership', 'error');
+        showToast(result.error ?? 'Failed to transfer ownership', 'error');
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to transfer ownership', 'error');
     } finally {
       setIsTransferring(false);

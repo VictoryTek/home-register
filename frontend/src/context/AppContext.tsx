@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import type { Theme, ToastMessage, Inventory, Item } from '@/types';
 import { checkWarrantyNotifications, type WarrantyNotification } from '@/utils/notifications';
 
@@ -23,7 +23,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export function AppProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
     const saved = localStorage.getItem('theme');
-    return (saved as Theme) || 'light';
+    return saved ? (saved as Theme) : 'light';
   });
   
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -54,16 +54,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setToasts(prev => prev.filter(toast => toast.id !== id));
   };
 
-  const checkNotifications = () => {
+  const checkNotifications = useCallback(() => {
     // Check all items from all inventories for warranty notifications
     const notifications = checkWarrantyNotifications(items);
     setWarrantyNotifications(notifications);
-  };
+  }, [items]);
 
   // Auto-check notifications when items change
   useEffect(() => {
     checkNotifications();
-  }, [items]);
+  }, [checkNotifications]);
 
   return (
     <AppContext.Provider value={{
@@ -86,6 +86,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useApp() {
   const context = useContext(AppContext);
   if (context === undefined) {

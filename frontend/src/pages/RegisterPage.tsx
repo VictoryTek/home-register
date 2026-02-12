@@ -59,7 +59,7 @@ export function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    if (!validateForm()) {return;}
 
     setIsLoading(true);
     setError(null);
@@ -82,13 +82,13 @@ export function RegisterPage() {
           setRecoveryCodes(codesResponse.data.codes);
           setShowRecoveryCodes(true);
         } else {
-          setError(codesResponse.error || 'Failed to generate recovery codes');
+          setError(codesResponse.error ?? 'Failed to generate recovery codes');
         }
       } else {
-        setError(result.error || 'Registration failed. Please try again.');
+        setError(result.error ?? 'Registration failed. Please try again.');
       }
-    } catch (err) {
-      console.error('Registration error:', err);
+    } catch {
+      console.error('Registration error');
       setError('Network error. Please check your connection and try again.');
     } finally {
       setIsLoading(false);
@@ -108,14 +108,16 @@ export function RegisterPage() {
       // Redirect to app
       navigate('/');
       window.location.reload();
-    } catch (err: any) {
+    } catch {
       setError('Failed to complete registration');
       setIsLoading(false);
     }
   };
 
   const downloadCodes = () => {
-    if (!recoveryCodes) return;
+    if (!recoveryCodes) {
+      return;
+    }
     
     const content = `Home Registry Recovery Codes\n\nUsername: ${formData.username}\nGenerated: ${new Date().toLocaleString()}\n\nSave these codes in a secure location. Each code can only be used once.\n\n${recoveryCodes.join('\n')}\n`;
     const blob = new Blob([content], { type: 'text/plain' });
@@ -130,10 +132,10 @@ export function RegisterPage() {
   };
 
   const printCodes = () => {
-    if (!recoveryCodes) return;
+    if (!recoveryCodes) {return;}
     
     const printWindow = window.open('', '', 'width=800,height=600');
-    if (!printWindow) return;
+    if (!printWindow) {return;}
     
     // Build document safely without using document.write with user content
     const doc = printWindow.document;
@@ -178,7 +180,7 @@ export function RegisterPage() {
   };
 
   const copyCodes = async () => {
-    if (!recoveryCodes) return;
+    if (!recoveryCodes) {return;}
     
     try {
       await navigator.clipboard.writeText(recoveryCodes.join('\n'));
@@ -328,7 +330,7 @@ export function RegisterPage() {
             
             <div className="recovery-codes-display" ref={codesRef}>
               <div className="codes-grid">
-                {recoveryCodes && recoveryCodes.map((code, index) => (
+                {recoveryCodes?.map((code, index) => (
                   <div key={index} className="code-item">
                     {code}
                   </div>

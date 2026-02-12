@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header, LoadingState, EmptyState, Modal, WarrantyNotificationBanner, ShareInventoryModal } from '@/components';
 import { inventoryApi, itemApi, organizerApi } from '@/services/api';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
-import { formatDate } from '@/utils/dateFormat';
-import { formatCurrency } from '@/utils/currencyFormat';
+import { formatDate, type DateFormatType } from '@/utils/dateFormat';
+import { formatCurrency, type CurrencyType } from '@/utils/currencyFormat';
 import type { Inventory, Item, CreateItemRequest, OrganizerTypeWithOptions, SetItemOrganizerValueRequest } from '@/types';
 
 export function InventoryDetailPage() {
@@ -20,7 +20,7 @@ export function InventoryDetailPage() {
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [newItem, setNewItem] = useState<CreateItemRequest>({
-    inventory_id: parseInt(id || '0'),
+    inventory_id: parseInt(id ?? '0', 10),
     name: '',
     description: '',
     category: '',
@@ -32,13 +32,7 @@ export function InventoryDetailPage() {
   });
   const [organizerValues, setOrganizerValues] = useState<Record<number, { optionId?: number; textValue?: string }>>({});
 
-  useEffect(() => {
-    if (id) {
-      loadInventoryDetail(parseInt(id));
-    }
-  }, [id]);
-
-  const loadInventoryDetail = async (inventoryId: number) => {
+  const loadInventoryDetail = useCallback(async (inventoryId: number) => {
     setLoading(true);
     try {
       const [invResult, itemsResult, organizersResult] = await Promise.all([
@@ -63,13 +57,19 @@ export function InventoryDetailPage() {
       if (organizersResult.success && organizersResult.data) {
         setOrganizers(organizersResult.data);
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to load inventory', 'error');
       navigate('/');
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate, setGlobalItems, showToast]);
+
+  useEffect(() => {
+    if (id) {
+      void loadInventoryDetail(parseInt(id, 10));
+    }
+  }, [id, loadInventoryDetail]);
 
   const handleAddItem = async () => {
     if (!newItem.name.trim()) {
@@ -79,8 +79,8 @@ export function InventoryDetailPage() {
 
     // Check required organizers
     for (const org of organizers) {
-      if (org.is_required) {
-        const value = organizerValues[org.id!];
+      if (org.is_required && org.id) {
+        const value = organizerValues[org.id];
         if (!value || (org.input_type === 'select' && !value.optionId) || (org.input_type === 'text' && !value.textValue?.trim())) {
           showToast(`Please fill in the required field: ${org.name}`, 'error');
           return;
@@ -91,7 +91,7 @@ export function InventoryDetailPage() {
     try {
       const result = await itemApi.create({
         ...newItem,
-        inventory_id: parseInt(id || '0'),
+        inventory_id: parseInt(id ?? '0', 10),
       });
 
       if (result.success && result.data) {
@@ -103,19 +103,19 @@ export function InventoryDetailPage() {
             valuesToSave.push({
               organizer_type_id: typeId,
               organizer_option_id: value.optionId,
-              text_value: value.textValue?.trim() || undefined,
+              text_value: value.textValue?.trim(),
             });
           }
         }
 
-        if (valuesToSave.length > 0) {
-          await itemApi.setOrganizerValues(result.data.id!, { values: valuesToSave });
+        if (valuesToSave.length > 0 && result.data.id) {
+          await itemApi.setOrganizerValues(result.data.id, { values: valuesToSave });
         }
 
         showToast('Item added successfully!', 'success');
         setShowAddItemModal(false);
         setNewItem({
-          inventory_id: parseInt(id || '0'),
+          inventory_id: parseInt(id ?? '0', 10),
           name: '',
           description: '',
           category: '',
@@ -126,33 +126,36 @@ export function InventoryDetailPage() {
           quantity: 1,
         });
         setOrganizerValues({});
-        loadInventoryDetail(parseInt(id || '0'));
+        void loadInventoryDetail(parseInt(id ?? '0', 10));
       } else {
-        showToast(result.error || 'Failed to add item', 'error');
+        showToast(result.error ?? 'Failed to add item', 'error');
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to add item', 'error');
     }
   };
 
   const handleDeleteItem = async (itemId: number) => {
-    if (!confirm('Are you sure you want to delete this item?')) return;
+    // eslint-disable-next-line no-alert
+    if (!confirm('Are you sure you want to delete this item?')) {
+      return;
+    }
 
     try {
       const result = await itemApi.delete(itemId);
       if (result.success) {
         showToast('Item deleted successfully!', 'success');
-        loadInventoryDetail(parseInt(id || '0'));
+        void loadInventoryDetail(parseInt(id ?? '0', 10));
       } else {
-        showToast(result.error || 'Failed to delete item', 'error');
+        showToast(result.error ?? 'Failed to delete item', 'error');
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to delete item', 'error');
     }
   };
 
   const totalValue = items.reduce(
-    (sum, item) => sum + (item.purchase_price || 0) * (item.quantity || 1),
+    (sum, item) => sum + (item.purchase_price ?? 0) * (item.quantity ?? 1),
     0
   );
 
@@ -175,7 +178,7 @@ export function InventoryDetailPage() {
     <>
       <Header
         title={inventory.name}
-        subtitle={inventory.description || 'Manage and organize your inventory collections'}
+        subtitle={inventory.description ?? 'Manage and organize your inventory collections'}
         icon="fas fa-warehouse"
       />
       
@@ -220,7 +223,7 @@ export function InventoryDetailPage() {
               </div>
               <div className="stat-content">
                 <div className="stat-label">Total Value</div>
-                <div className="stat-value">{formatCurrency(totalValue, settings?.currency as any || 'USD')}</div>
+                <div className="stat-value">{formatCurrency(totalValue, (settings?.currency ?? 'USD') as CurrencyType)}</div>
               </div>
             </div>
           </div>
@@ -240,7 +243,7 @@ export function InventoryDetailPage() {
             ) : (
               <div className="items-grid">
                 {items.map((item) => {
-                  const itemValue = (item.purchase_price || 0) * (item.quantity || 1);
+                  const itemValue = (item.purchase_price ?? 0) * (item.quantity ?? 1);
                   return (
                     <div key={item.id} className="item-card">
                       <div className="item-card-header">
@@ -269,25 +272,25 @@ export function InventoryDetailPage() {
                           {item.purchase_date && (
                             <div className="detail-item">
                               <i className="fas fa-calendar-alt"></i>
-                              <span>Purchased: {formatDate(item.purchase_date, settings?.date_format as any || 'MM/DD/YYYY')}</span>
+                              <span>Purchased: {formatDate(item.purchase_date, (settings?.date_format ?? 'MM/DD/YYYY') as DateFormatType)}</span>
                             </div>
                           )}
                           {item.purchase_price && (
                             <div className="detail-item">
                               <i className="fas fa-tag"></i>
-                              <span>{formatCurrency(item.purchase_price, settings?.currency as any || 'USD')} ea</span>
+                              <span>{formatCurrency(item.purchase_price, (settings?.currency ?? 'USD') as CurrencyType)} ea</span>
                             </div>
                           )}
                           {itemValue > 0 && (
                             <div className="detail-item">
                               <i className="fas fa-coins"></i>
-                              <span>Total: {formatCurrency(itemValue, settings?.currency as any || 'USD')}</span>
+                              <span>Total: {formatCurrency(itemValue, (settings?.currency ?? 'USD') as CurrencyType)}</span>
                             </div>
                           )}
                           {item.warranty_expiry && (
                             <div className="detail-item">
                               <i className="fas fa-shield-alt"></i>
-                              <span>Warranty: {formatDate(item.warranty_expiry, settings?.date_format as any || 'MM/DD/YYYY')}</span>
+                              <span>Warranty: {formatDate(item.warranty_expiry, (settings?.date_format ?? 'MM/DD/YYYY') as DateFormatType)}</span>
                             </div>
                           )}
                         </div>
@@ -301,7 +304,7 @@ export function InventoryDetailPage() {
                         </button>
                         <button
                           className="btn btn-sm btn-ghost text-danger"
-                          onClick={() => handleDeleteItem(item.id!)}
+                          onClick={() => item.id && handleDeleteItem(item.id)}
                           title="Delete Item"
                         >
                           <i className="fas fa-trash"></i>
@@ -348,7 +351,7 @@ export function InventoryDetailPage() {
         {/* Dynamic Organizer Fields */}
         {organizers.length > 0 && (
           <div className="organizer-fields">
-            {organizers.map((org) => (
+            {organizers.map((org) => org.id && (
               <div className="form-group" key={org.id}>
                 <label className="form-label" htmlFor={`organizer-${org.id}`}>
                   {org.name}{org.is_required ? ' *' : ''}
@@ -357,10 +360,10 @@ export function InventoryDetailPage() {
                   <select
                     className="form-select"
                     id={`organizer-${org.id}`}
-                    value={organizerValues[org.id!]?.optionId || ''}
+                    value={organizerValues[org.id]?.optionId ?? ''}
                     onChange={(e) => setOrganizerValues({
                       ...organizerValues,
-                      [org.id!]: { optionId: e.target.value ? parseInt(e.target.value) : undefined }
+                      [org.id]: { optionId: e.target.value ? parseInt(e.target.value, 10) : undefined }
                     })}
                   >
                     <option value="">Select {org.name.toLowerCase()}</option>
@@ -374,10 +377,10 @@ export function InventoryDetailPage() {
                     className="form-input"
                     id={`organizer-${org.id}`}
                     placeholder={`Enter ${org.name.toLowerCase()}`}
-                    value={organizerValues[org.id!]?.textValue || ''}
+                    value={organizerValues[org.id]?.textValue ?? ''}
                     onChange={(e) => setOrganizerValues({
                       ...organizerValues,
-                      [org.id!]: { textValue: e.target.value }
+                      [org.id]: { textValue: e.target.value }
                     })}
                   />
                 )}
@@ -424,7 +427,7 @@ export function InventoryDetailPage() {
               placeholder="0.00"
               step="0.01"
               min="0"
-              value={newItem.purchase_price || ''}
+              value={newItem.purchase_price ?? ''}
               onChange={(e) => setNewItem({ ...newItem, purchase_price: e.target.value ? parseFloat(e.target.value) : undefined })}
             />
           </div>
@@ -437,8 +440,8 @@ export function InventoryDetailPage() {
               id="item-quantity"
               placeholder="1"
               min="1"
-              value={newItem.quantity || 1}
-              onChange={(e) => setNewItem({ ...newItem, quantity: parseInt(e.target.value) || 1 })}
+              value={newItem.quantity ?? 1}
+              onChange={(e) => setNewItem({ ...newItem, quantity: parseInt(e.target.value, 10) || 1 })}
             />
           </div>
         </div>
@@ -450,7 +453,7 @@ export function InventoryDetailPage() {
               type="date"
               className="form-input"
               id="item-purchase-date"
-              value={newItem.purchase_date || ''}
+              value={newItem.purchase_date ?? ''}
               onChange={(e) => setNewItem({ ...newItem, purchase_date: e.target.value })}
             />
           </div>
@@ -461,7 +464,7 @@ export function InventoryDetailPage() {
               type="date"
               className="form-input"
               id="item-warranty"
-              value={newItem.warranty_expiry || ''}
+              value={newItem.warranty_expiry ?? ''}
               onChange={(e) => setNewItem({ ...newItem, warranty_expiry: e.target.value })}
             />
           </div>
@@ -483,8 +486,8 @@ export function InventoryDetailPage() {
       <ShareInventoryModal
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
-        inventoryId={parseInt(id || '0')}
-        inventoryName={inventory?.name || ''}
+        inventoryId={parseInt(id ?? '0', 10)}
+        inventoryName={inventory.name}
       />
     </>
   );

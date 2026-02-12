@@ -42,7 +42,7 @@ export function LoginPage() {
     if (result.success) {
       navigate('/');
     } else {
-      setError(result.error || 'Login failed. Please check your credentials.');
+      setError(result.error ?? 'Login failed. Please check your credentials.');
     }
     
     setIsLoading(false);

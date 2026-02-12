@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { authApi } from '@/services/api';
@@ -23,25 +23,25 @@ export function UserManagement() {
     is_active: true,
   });
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setLoading(true);
     try {
       const result = await authApi.getAllUsers();
       if (result.success && result.data) {
         setUsers(result.data);
       } else {
-        showToast(result.error || 'Failed to load users', 'error');
+        showToast(result.error ?? 'Failed to load users', 'error');
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to load users', 'error');
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
+
+  useEffect(() => {
+    void loadUsers();
+  }, [loadUsers]);
 
   const openCreateModal = () => {
     setFormData({
@@ -95,17 +95,17 @@ export function UserManagement() {
       if (result.success) {
         showToast('User created successfully!', 'success');
         setShowCreateModal(false);
-        loadUsers();
+        void loadUsers();
       } else {
-        showToast(result.error || 'Failed to create user', 'error');
+        showToast(result.error ?? 'Failed to create user', 'error');
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to create user', 'error');
     }
   };
 
   const handleUpdateUser = async () => {
-    if (!editingUser) return;
+    if (!editingUser) {return;}
 
     if (!formData.full_name.trim()) {
       showToast('Please fill in all required fields', 'error');
@@ -132,17 +132,17 @@ export function UserManagement() {
       if (result.success) {
         showToast('User updated successfully!', 'success');
         setShowEditModal(false);
-        loadUsers();
+        void loadUsers();
       } else {
-        showToast(result.error || 'Failed to update user', 'error');
+        showToast(result.error ?? 'Failed to update user', 'error');
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to update user', 'error');
     }
   };
 
   const handleDeleteUser = async () => {
-    if (!deletingUser) return;
+    if (!deletingUser) {return;}
 
     try {
       const result = await authApi.deleteUser(deletingUser.id);
@@ -150,11 +150,11 @@ export function UserManagement() {
         showToast('User deleted successfully!', 'success');
         setShowDeleteModal(false);
         setDeletingUser(null);
-        loadUsers();
+        void loadUsers();
       } else {
-        showToast(result.error || 'Failed to delete user', 'error');
+        showToast(result.error ?? 'Failed to delete user', 'error');
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to delete user', 'error');
     }
   };

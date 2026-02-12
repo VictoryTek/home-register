@@ -22,14 +22,16 @@ export interface WarrantyNotification {
  */
 export function checkWarrantyNotifications(
   items: Item[],
-  daysThreshold: number = 30
+  daysThreshold = 30
 ): WarrantyNotification[] {
   const notifications: WarrantyNotification[] = [];
   const now = new Date();
   now.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
 
   items.forEach((item) => {
-    if (!item.warranty_expiry || !item.id) return;
+    if (!item.warranty_expiry || !item.id) {
+      return;
+    }
 
     const expiryDate = new Date(item.warranty_expiry);
     expiryDate.setHours(0, 0, 0, 0);
@@ -62,8 +64,8 @@ export function checkWarrantyNotifications(
 
   // Sort by urgency: expired first, then by days until expiry
   return notifications.sort((a, b) => {
-    if (a.status === 'expired' && b.status !== 'expired') return -1;
-    if (a.status !== 'expired' && b.status === 'expired') return 1;
+    if (a.status === 'expired' && b.status !== 'expired') {return -1;}
+    if (a.status !== 'expired' && b.status === 'expired') {return 1;}
     return a.daysUntilExpiry - b.daysUntilExpiry;
   });
 }

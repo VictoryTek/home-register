@@ -23,10 +23,10 @@ export function Modal({ isOpen, onClose, title, subtitle, children, footer, maxW
     return undefined;
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {return null;}
 
   const modalContent = (
-    <div className={`modal-overlay ${isOpen ? 'active' : ''}`} onClick={onClose}>
+    <div className="modal-overlay active" onClick={onClose}>
       <div 
         className="modal-content" 
         style={{ maxWidth }}

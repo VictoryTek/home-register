@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Modal } from './Modal';
+import Modal from './Modal';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { authApi } from '@/services/api';
-import { formatDate } from '@/utils/dateFormat';
+import { formatDate, type DateFormatType } from '@/utils/dateFormat';
 
 interface EditProfileModalProps {
   onClose: () => void;
@@ -42,7 +42,9 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -55,7 +57,7 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
         showToast('Profile updated successfully', 'success');
         onClose();
       } else {
-        showToast(result.error || 'Failed to update profile', 'error');
+        showToast(result.error ?? 'Failed to update profile', 'error');
       }
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -71,8 +73,7 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
     setForm(prev => ({ ...prev, [field]: e.target.value }));
     if (errors[field]) {
       setErrors(prev => {
-        const next = { ...prev };
-        delete next[field];
+        const { [field]: _removed, ...next } = prev;
         return next;
       });
     }
@@ -125,7 +126,7 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
           <input
             type="text"
             id="username"
-            value={user?.username || ''}
+            value={user?.username ?? ''}
             disabled
             className="input-disabled"
           />
@@ -167,7 +168,7 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
           <label>Member Since</label>
           <input
             type="text"
-            value={formatDate(user?.created_at, settings?.date_format as any || 'MM/DD/YYYY')}
+            value={formatDate(user?.created_at, (settings?.date_format ?? 'MM/DD/YYYY') as DateFormatType)}
             disabled
             className="input-disabled"
           />

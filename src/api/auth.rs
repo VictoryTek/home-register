@@ -45,7 +45,7 @@ pub async fn get_auth_context_from_request(
         Err(e) => {
             return Err(HttpResponse::Unauthorized().json(ErrorResponse {
                 success: false,
-                error: format!("Invalid token: {}", e),
+                error: format!("Invalid token: {e}"),
                 message: Some("Please log in again".to_string()),
             }));
         },
@@ -212,7 +212,7 @@ pub async fn initial_setup(
             error!("Error creating admin user: {}", e);
             return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Failed to create user: {}", e),
+                error: format!("Failed to create user: {e}"),
                 message: None,
             }));
         },
@@ -766,7 +766,7 @@ pub async fn admin_get_users(pool: web::Data<Pool>, req: HttpRequest) -> Result<
         Ok(users) => Ok(HttpResponse::Ok().json(ApiResponse {
             success: true,
             data: Some(users.clone()),
-            message: Some(format!("Retrieved {} users", users.len())),
+            message: Some(format!("Retrieved {count} users", count = users.len())),
             error: None,
         })),
         Err(e) => {
@@ -897,7 +897,7 @@ pub async fn admin_create_user(
             error!("Error creating user: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Failed to create user: {}", e),
+                error: format!("Failed to create user: {e}"),
                 message: None,
             }))
         },
@@ -986,7 +986,7 @@ pub async fn admin_update_user(
             error!("Error updating user: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Failed to update user: {}", e),
+                error: format!("Failed to update user: {e}"),
                 message: None,
             }))
         },
@@ -1071,7 +1071,7 @@ pub async fn admin_delete_user(
             error!("Error deleting user: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Failed to delete user: {}", e),
+                error: format!("Failed to delete user: {e}"),
                 message: None,
             }))
         },
@@ -1216,8 +1216,8 @@ pub async fn create_inventory_share(
                 success: false,
                 error: "User not found".to_string(),
                 message: Some(format!(
-                    "No user found with username or email: {}",
-                    body.shared_with_username
+                    "No user found with username or email: {username}",
+                    username = body.shared_with_username
                 )),
             }));
         },
@@ -1257,7 +1257,7 @@ pub async fn create_inventory_share(
             Ok(HttpResponse::Created().json(ApiResponse {
                 success: true,
                 data: Some(share),
-                message: Some(format!("Inventory shared with {}", target_user.username)),
+                message: Some(format!("Inventory shared with {username}", username = target_user.username)),
                 error: None,
             }))
         },
@@ -1268,8 +1268,8 @@ pub async fn create_inventory_share(
                     success: false,
                     error: "Already shared".to_string(),
                     message: Some(format!(
-                        "This inventory is already shared with {}",
-                        target_user.username
+                        "This inventory is already shared with {username}",
+                        username = target_user.username
                     )),
                 }));
             }
@@ -1517,8 +1517,8 @@ pub async fn create_access_grant(
                 success: false,
                 error: "User not found".to_string(),
                 message: Some(format!(
-                    "No user found with username or email: {}",
-                    body.grantee_username
+                    "No user found with username or email: {username}",
+                    username = body.grantee_username
                 )),
             }));
         },
@@ -1554,8 +1554,8 @@ pub async fn create_access_grant(
                 success: true,
                 data: Some(grant),
                 message: Some(format!(
-                    "{} now has All Access to all your inventories",
-                    target_user.username
+                    "{username} now has All Access to all your inventories",
+                    username = target_user.username
                 )),
                 error: None,
             }))
@@ -1567,8 +1567,8 @@ pub async fn create_access_grant(
                     success: false,
                     error: "Already granted".to_string(),
                     message: Some(format!(
-                        "{} already has All Access to your inventories",
-                        target_user.username
+                        "{username} already has All Access to your inventories",
+                        username = target_user.username
                     )),
                 }));
             }
@@ -1745,7 +1745,7 @@ pub async fn transfer_inventory_ownership(
         Ok(None) => {
             return Ok(HttpResponse::NotFound().json(ErrorResponse {
                 success: false,
-                error: format!("User '{}' not found", body.new_owner_username),
+                error: format!("User '{username}' not found", username = body.new_owner_username),
                 message: None,
             }));
         },
@@ -1839,10 +1839,7 @@ pub async fn transfer_inventory_ownership(
                     shares_removed,
                 }),
                 message: Some(format!(
-                    "Ownership transferred successfully to {}. {} items transferred, {} shares removed.",
-                    target_full_name,
-                    items_transferred,
-                    shares_removed
+                    "Ownership transferred successfully to {target_full_name}. {items_transferred} items transferred, {shares_removed} shares removed."
                 )),
                 error: None,
             }))
@@ -1851,7 +1848,7 @@ pub async fn transfer_inventory_ownership(
             error!("Error transferring ownership: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("Failed to transfer ownership: {}", e),
+                error: format!("Failed to transfer ownership: {e}"),
                 message: None,
             }))
         },
@@ -2194,8 +2191,7 @@ pub async fn use_recovery_code(
             remaining_codes: remaining,
         }),
         message: Some(format!(
-            "Password reset successfully. You have {} recovery codes remaining.",
-            remaining
+            "Password reset successfully. You have {remaining} recovery codes remaining."
         )),
         error: None,
     }))

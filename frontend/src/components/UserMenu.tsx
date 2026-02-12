@@ -5,7 +5,9 @@ import { EditProfileModal } from './EditProfileModal';
 
 // Helper to get user initials
 function getInitials(name: string): string {
-  if (!name) return '?';
+  if (!name) {
+    return '?';
+  }
   const parts = name.trim().split(/\s+/);
   const first = parts[0];
   const last = parts[parts.length - 1];
@@ -52,7 +54,9 @@ export function UserMenu() {
     return undefined;
   }, [isOpen]);
 
-  if (!user) return null;
+  if (!user) {
+    return null;
+  }
 
   const handleMenuItemClick = (action: () => void) => {
     setIsOpen(false);

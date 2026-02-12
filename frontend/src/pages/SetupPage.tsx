@@ -79,7 +79,7 @@ export function SetupPage() {
     await completeSetup();
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Prevent form submission - use button handlers instead
   };
@@ -108,10 +108,10 @@ export function SetupPage() {
           // Move to recovery codes step
           setStep(4);
         } else {
-          setError(codesResponse.error || 'Failed to generate recovery codes');
+          setError(codesResponse.error ?? 'Failed to generate recovery codes');
         }
       } else {
-        setError(result.error || 'Setup failed. Please try again.');
+        setError(result.error ?? 'Setup failed. Please try again.');
       }
     } catch (err) {
       console.error('Setup error:', err);
@@ -134,14 +134,16 @@ export function SetupPage() {
       // Redirect to app
       navigate('/');
       window.location.reload();
-    } catch (err: any) {
+    } catch {
       setError('Failed to complete setup');
       setIsLoading(false);
     }
   };
 
   const downloadCodes = () => {
-    if (!recoveryCodes) return;
+    if (!recoveryCodes) {
+      return;
+    }
     
     const content = `Home Registry Recovery Codes\n\nUsername: ${formData.username}\nGenerated: ${new Date().toLocaleString()}\n\nSave these codes in a secure location. Each code can only be used once.\n\n${recoveryCodes.join('\n')}\n`;
     const blob = new Blob([content], { type: 'text/plain' });
@@ -156,10 +158,14 @@ export function SetupPage() {
   };
 
   const printCodes = () => {
-    if (!recoveryCodes) return;
+    if (!recoveryCodes) {
+      return;
+    }
     
     const printWindow = window.open('', '', 'width=800,height=600');
-    if (!printWindow) return;
+    if (!printWindow) {
+      return;
+    }
     
     // Build document safely without using document.write with user content
     const doc = printWindow.document;
@@ -204,12 +210,14 @@ export function SetupPage() {
   };
 
   const copyCodes = async () => {
-    if (!recoveryCodes) return;
+    if (!recoveryCodes) {
+      return;
+    }
     
     try {
       await navigator.clipboard.writeText(recoveryCodes.join('\n'));
-    } catch (err) {
-      console.error('Failed to copy codes:', err);
+    } catch {
+      console.error('Failed to copy codes');
     }
   };
 

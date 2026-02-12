@@ -38,7 +38,9 @@ export function SettingsPage() {
   // Load inventories for default inventory selector
   useEffect(() => {
     const loadInventories = async () => {
-      if (!token) return;
+      if (!token) {
+        return;
+      }
       setIsLoading(true);
       try {
         const result = await inventoryApi.getAll();
@@ -51,7 +53,7 @@ export function SettingsPage() {
         setIsLoading(false);
       }
     };
-    loadInventories();
+    void loadInventories();
   }, [token]);
 
   // Sync form with settings when loaded
@@ -61,7 +63,7 @@ export function SettingsPage() {
         date_format: settings.date_format || 'MM/DD/YYYY',
         currency: settings.currency || 'USD',
         default_inventory_id: settings.default_inventory_id,
-        notifications_enabled: settings.notifications_enabled ?? true,
+        notifications_enabled: settings.notifications_enabled,
       });
     }
   }, [settings]);
@@ -93,7 +95,7 @@ export function SettingsPage() {
     form.date_format !== (settings.date_format || 'MM/DD/YYYY') ||
     form.currency !== (settings.currency || 'USD') ||
     form.default_inventory_id !== settings.default_inventory_id ||
-    form.notifications_enabled !== (settings.notifications_enabled ?? true)
+    form.notifications_enabled !== settings.notifications_enabled
   );
 
   return (

@@ -27,9 +27,11 @@ const CURRENCY_CONFIGS: Record<CurrencyType, CurrencyConfig> = {
  * @returns Formatted currency string
  */
 export function formatCurrency(amount: number | undefined | null, currency: CurrencyType = 'USD'): string {
-  if (amount === undefined || amount === null) return '';
+  if (amount === undefined || amount === null) {
+    return '';
+  }
   
-  const config = CURRENCY_CONFIGS[currency] || CURRENCY_CONFIGS.USD;
+  const config = CURRENCY_CONFIGS[currency];
   const formattedAmount = amount.toFixed(config.decimals);
   
   if (config.position === 'before') {
@@ -45,5 +47,5 @@ export function formatCurrency(amount: number | undefined | null, currency: Curr
  * @returns Currency symbol
  */
 export function getCurrencySymbol(currency: CurrencyType = 'USD'): string {
-  return CURRENCY_CONFIGS[currency]?.symbol || '$';
+  return CURRENCY_CONFIGS[currency].symbol;
 }
