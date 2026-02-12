@@ -50,7 +50,10 @@ pub async fn get_inventories(pool: web::Data<Pool>, req: HttpRequest) -> Result<
             Ok(HttpResponse::Ok().json(ApiResponse {
                 success: true,
                 data: Some(inventories.clone()),
-                message: Some(format!("Retrieved {count} inventories", count = inventories.len())),
+                message: Some(format!(
+                    "Retrieved {count} inventories",
+                    count = inventories.len()
+                )),
                 error: None,
             }))
         },
@@ -446,7 +449,10 @@ pub async fn search_items(
             Ok(HttpResponse::Ok().json(ApiResponse {
                 success: true,
                 data: Some(items.clone()),
-                message: Some(format!("Found {count} items matching '{query}'", count = items.len())),
+                message: Some(format!(
+                    "Found {count} items matching '{query}'",
+                    count = items.len()
+                )),
                 error: None,
             }))
         },
@@ -484,7 +490,10 @@ pub async fn get_inventory_organizers(
             Ok(HttpResponse::Ok().json(ApiResponse {
                 success: true,
                 data: Some(organizers.clone()),
-                message: Some(format!("Retrieved {count} organizers", count = organizers.len())),
+                message: Some(format!(
+                    "Retrieved {count} organizers",
+                    count = organizers.len()
+                )),
                 error: None,
             }))
         },
@@ -813,7 +822,10 @@ pub async fn get_item_organizer_values(
             Ok(HttpResponse::Ok().json(ApiResponse {
                 success: true,
                 data: Some(values.clone()),
-                message: Some(format!("Retrieved {count} organizer values", count = values.len())),
+                message: Some(format!(
+                    "Retrieved {count} organizer values",
+                    count = values.len()
+                )),
                 error: None,
             }))
         },
@@ -891,9 +903,7 @@ pub async fn delete_item_organizer_value(
         },
         Ok(false) => Ok(HttpResponse::NotFound().json(ErrorResponse {
             success: false,
-            error: format!(
-                "Organizer value not found for item {item_id} type {organizer_type_id}"
-            ),
+            error: format!("Organizer value not found for item {item_id} type {organizer_type_id}"),
             message: Some("Item organizer value not found".to_string()),
         })),
         Err(e) => {
@@ -913,7 +923,10 @@ async fn api_not_found(req: HttpRequest) -> impl Responder {
     HttpResponse::NotFound().json(ErrorResponse {
         success: false,
         error: "Endpoint not found".to_string(),
-        message: Some(format!("The API endpoint {uri} does not exist", uri = req.uri())),
+        message: Some(format!(
+            "The API endpoint {uri} does not exist",
+            uri = req.uri()
+        )),
     })
 }
 

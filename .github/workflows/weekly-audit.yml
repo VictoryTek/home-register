@@ -29,7 +29,7 @@ jobs:
         run: cargo audit --json > rust-audit.json || true
 
       - name: Run cargo deny advisories
-        uses: EmbarkStudios/cargo-deny-action@34899fc7ba81ca6268d5947a7a16b4649013fea1 # v2.0.11
+        uses: EmbarkStudios/cargo-deny-action@v2 # v2.x latest
         with:
           command: check advisories
 

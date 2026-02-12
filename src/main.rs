@@ -16,10 +16,8 @@ use actix_web::{
 use dotenv::dotenv;
 use std::env;
 
-mod api;
-mod auth;
-mod db;
-mod models;
+// Use the library crate
+use home_registry::{api, auth, db};
 
 async fn health() -> impl Responder {
     HttpResponse::Ok().json(serde_json::json!({

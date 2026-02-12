@@ -1257,7 +1257,10 @@ pub async fn create_inventory_share(
             Ok(HttpResponse::Created().json(ApiResponse {
                 success: true,
                 data: Some(share),
-                message: Some(format!("Inventory shared with {username}", username = target_user.username)),
+                message: Some(format!(
+                    "Inventory shared with {username}",
+                    username = target_user.username
+                )),
                 error: None,
             }))
         },
@@ -1745,7 +1748,10 @@ pub async fn transfer_inventory_ownership(
         Ok(None) => {
             return Ok(HttpResponse::NotFound().json(ErrorResponse {
                 success: false,
-                error: format!("User '{username}' not found", username = body.new_owner_username),
+                error: format!(
+                    "User '{username}' not found",
+                    username = body.new_owner_username
+                ),
                 message: None,
             }));
         },

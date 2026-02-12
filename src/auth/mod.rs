@@ -268,6 +268,39 @@ pub fn validate_username(username: &str) -> Result<(), &'static str> {
     Ok(())
 }
 
+// ==================== Testing Helpers ====================
+
+/// Synchronous password hashing for tests (do not use in async contexts)
+#[cfg(test)]
+pub fn hash_password_sync(password: &str) -> Result<String, argon2::password_hash::Error> {
+    let salt = SaltString::generate(&mut OsRng);
+    let argon2 = Argon2::default();
+    let password_hash = argon2.hash_password(password.as_bytes(), &salt)?;
+    Ok(password_hash.to_string())
+}
+
+/// Synchronous password verification for tests (do not use in async contexts)
+#[cfg(test)]
+pub fn verify_password_sync(password: &str, hash_str: &str) -> Result<bool, argon2::password_hash::Error> {
+    let parsed_hash = PasswordHash::new(hash_str)?;
+    Ok(Argon2::default()
+        .verify_password(password.as_bytes(), &parsed_hash)
+        .is_ok())
+}
+
+/// Alias for generate_token to match common naming convention
+pub fn create_token(user_id: &Uuid, username: &str) -> Result<String, jsonwebtoken::errors::Error> {
+    let user = User {
+        id: *user_id,
+        username: username.to_string(),
+        password_hash: String::new(), // Not used for token generation
+        is_admin: false,
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
+    };
+    generate_token(&user)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

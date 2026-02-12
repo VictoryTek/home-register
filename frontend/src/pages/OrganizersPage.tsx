@@ -164,7 +164,7 @@ export function OrganizersPage() {
   };
 
   const handleSaveOption = async () => {
-    if (!optionName.trim() || !selectedTypeForOption || !selectedTypeForOption.id) {
+    if (!optionName.trim() || !selectedTypeForOption?.id) {
       showToast('Please enter a name for the option', 'error');
       return;
     }
