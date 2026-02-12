@@ -9,21 +9,8 @@ output:
 
 # Cataloger configuration
 catalogers:
-  # Enable all relevant catalogers
-  enabled:
-    - "rust-cargo-lock-cataloger"
-    - "javascript-package-cataloger"
-    - "javascript-lock-cataloger"
-    - "binary-cataloger"
-    - "file-classifier-cataloger"
-  
-  # Cataloger-specific settings
-  javascript:
-    search-remote-licenses: false
-    npm-base-url: "https://registry.npmjs.org"
-  
-  rust:
-    search-remote-licenses: true
+  # Scope to only necessary catalogers for this project
+  scope: "all-layers"
 
 # File selection
 file:
@@ -47,10 +34,15 @@ source:
 # Exclude paths from scanning
 exclude:
   - "**/node_modules/**"
-  - "**/target/debug/**"
+  - "**/target/**"
   - "**/.git/**"
   - "**/dist/**"
   - "**/coverage/**"
+  - "**/.cache/**"
+  - "**/tmp/**"
+  - "**/temp/**"
+  - "**/*.log"
+  - "analysis/**"
 
 # Parallelism for scanning
 parallelism: 4

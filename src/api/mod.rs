@@ -1,14 +1,13 @@
 pub mod auth;
 
-use actix_web::{delete, get, post, put, web, HttpRequest, HttpResponse, Responder, Result, Scope};
 use crate::db::DatabaseService;
 use crate::models::{
-    ApiResponse, CreateItemRequest, ErrorResponse, UpdateItemRequest, 
-    CreateInventoryRequest, UpdateInventoryRequest,
-    CreateOrganizerTypeRequest, UpdateOrganizerTypeRequest,
-    CreateOrganizerOptionRequest, UpdateOrganizerOptionRequest,
-    SetItemOrganizerValuesRequest,
+    ApiResponse, CreateInventoryRequest, CreateItemRequest, CreateOrganizerOptionRequest,
+    CreateOrganizerTypeRequest, ErrorResponse, SetItemOrganizerValuesRequest,
+    UpdateInventoryRequest, UpdateItemRequest, UpdateOrganizerOptionRequest,
+    UpdateOrganizerTypeRequest,
 };
+use actix_web::{delete, get, post, put, web, HttpRequest, HttpResponse, Responder, Result, Scope};
 use deadpool_postgres::Pool;
 use log::{error, info};
 use validator::Validate;
@@ -18,7 +17,7 @@ pub async fn index() -> impl Responder {
     // Serve the static HTML file instead of embedded HTML
     match std::fs::read_to_string("static/index.html") {
         Ok(content) => HttpResponse::Ok().content_type("text/html").body(content),
-        Err(_) => HttpResponse::InternalServerError().body("Could not load index page")
+        Err(_) => HttpResponse::InternalServerError().body("Could not load index page"),
     }
 }
 
@@ -33,20 +32,21 @@ pub async fn api_health() -> impl Responder {
 
 // Inventories API endpoints
 #[get("/inventories")]
-pub async fn get_inventories(
-    pool: web::Data<Pool>,
-    req: HttpRequest,
-) -> Result<impl Responder> {
+pub async fn get_inventories(pool: web::Data<Pool>, req: HttpRequest) -> Result<impl Responder> {
     let auth = match auth::get_auth_context_from_request(&req, pool.get_ref()).await {
         Ok(a) => a,
         Err(e) => return Ok(e),
     };
-    
+
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     match db_service.get_accessible_inventories(auth.user_id).await {
         Ok(inventories) => {
-            info!("Successfully retrieved {} inventories for user {}", inventories.len(), auth.username);
+            info!(
+                "Successfully retrieved {} inventories for user {}",
+                inventories.len(),
+                auth.username
+            );
             Ok(HttpResponse::Ok().json(ApiResponse {
                 success: true,
                 data: Some(inventories.clone()),
@@ -61,7 +61,7 @@ pub async fn get_inventories(
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to retrieve inventories".to_string()),
             }))
-        }
+        },
     }
 }
 
@@ -69,13 +69,13 @@ pub async fn get_inventories(
 pub async fn create_inventory(
     pool: web::Data<Pool>,
     http_req: HttpRequest,
-    req: web::Json<CreateInventoryRequest>
+    req: web::Json<CreateInventoryRequest>,
 ) -> Result<impl Responder> {
     let auth = match auth::get_auth_context_from_request(&http_req, pool.get_ref()).await {
         Ok(a) => a,
         Err(e) => return Ok(e),
     };
-    
+
     // Validate input before processing
     if let Err(validation_errors) = req.validate() {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
@@ -84,10 +84,13 @@ pub async fn create_inventory(
             message: Some(validation_errors.to_string()),
         }));
     }
-    
+
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
-    match db_service.create_inventory(req.into_inner(), auth.user_id).await {
+
+    match db_service
+        .create_inventory(req.into_inner(), auth.user_id)
+        .await
+    {
         Ok(inventory) => {
             info!("Successfully created inventory: {}", inventory.name);
             Ok(HttpResponse::Created().json(ApiResponse {
@@ -104,18 +107,15 @@ pub async fn create_inventory(
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to create inventory".to_string()),
             }))
-        }
+        },
     }
 }
 
 #[get("/inventories/{id}")]
-pub async fn get_inventory(
-    pool: web::Data<Pool>,
-    path: web::Path<i32>
-) -> Result<impl Responder> {
+pub async fn get_inventory(pool: web::Data<Pool>, path: web::Path<i32>) -> Result<impl Responder> {
     let inventory_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     match db_service.get_inventory_by_id(inventory_id).await {
         Ok(Some(inventory)) => {
             info!("Successfully retrieved inventory with id: {}", inventory_id);
@@ -126,13 +126,11 @@ pub async fn get_inventory(
                 error: None,
             }))
         },
-        Ok(None) => {
-            Ok(HttpResponse::NotFound().json(ErrorResponse {
-                success: false,
-                error: format!("Inventory with id {} not found", inventory_id),
-                message: Some("Inventory not found".to_string()),
-            }))
-        },
+        Ok(None) => Ok(HttpResponse::NotFound().json(ErrorResponse {
+            success: false,
+            error: format!("Inventory with id {} not found", inventory_id),
+            message: Some("Inventory not found".to_string()),
+        })),
         Err(e) => {
             error!("Error retrieving inventory: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -140,21 +138,25 @@ pub async fn get_inventory(
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to retrieve inventory".to_string()),
             }))
-        }
+        },
     }
 }
 
 #[get("/inventories/{id}/items")]
 pub async fn get_inventory_items(
     pool: web::Data<Pool>,
-    path: web::Path<i32>
+    path: web::Path<i32>,
 ) -> Result<impl Responder> {
     let inventory_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     match db_service.get_items_by_inventory(inventory_id).await {
         Ok(items) => {
-            info!("Successfully retrieved {} items for inventory {}", items.len(), inventory_id);
+            info!(
+                "Successfully retrieved {} items for inventory {}",
+                items.len(),
+                inventory_id
+            );
             Ok(HttpResponse::Ok().json(ApiResponse {
                 success: true,
                 data: Some(items.clone()),
@@ -163,13 +165,16 @@ pub async fn get_inventory_items(
             }))
         },
         Err(e) => {
-            error!("Error retrieving items for inventory {}: {}", inventory_id, e);
+            error!(
+                "Error retrieving items for inventory {}: {}",
+                inventory_id, e
+            );
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to retrieve inventory items".to_string()),
             }))
-        }
+        },
     }
 }
 
@@ -177,7 +182,7 @@ pub async fn get_inventory_items(
 pub async fn update_inventory(
     pool: web::Data<Pool>,
     path: web::Path<i32>,
-    req: web::Json<UpdateInventoryRequest>
+    req: web::Json<UpdateInventoryRequest>,
 ) -> Result<impl Responder> {
     // Validate input before processing
     if let Err(validation_errors) = req.validate() {
@@ -187,11 +192,14 @@ pub async fn update_inventory(
             message: Some(validation_errors.to_string()),
         }));
     }
-    
+
     let inventory_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
-    match db_service.update_inventory(inventory_id, req.into_inner()).await {
+
+    match db_service
+        .update_inventory(inventory_id, req.into_inner())
+        .await
+    {
         Ok(Some(inventory)) => {
             info!("Successfully updated inventory with id: {}", inventory_id);
             Ok(HttpResponse::Ok().json(ApiResponse {
@@ -201,13 +209,11 @@ pub async fn update_inventory(
                 error: None,
             }))
         },
-        Ok(None) => {
-            Ok(HttpResponse::NotFound().json(ErrorResponse {
-                success: false,
-                error: format!("Inventory with id {} not found", inventory_id),
-                message: Some("Inventory not found".to_string()),
-            }))
-        },
+        Ok(None) => Ok(HttpResponse::NotFound().json(ErrorResponse {
+            success: false,
+            error: format!("Inventory with id {} not found", inventory_id),
+            message: Some("Inventory not found".to_string()),
+        })),
         Err(e) => {
             error!("Error updating inventory: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -215,18 +221,18 @@ pub async fn update_inventory(
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to update inventory".to_string()),
             }))
-        }
+        },
     }
 }
 
 #[delete("/inventories/{id}")]
 pub async fn delete_inventory(
     pool: web::Data<Pool>,
-    path: web::Path<i32>
+    path: web::Path<i32>,
 ) -> Result<impl Responder> {
     let inventory_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     match db_service.delete_inventory(inventory_id).await {
         Ok(true) => {
             info!("Successfully deleted inventory with id: {}", inventory_id);
@@ -237,13 +243,11 @@ pub async fn delete_inventory(
                 error: None,
             }))
         },
-        Ok(false) => {
-            Ok(HttpResponse::NotFound().json(ErrorResponse {
-                success: false,
-                error: format!("Inventory with id {} not found", inventory_id),
-                message: Some("Inventory not found".to_string()),
-            }))
-        },
+        Ok(false) => Ok(HttpResponse::NotFound().json(ErrorResponse {
+            success: false,
+            error: format!("Inventory with id {} not found", inventory_id),
+            message: Some("Inventory not found".to_string()),
+        })),
         Err(e) => {
             error!("Error deleting inventory: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -251,7 +255,7 @@ pub async fn delete_inventory(
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to delete inventory".to_string()),
             }))
-        }
+        },
     }
 }
 
@@ -259,7 +263,7 @@ pub async fn delete_inventory(
 #[get("/items")]
 pub async fn get_items(pool: web::Data<Pool>) -> Result<impl Responder> {
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     match db_service.get_all_items().await {
         Ok(items) => {
             info!("Successfully retrieved {} items from database", items.len());
@@ -277,18 +281,15 @@ pub async fn get_items(pool: web::Data<Pool>) -> Result<impl Responder> {
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to retrieve items".to_string()),
             }))
-        }
+        },
     }
 }
 
 #[get("/items/{id}")]
-pub async fn get_item(
-    pool: web::Data<Pool>,
-    path: web::Path<i32>
-) -> Result<impl Responder> {
+pub async fn get_item(pool: web::Data<Pool>, path: web::Path<i32>) -> Result<impl Responder> {
     let item_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     match db_service.get_item_by_id(item_id).await {
         Ok(Some(item)) => {
             info!("Successfully retrieved item with id: {}", item_id);
@@ -299,13 +300,11 @@ pub async fn get_item(
                 error: None,
             }))
         },
-        Ok(None) => {
-            Ok(HttpResponse::NotFound().json(ErrorResponse {
-                success: false,
-                error: format!("Item with id {} not found", item_id),
-                message: Some("Item not found".to_string()),
-            }))
-        },
+        Ok(None) => Ok(HttpResponse::NotFound().json(ErrorResponse {
+            success: false,
+            error: format!("Item with id {} not found", item_id),
+            message: Some("Item not found".to_string()),
+        })),
         Err(e) => {
             error!("Error retrieving item: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -313,14 +312,14 @@ pub async fn get_item(
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to retrieve item".to_string()),
             }))
-        }
+        },
     }
 }
 
 #[post("/items")]
 pub async fn create_item(
     pool: web::Data<Pool>,
-    req: web::Json<CreateItemRequest>
+    req: web::Json<CreateItemRequest>,
 ) -> Result<impl Responder> {
     // Validate input before processing
     if let Err(validation_errors) = req.validate() {
@@ -330,9 +329,9 @@ pub async fn create_item(
             message: Some(validation_errors.to_string()),
         }));
     }
-    
+
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     match db_service.create_item(req.into_inner()).await {
         Ok(item) => {
             info!("Successfully created item: {}", item.name);
@@ -350,7 +349,7 @@ pub async fn create_item(
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to create item".to_string()),
             }))
-        }
+        },
     }
 }
 
@@ -358,7 +357,7 @@ pub async fn create_item(
 pub async fn update_item(
     pool: web::Data<Pool>,
     path: web::Path<i32>,
-    req: web::Json<UpdateItemRequest>
+    req: web::Json<UpdateItemRequest>,
 ) -> Result<impl Responder> {
     // Validate input before processing
     if let Err(validation_errors) = req.validate() {
@@ -368,14 +367,11 @@ pub async fn update_item(
             message: Some(validation_errors.to_string()),
         }));
     }
-    
+
     let item_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
-    match db_service.update_item(
-        item_id,
-        req.into_inner()
-    ).await {
+
+    match db_service.update_item(item_id, req.into_inner()).await {
         Ok(Some(item)) => {
             info!("Successfully updated item with id: {}", item_id);
             Ok(HttpResponse::Ok().json(ApiResponse {
@@ -385,13 +381,11 @@ pub async fn update_item(
                 error: None,
             }))
         },
-        Ok(None) => {
-            Ok(HttpResponse::NotFound().json(ErrorResponse {
-                success: false,
-                error: format!("Item with id {} not found", item_id),
-                message: Some("Item not found".to_string()),
-            }))
-        },
+        Ok(None) => Ok(HttpResponse::NotFound().json(ErrorResponse {
+            success: false,
+            error: format!("Item with id {} not found", item_id),
+            message: Some("Item not found".to_string()),
+        })),
         Err(e) => {
             error!("Error updating item: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -399,18 +393,15 @@ pub async fn update_item(
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to update item".to_string()),
             }))
-        }
+        },
     }
 }
 
 #[delete("/items/{id}")]
-pub async fn delete_item(
-    pool: web::Data<Pool>,
-    path: web::Path<i32>
-) -> Result<impl Responder> {
+pub async fn delete_item(pool: web::Data<Pool>, path: web::Path<i32>) -> Result<impl Responder> {
     let item_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     match db_service.delete_item(item_id).await {
         Ok(true) => {
             info!("Successfully deleted item with id: {}", item_id);
@@ -421,13 +412,11 @@ pub async fn delete_item(
                 error: None,
             }))
         },
-        Ok(false) => {
-            Ok(HttpResponse::NotFound().json(ErrorResponse {
-                success: false,
-                error: format!("Item with id {} not found", item_id),
-                message: Some("Item not found".to_string()),
-            }))
-        },
+        Ok(false) => Ok(HttpResponse::NotFound().json(ErrorResponse {
+            success: false,
+            error: format!("Item with id {} not found", item_id),
+            message: Some("Item not found".to_string()),
+        })),
         Err(e) => {
             error!("Error deleting item: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -435,21 +424,25 @@ pub async fn delete_item(
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to delete item".to_string()),
             }))
-        }
+        },
     }
 }
 
 #[get("/items/search/{query}")]
 pub async fn search_items(
     pool: web::Data<Pool>,
-    path: web::Path<String>
+    path: web::Path<String>,
 ) -> Result<impl Responder> {
     let query = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     match db_service.search_items(&query).await {
         Ok(items) => {
-            info!("Successfully searched items with query '{}', found {} results", query, items.len());
+            info!(
+                "Successfully searched items with query '{}', found {} results",
+                query,
+                items.len()
+            );
             Ok(HttpResponse::Ok().json(ApiResponse {
                 success: true,
                 data: Some(items.clone()),
@@ -464,7 +457,7 @@ pub async fn search_items(
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to search items".to_string()),
             }))
-        }
+        },
     }
 }
 
@@ -473,14 +466,21 @@ pub async fn search_items(
 #[get("/inventories/{id}/organizers")]
 pub async fn get_inventory_organizers(
     pool: web::Data<Pool>,
-    path: web::Path<i32>
+    path: web::Path<i32>,
 ) -> Result<impl Responder> {
     let inventory_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
-    match db_service.get_organizer_types_with_options_by_inventory(inventory_id).await {
+
+    match db_service
+        .get_organizer_types_with_options_by_inventory(inventory_id)
+        .await
+    {
         Ok(organizers) => {
-            info!("Successfully retrieved {} organizers for inventory {}", organizers.len(), inventory_id);
+            info!(
+                "Successfully retrieved {} organizers for inventory {}",
+                organizers.len(),
+                inventory_id
+            );
             Ok(HttpResponse::Ok().json(ApiResponse {
                 success: true,
                 data: Some(organizers.clone()),
@@ -495,7 +495,7 @@ pub async fn get_inventory_organizers(
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to retrieve organizers".to_string()),
             }))
-        }
+        },
     }
 }
 
@@ -503,12 +503,15 @@ pub async fn get_inventory_organizers(
 pub async fn create_organizer_type(
     pool: web::Data<Pool>,
     path: web::Path<i32>,
-    req: web::Json<CreateOrganizerTypeRequest>
+    req: web::Json<CreateOrganizerTypeRequest>,
 ) -> Result<impl Responder> {
     let inventory_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
-    match db_service.create_organizer_type(inventory_id, req.into_inner()).await {
+
+    match db_service
+        .create_organizer_type(inventory_id, req.into_inner())
+        .await
+    {
         Ok(organizer) => {
             info!("Successfully created organizer type: {}", organizer.name);
             Ok(HttpResponse::Created().json(ApiResponse {
@@ -525,21 +528,24 @@ pub async fn create_organizer_type(
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to create organizer type".to_string()),
             }))
-        }
+        },
     }
 }
 
 #[get("/organizers/{id}")]
 pub async fn get_organizer_type(
     pool: web::Data<Pool>,
-    path: web::Path<i32>
+    path: web::Path<i32>,
 ) -> Result<impl Responder> {
     let organizer_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     match db_service.get_organizer_type_by_id(organizer_id).await {
         Ok(Some(organizer)) => {
-            info!("Successfully retrieved organizer type with id: {}", organizer_id);
+            info!(
+                "Successfully retrieved organizer type with id: {}",
+                organizer_id
+            );
             Ok(HttpResponse::Ok().json(ApiResponse {
                 success: true,
                 data: Some(organizer),
@@ -547,13 +553,11 @@ pub async fn get_organizer_type(
                 error: None,
             }))
         },
-        Ok(None) => {
-            Ok(HttpResponse::NotFound().json(ErrorResponse {
-                success: false,
-                error: format!("Organizer type with id {} not found", organizer_id),
-                message: Some("Organizer type not found".to_string()),
-            }))
-        },
+        Ok(None) => Ok(HttpResponse::NotFound().json(ErrorResponse {
+            success: false,
+            error: format!("Organizer type with id {} not found", organizer_id),
+            message: Some("Organizer type not found".to_string()),
+        })),
         Err(e) => {
             error!("Error retrieving organizer type: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -561,7 +565,7 @@ pub async fn get_organizer_type(
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to retrieve organizer type".to_string()),
             }))
-        }
+        },
     }
 }
 
@@ -569,14 +573,20 @@ pub async fn get_organizer_type(
 pub async fn update_organizer_type(
     pool: web::Data<Pool>,
     path: web::Path<i32>,
-    req: web::Json<UpdateOrganizerTypeRequest>
+    req: web::Json<UpdateOrganizerTypeRequest>,
 ) -> Result<impl Responder> {
     let organizer_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
-    match db_service.update_organizer_type(organizer_id, req.into_inner()).await {
+
+    match db_service
+        .update_organizer_type(organizer_id, req.into_inner())
+        .await
+    {
         Ok(Some(organizer)) => {
-            info!("Successfully updated organizer type with id: {}", organizer_id);
+            info!(
+                "Successfully updated organizer type with id: {}",
+                organizer_id
+            );
             Ok(HttpResponse::Ok().json(ApiResponse {
                 success: true,
                 data: Some(organizer),
@@ -584,13 +594,11 @@ pub async fn update_organizer_type(
                 error: None,
             }))
         },
-        Ok(None) => {
-            Ok(HttpResponse::NotFound().json(ErrorResponse {
-                success: false,
-                error: format!("Organizer type with id {} not found", organizer_id),
-                message: Some("Organizer type not found".to_string()),
-            }))
-        },
+        Ok(None) => Ok(HttpResponse::NotFound().json(ErrorResponse {
+            success: false,
+            error: format!("Organizer type with id {} not found", organizer_id),
+            message: Some("Organizer type not found".to_string()),
+        })),
         Err(e) => {
             error!("Error updating organizer type: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -598,21 +606,24 @@ pub async fn update_organizer_type(
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to update organizer type".to_string()),
             }))
-        }
+        },
     }
 }
 
 #[delete("/organizers/{id}")]
 pub async fn delete_organizer_type(
     pool: web::Data<Pool>,
-    path: web::Path<i32>
+    path: web::Path<i32>,
 ) -> Result<impl Responder> {
     let organizer_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     match db_service.delete_organizer_type(organizer_id).await {
         Ok(true) => {
-            info!("Successfully deleted organizer type with id: {}", organizer_id);
+            info!(
+                "Successfully deleted organizer type with id: {}",
+                organizer_id
+            );
             Ok(HttpResponse::Ok().json(ApiResponse {
                 success: true,
                 data: Some(()),
@@ -620,13 +631,11 @@ pub async fn delete_organizer_type(
                 error: None,
             }))
         },
-        Ok(false) => {
-            Ok(HttpResponse::NotFound().json(ErrorResponse {
-                success: false,
-                error: format!("Organizer type with id {} not found", organizer_id),
-                message: Some("Organizer type not found".to_string()),
-            }))
-        },
+        Ok(false) => Ok(HttpResponse::NotFound().json(ErrorResponse {
+            success: false,
+            error: format!("Organizer type with id {} not found", organizer_id),
+            message: Some("Organizer type not found".to_string()),
+        })),
         Err(e) => {
             error!("Error deleting organizer type: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -634,7 +643,7 @@ pub async fn delete_organizer_type(
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to delete organizer type".to_string()),
             }))
-        }
+        },
     }
 }
 
@@ -643,14 +652,18 @@ pub async fn delete_organizer_type(
 #[get("/organizers/{id}/options")]
 pub async fn get_organizer_options(
     pool: web::Data<Pool>,
-    path: web::Path<i32>
+    path: web::Path<i32>,
 ) -> Result<impl Responder> {
     let organizer_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     match db_service.get_organizer_options(organizer_id).await {
         Ok(options) => {
-            info!("Successfully retrieved {} options for organizer {}", options.len(), organizer_id);
+            info!(
+                "Successfully retrieved {} options for organizer {}",
+                options.len(),
+                organizer_id
+            );
             Ok(HttpResponse::Ok().json(ApiResponse {
                 success: true,
                 data: Some(options.clone()),
@@ -665,7 +678,7 @@ pub async fn get_organizer_options(
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to retrieve organizer options".to_string()),
             }))
-        }
+        },
     }
 }
 
@@ -673,12 +686,15 @@ pub async fn get_organizer_options(
 pub async fn create_organizer_option(
     pool: web::Data<Pool>,
     path: web::Path<i32>,
-    req: web::Json<CreateOrganizerOptionRequest>
+    req: web::Json<CreateOrganizerOptionRequest>,
 ) -> Result<impl Responder> {
     let organizer_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
-    match db_service.create_organizer_option(organizer_id, req.into_inner()).await {
+
+    match db_service
+        .create_organizer_option(organizer_id, req.into_inner())
+        .await
+    {
         Ok(option) => {
             info!("Successfully created organizer option: {}", option.name);
             Ok(HttpResponse::Created().json(ApiResponse {
@@ -695,7 +711,7 @@ pub async fn create_organizer_option(
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to create organizer option".to_string()),
             }))
-        }
+        },
     }
 }
 
@@ -703,14 +719,20 @@ pub async fn create_organizer_option(
 pub async fn update_organizer_option(
     pool: web::Data<Pool>,
     path: web::Path<i32>,
-    req: web::Json<UpdateOrganizerOptionRequest>
+    req: web::Json<UpdateOrganizerOptionRequest>,
 ) -> Result<impl Responder> {
     let option_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
-    match db_service.update_organizer_option(option_id, req.into_inner()).await {
+
+    match db_service
+        .update_organizer_option(option_id, req.into_inner())
+        .await
+    {
         Ok(Some(option)) => {
-            info!("Successfully updated organizer option with id: {}", option_id);
+            info!(
+                "Successfully updated organizer option with id: {}",
+                option_id
+            );
             Ok(HttpResponse::Ok().json(ApiResponse {
                 success: true,
                 data: Some(option),
@@ -718,13 +740,11 @@ pub async fn update_organizer_option(
                 error: None,
             }))
         },
-        Ok(None) => {
-            Ok(HttpResponse::NotFound().json(ErrorResponse {
-                success: false,
-                error: format!("Organizer option with id {} not found", option_id),
-                message: Some("Organizer option not found".to_string()),
-            }))
-        },
+        Ok(None) => Ok(HttpResponse::NotFound().json(ErrorResponse {
+            success: false,
+            error: format!("Organizer option with id {} not found", option_id),
+            message: Some("Organizer option not found".to_string()),
+        })),
         Err(e) => {
             error!("Error updating organizer option: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -732,21 +752,24 @@ pub async fn update_organizer_option(
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to update organizer option".to_string()),
             }))
-        }
+        },
     }
 }
 
 #[delete("/organizer-options/{id}")]
 pub async fn delete_organizer_option(
     pool: web::Data<Pool>,
-    path: web::Path<i32>
+    path: web::Path<i32>,
 ) -> Result<impl Responder> {
     let option_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     match db_service.delete_organizer_option(option_id).await {
         Ok(true) => {
-            info!("Successfully deleted organizer option with id: {}", option_id);
+            info!(
+                "Successfully deleted organizer option with id: {}",
+                option_id
+            );
             Ok(HttpResponse::Ok().json(ApiResponse {
                 success: true,
                 data: Some(()),
@@ -754,13 +777,11 @@ pub async fn delete_organizer_option(
                 error: None,
             }))
         },
-        Ok(false) => {
-            Ok(HttpResponse::NotFound().json(ErrorResponse {
-                success: false,
-                error: format!("Organizer option with id {} not found", option_id),
-                message: Some("Organizer option not found".to_string()),
-            }))
-        },
+        Ok(false) => Ok(HttpResponse::NotFound().json(ErrorResponse {
+            success: false,
+            error: format!("Organizer option with id {} not found", option_id),
+            message: Some("Organizer option not found".to_string()),
+        })),
         Err(e) => {
             error!("Error deleting organizer option: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -768,7 +789,7 @@ pub async fn delete_organizer_option(
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to delete organizer option".to_string()),
             }))
-        }
+        },
     }
 }
 
@@ -777,14 +798,18 @@ pub async fn delete_organizer_option(
 #[get("/items/{id}/organizer-values")]
 pub async fn get_item_organizer_values(
     pool: web::Data<Pool>,
-    path: web::Path<i32>
+    path: web::Path<i32>,
 ) -> Result<impl Responder> {
     let item_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     match db_service.get_item_organizer_values(item_id).await {
         Ok(values) => {
-            info!("Successfully retrieved {} organizer values for item {}", values.len(), item_id);
+            info!(
+                "Successfully retrieved {} organizer values for item {}",
+                values.len(),
+                item_id
+            );
             Ok(HttpResponse::Ok().json(ApiResponse {
                 success: true,
                 data: Some(values.clone()),
@@ -799,7 +824,7 @@ pub async fn get_item_organizer_values(
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to retrieve item organizer values".to_string()),
             }))
-        }
+        },
     }
 }
 
@@ -807,14 +832,21 @@ pub async fn get_item_organizer_values(
 pub async fn set_item_organizer_values(
     pool: web::Data<Pool>,
     path: web::Path<i32>,
-    req: web::Json<SetItemOrganizerValuesRequest>
+    req: web::Json<SetItemOrganizerValuesRequest>,
 ) -> Result<impl Responder> {
     let item_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
-    match db_service.set_item_organizer_values(item_id, req.into_inner().values).await {
+
+    match db_service
+        .set_item_organizer_values(item_id, req.into_inner().values)
+        .await
+    {
         Ok(values) => {
-            info!("Successfully set {} organizer values for item {}", values.len(), item_id);
+            info!(
+                "Successfully set {} organizer values for item {}",
+                values.len(),
+                item_id
+            );
             Ok(HttpResponse::Ok().json(ApiResponse {
                 success: true,
                 data: Some(values),
@@ -829,21 +861,27 @@ pub async fn set_item_organizer_values(
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to set item organizer values".to_string()),
             }))
-        }
+        },
     }
 }
 
 #[delete("/items/{item_id}/organizer-values/{organizer_type_id}")]
 pub async fn delete_item_organizer_value(
     pool: web::Data<Pool>,
-    path: web::Path<(i32, i32)>
+    path: web::Path<(i32, i32)>,
 ) -> Result<impl Responder> {
     let (item_id, organizer_type_id) = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
-    match db_service.delete_item_organizer_value(item_id, organizer_type_id).await {
+
+    match db_service
+        .delete_item_organizer_value(item_id, organizer_type_id)
+        .await
+    {
         Ok(true) => {
-            info!("Successfully deleted organizer value for item {} type {}", item_id, organizer_type_id);
+            info!(
+                "Successfully deleted organizer value for item {} type {}",
+                item_id, organizer_type_id
+            );
             Ok(HttpResponse::Ok().json(ApiResponse {
                 success: true,
                 data: Some(()),
@@ -851,13 +889,14 @@ pub async fn delete_item_organizer_value(
                 error: None,
             }))
         },
-        Ok(false) => {
-            Ok(HttpResponse::NotFound().json(ErrorResponse {
-                success: false,
-                error: format!("Organizer value not found for item {} type {}", item_id, organizer_type_id),
-                message: Some("Item organizer value not found".to_string()),
-            }))
-        },
+        Ok(false) => Ok(HttpResponse::NotFound().json(ErrorResponse {
+            success: false,
+            error: format!(
+                "Organizer value not found for item {} type {}",
+                item_id, organizer_type_id
+            ),
+            message: Some("Item organizer value not found".to_string()),
+        })),
         Err(e) => {
             error!("Error deleting item organizer value: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -865,7 +904,7 @@ pub async fn delete_item_organizer_value(
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to delete item organizer value".to_string()),
             }))
-        }
+        },
     }
 }
 
@@ -889,7 +928,7 @@ pub fn api_scope() -> Scope {
         .service(auth::login)
         .service(auth::register)
         .service(auth::get_current_user)
-        .service(auth::update_current_user)  
+        .service(auth::update_current_user)
         .service(auth::change_password)
         // Recovery codes endpoints
         .service(auth::generate_recovery_codes)

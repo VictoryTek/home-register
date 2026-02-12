@@ -21,8 +21,8 @@ all-features = true
 db-path = "~/.cargo/advisory-dbs"
 # The url(s) of the advisory databases to use
 db-urls = ["https://github.com/RustSec/advisory-db"]
-# How to handle unmaintained crates
-unmaintained = "warn"
+# Check all dependencies for unmaintained status
+unmaintained = "all"
 # Threshold for yanked crates
 yanked = "deny"
 # List of ignored advisories (add with reason if needed)

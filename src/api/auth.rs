@@ -1,6 +1,6 @@
 //! User authentication and management API endpoints
-//! 
-//! Provides endpoints for login, registration, profile management, 
+//!
+//! Provides endpoints for login, registration, profile management,
 //! admin user management, and initial setup.
 
 use actix_web::{delete, get, post, put, web, HttpRequest, HttpResponse, Responder, Result};
@@ -9,21 +9,17 @@ use log::{error, info, warn};
 use uuid::Uuid;
 
 use crate::auth::{
-    extract_token, generate_token, hash_password, verify_password, verify_token,
-    validate_password, validate_username,
-    AuthContext,
+    extract_token, generate_token, hash_password, validate_password, validate_username,
+    verify_password, verify_token, AuthContext,
 };
 use crate::db::DatabaseService;
 use crate::models::{
-    ApiResponse, ErrorResponse, LoginRequest, LoginResponse,
-    AdminCreateUserRequest, AdminUpdateUserRequest, UpdateProfileRequest,
-    ChangePasswordRequest,
-    UserResponse, SetupStatusResponse, InitialSetupRequest,
-    UpdateUserSettingsRequest, CreateInventoryShareRequest, UpdateInventoryShareRequest,
-    CreateUserAccessGrantRequest, PermissionSource, TransferOwnershipRequest, TransferOwnershipResponse,
-    // Recovery codes models
-    RecoveryCodesResponse, RecoveryCodesStatus, ConfirmRecoveryCodesRequest, 
-    UseRecoveryCodeRequest, RecoveryCodeUsedResponse,
+    AdminCreateUserRequest, AdminUpdateUserRequest, ApiResponse, ChangePasswordRequest,
+    ConfirmRecoveryCodesRequest, CreateInventoryShareRequest, CreateUserAccessGrantRequest,
+    ErrorResponse, InitialSetupRequest, LoginRequest, LoginResponse, PermissionSource,
+    RecoveryCodeUsedResponse, RecoveryCodesResponse, RecoveryCodesStatus, SetupStatusResponse,
+    TransferOwnershipRequest, TransferOwnershipResponse, UpdateInventoryShareRequest,
+    UpdateProfileRequest, UpdateUserSettingsRequest, UseRecoveryCodeRequest, UserResponse,
 };
 
 // ==================== Helper Functions ====================
@@ -41,7 +37,7 @@ pub async fn get_auth_context_from_request(
                 error: "No authentication token provided".to_string(),
                 message: Some("Please log in to access this resource".to_string()),
             }));
-        }
+        },
     };
 
     let claims = match verify_token(&token) {
@@ -52,7 +48,7 @@ pub async fn get_auth_context_from_request(
                 error: format!("Invalid token: {}", e),
                 message: Some("Please log in again".to_string()),
             }));
-        }
+        },
     };
 
     let auth_ctx = match AuthContext::from_claims(&claims) {
@@ -63,7 +59,7 @@ pub async fn get_auth_context_from_request(
                 error: "Invalid user ID in token".to_string(),
                 message: Some("Please log in again".to_string()),
             }));
-        }
+        },
     };
 
     // Verify user still exists and is active
@@ -74,17 +70,19 @@ pub async fn get_auth_context_from_request(
                 return Err(HttpResponse::Forbidden().json(ErrorResponse {
                     success: false,
                     error: "Account is deactivated".to_string(),
-                    message: Some("Your account has been deactivated. Contact an administrator.".to_string()),
+                    message: Some(
+                        "Your account has been deactivated. Contact an administrator.".to_string(),
+                    ),
                 }));
             }
-        }
+        },
         Ok(None) => {
             return Err(HttpResponse::Unauthorized().json(ErrorResponse {
                 success: false,
                 error: "User not found".to_string(),
                 message: Some("Please log in again".to_string()),
             }));
-        }
+        },
         Err(e) => {
             error!("Database error verifying user: {}", e);
             return Err(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -92,19 +90,16 @@ pub async fn get_auth_context_from_request(
                 error: "Database error".to_string(),
                 message: Some("Unable to verify user".to_string()),
             }));
-        }
+        },
     }
 
     Ok(auth_ctx)
 }
 
 /// Require admin privileges
-async fn require_admin(
-    req: &HttpRequest,
-    pool: &Pool,
-) -> Result<AuthContext, HttpResponse> {
+async fn require_admin(req: &HttpRequest, pool: &Pool) -> Result<AuthContext, HttpResponse> {
     let auth_ctx = get_auth_context_from_request(req, pool).await?;
-    
+
     if !auth_ctx.is_admin {
         return Err(HttpResponse::Forbidden().json(ErrorResponse {
             success: false,
@@ -112,7 +107,7 @@ async fn require_admin(
             message: Some("You don't have permission to access this resource".to_string()),
         }));
     }
-    
+
     Ok(auth_ctx)
 }
 
@@ -122,19 +117,17 @@ async fn require_admin(
 #[get("/auth/setup/status")]
 pub async fn get_setup_status(pool: web::Data<Pool>) -> Result<impl Responder> {
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     match db_service.get_user_count().await {
-        Ok(count) => {
-            Ok(HttpResponse::Ok().json(ApiResponse {
-                success: true,
-                data: Some(SetupStatusResponse {
-                    needs_setup: count == 0,
-                    user_count: count,
-                }),
-                message: None,
-                error: None,
-            }))
-        }
+        Ok(count) => Ok(HttpResponse::Ok().json(ApiResponse {
+            success: true,
+            data: Some(SetupStatusResponse {
+                needs_setup: count == 0,
+                user_count: count,
+            }),
+            message: None,
+            error: None,
+        })),
         Err(e) => {
             error!("Error checking setup status: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -142,7 +135,7 @@ pub async fn get_setup_status(pool: web::Data<Pool>) -> Result<impl Responder> {
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to check setup status".to_string()),
             }))
-        }
+        },
     }
 }
 
@@ -153,7 +146,7 @@ pub async fn initial_setup(
     req: web::Json<InitialSetupRequest>,
 ) -> Result<impl Responder> {
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     // Verify no users exist
     match db_service.get_user_count().await {
         Ok(count) if count > 0 => {
@@ -162,7 +155,7 @@ pub async fn initial_setup(
                 error: "Setup already completed".to_string(),
                 message: Some("An admin user already exists".to_string()),
             }));
-        }
+        },
         Err(e) => {
             error!("Error checking user count: {}", e);
             return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -170,10 +163,10 @@ pub async fn initial_setup(
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to check setup status".to_string()),
             }));
-        }
-        _ => {}
+        },
+        _ => {},
     }
-    
+
     // Validate input
     if let Err(msg) = validate_username(&req.username) {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
@@ -189,7 +182,7 @@ pub async fn initial_setup(
             message: Some("Invalid password".to_string()),
         }));
     }
-    
+
     // Hash password
     let password_hash = match hash_password(req.password.clone()).await {
         Ok(hash) => hash,
@@ -200,17 +193,20 @@ pub async fn initial_setup(
                 error: "Failed to hash password".to_string(),
                 message: None,
             }));
-        }
+        },
     };
-    
+
     // Create admin user
-    let user = match db_service.create_user(
-        &req.username,
-        &req.full_name,
-        &password_hash,
-        true,  // is_admin
-        true,  // is_active
-    ).await {
+    let user = match db_service
+        .create_user(
+            &req.username,
+            &req.full_name,
+            &password_hash,
+            true, // is_admin
+            true, // is_active
+        )
+        .await
+    {
         Ok(u) => u,
         Err(e) => {
             error!("Error creating admin user: {}", e);
@@ -219,14 +215,14 @@ pub async fn initial_setup(
                 error: format!("Failed to create user: {}", e),
                 message: None,
             }));
-        }
+        },
     };
-    
+
     // Create default settings for user
     if let Err(e) = db_service.create_user_settings(user.id).await {
         warn!("Failed to create user settings: {}", e);
     }
-    
+
     // Optionally create first inventory
     if let Some(inventory_name) = &req.inventory_name {
         if !inventory_name.is_empty() {
@@ -236,19 +232,24 @@ pub async fn initial_setup(
                 location: None,
                 image_url: None,
             };
-            
-            match db_service.create_inventory(inventory_request, user.id).await {
+
+            match db_service
+                .create_inventory(inventory_request, user.id)
+                .await
+            {
                 Ok(inventory) => {
-                    info!("Created initial inventory: {} (ID: {:?}) for user {}", 
-                          inventory.name, inventory.id, user.username);
-                }
+                    info!(
+                        "Created initial inventory: {} (ID: {:?}) for user {}",
+                        inventory.name, inventory.id, user.username
+                    );
+                },
                 Err(e) => {
                     warn!("Failed to create initial inventory: {}", e);
-                }
+                },
             }
         }
     }
-    
+
     // Generate token
     let token = match generate_token(&user) {
         Ok(t) => t,
@@ -259,11 +260,14 @@ pub async fn initial_setup(
                 error: "Failed to generate token".to_string(),
                 message: None,
             }));
-        }
+        },
     };
-    
-    info!("Initial setup completed - created admin user: {}", user.username);
-    
+
+    info!(
+        "Initial setup completed - created admin user: {}",
+        user.username
+    );
+
     Ok(HttpResponse::Created().json(ApiResponse {
         success: true,
         data: Some(LoginResponse {
@@ -277,14 +281,14 @@ pub async fn initial_setup(
 
 /// User login
 #[post("/auth/login")]
-pub async fn login(
-    pool: web::Data<Pool>,
-    req: web::Json<LoginRequest>,
-) -> Result<impl Responder> {
+pub async fn login(pool: web::Data<Pool>, req: web::Json<LoginRequest>) -> Result<impl Responder> {
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     // Find user by username
-    let user = match db_service.get_user_by_username_or_email(&req.username).await {
+    let user = match db_service
+        .get_user_by_username_or_email(&req.username)
+        .await
+    {
         Ok(Some(u)) => u,
         Ok(None) => {
             // Don't reveal whether username exists
@@ -293,7 +297,7 @@ pub async fn login(
                 error: "Invalid credentials".to_string(),
                 message: Some("Username or password is incorrect".to_string()),
             }));
-        }
+        },
         Err(e) => {
             error!("Database error during login: {}", e);
             return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -301,31 +305,34 @@ pub async fn login(
                 error: "Database error".to_string(),
                 message: None,
             }));
-        }
+        },
     };
-    
+
     // Check if user is active
     if !user.is_active {
         return Ok(HttpResponse::Forbidden().json(ErrorResponse {
             success: false,
             error: "Account deactivated".to_string(),
-            message: Some("Your account has been deactivated. Contact an administrator.".to_string()),
+            message: Some(
+                "Your account has been deactivated. Contact an administrator.".to_string(),
+            ),
         }));
     }
-    
+
     // Verify password
-    let password_valid = match verify_password(req.password.clone(), user.password_hash.clone()).await {
-        Ok(valid) => valid,
-        Err(e) => {
-            error!("Error verifying password: {}", e);
-            return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
-                success: false,
-                error: "Password verification failed".to_string(),
-                message: None,
-            }));
-        }
-    };
-    
+    let password_valid =
+        match verify_password(req.password.clone(), user.password_hash.clone()).await {
+            Ok(valid) => valid,
+            Err(e) => {
+                error!("Error verifying password: {}", e);
+                return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                    success: false,
+                    error: "Password verification failed".to_string(),
+                    message: None,
+                }));
+            },
+        };
+
     if !password_valid {
         return Ok(HttpResponse::Unauthorized().json(ErrorResponse {
             success: false,
@@ -333,7 +340,7 @@ pub async fn login(
             message: Some("Username or password is incorrect".to_string()),
         }));
     }
-    
+
     // Generate token
     let token = match generate_token(&user) {
         Ok(t) => t,
@@ -344,11 +351,11 @@ pub async fn login(
                 error: "Failed to generate token".to_string(),
                 message: None,
             }));
-        }
+        },
     };
-    
+
     info!("User logged in: {}", user.username);
-    
+
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
         data: Some(LoginResponse {
@@ -367,16 +374,18 @@ pub async fn register(
     req: web::Json<crate::models::CreateUserRequest>,
 ) -> Result<impl Responder> {
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     // Check that at least one user exists (initial setup has been done)
     match db_service.get_user_count().await {
         Ok(count) if count == 0 => {
             return Ok(HttpResponse::BadRequest().json(ErrorResponse {
                 success: false,
                 error: "Initial setup required".to_string(),
-                message: Some("Please complete the initial setup before registering users".to_string()),
+                message: Some(
+                    "Please complete the initial setup before registering users".to_string(),
+                ),
             }));
-        }
+        },
         Err(e) => {
             error!("Database error checking user count: {}", e);
             return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -384,10 +393,10 @@ pub async fn register(
                 error: "Database error".to_string(),
                 message: None,
             }));
-        }
-        _ => {}
+        },
+        _ => {},
     }
-    
+
     // Validate username
     if let Err(msg) = validate_username(&req.username) {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
@@ -396,7 +405,7 @@ pub async fn register(
             message: Some("Invalid username".to_string()),
         }));
     }
-    
+
     // Validate password
     if let Err(msg) = validate_password(&req.password) {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
@@ -405,7 +414,7 @@ pub async fn register(
             message: Some("Invalid password".to_string()),
         }));
     }
-    
+
     // Check if username already exists
     if let Ok(Some(_)) = db_service.get_user_by_username(&req.username).await {
         return Ok(HttpResponse::Conflict().json(ErrorResponse {
@@ -414,7 +423,7 @@ pub async fn register(
             message: Some("Please choose a different username".to_string()),
         }));
     }
-    
+
     // Hash password
     let password_hash = match hash_password(req.password.clone()).await {
         Ok(hash) => hash,
@@ -425,17 +434,20 @@ pub async fn register(
                 error: "Failed to process password".to_string(),
                 message: None,
             }));
-        }
+        },
     };
-    
+
     // Create user (non-admin, active)
-    let user = match db_service.create_user(
-        &req.username,
-        &req.full_name,
-        &password_hash,
-        false, // not admin
-        true,  // active
-    ).await {
+    let user = match db_service
+        .create_user(
+            &req.username,
+            &req.full_name,
+            &password_hash,
+            false, // not admin
+            true,  // active
+        )
+        .await
+    {
         Ok(u) => u,
         Err(e) => {
             error!("Error creating user: {}", e);
@@ -444,14 +456,17 @@ pub async fn register(
                 error: "An internal error occurred".to_string(),
                 message: Some("Failed to create account".to_string()),
             }));
-        }
+        },
     };
-    
+
     // Create default settings for the user
     if let Err(e) = db_service.create_user_settings(user.id).await {
-        warn!("Failed to create user settings for {}: {}", user.username, e);
+        warn!(
+            "Failed to create user settings for {}: {}",
+            user.username, e
+        );
     }
-    
+
     // Generate token for immediate login
     let token = match generate_token(&user) {
         Ok(t) => t,
@@ -462,11 +477,11 @@ pub async fn register(
                 error: "Account created but login failed".to_string(),
                 message: Some("Please log in manually".to_string()),
             }));
-        }
+        },
     };
-    
+
     info!("New user registered: {}", user.username);
-    
+
     Ok(HttpResponse::Created().json(ApiResponse {
         success: true,
         data: Some(LoginResponse {
@@ -482,33 +497,26 @@ pub async fn register(
 
 /// Get current user's profile
 #[get("/auth/me")]
-pub async fn get_current_user(
-    pool: web::Data<Pool>,
-    req: HttpRequest,
-) -> Result<impl Responder> {
+pub async fn get_current_user(pool: web::Data<Pool>, req: HttpRequest) -> Result<impl Responder> {
     let auth_ctx = match get_auth_context_from_request(&req, pool.get_ref()).await {
         Ok(ctx) => ctx,
         Err(response) => return Ok(response),
     };
-    
+
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     match db_service.get_user_by_id(auth_ctx.user_id).await {
-        Ok(Some(user)) => {
-            Ok(HttpResponse::Ok().json(ApiResponse {
-                success: true,
-                data: Some(UserResponse::from(user)),
-                message: None,
-                error: None,
-            }))
-        }
-        Ok(None) => {
-            Ok(HttpResponse::NotFound().json(ErrorResponse {
-                success: false,
-                error: "User not found".to_string(),
-                message: None,
-            }))
-        }
+        Ok(Some(user)) => Ok(HttpResponse::Ok().json(ApiResponse {
+            success: true,
+            data: Some(UserResponse::from(user)),
+            message: None,
+            error: None,
+        })),
+        Ok(None) => Ok(HttpResponse::NotFound().json(ErrorResponse {
+            success: false,
+            error: "User not found".to_string(),
+            message: None,
+        })),
         Err(e) => {
             error!("Error getting user profile: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -516,7 +524,7 @@ pub async fn get_current_user(
                 error: "An internal error occurred".to_string(),
                 message: None,
             }))
-        }
+        },
     }
 }
 
@@ -531,13 +539,13 @@ pub async fn update_current_user(
         Ok(ctx) => ctx,
         Err(response) => return Ok(response),
     };
-    
+
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
-    match db_service.update_user_profile(
-        auth_ctx.user_id,
-        body.full_name.as_deref(),
-    ).await {
+
+    match db_service
+        .update_user_profile(auth_ctx.user_id, body.full_name.as_deref())
+        .await
+    {
         Ok(Some(user)) => {
             info!("User {} updated their profile", auth_ctx.username);
             Ok(HttpResponse::Ok().json(ApiResponse {
@@ -546,14 +554,12 @@ pub async fn update_current_user(
                 message: Some("Profile updated successfully".to_string()),
                 error: None,
             }))
-        }
-        Ok(None) => {
-            Ok(HttpResponse::NotFound().json(ErrorResponse {
-                success: false,
-                error: "User not found".to_string(),
-                message: None,
-            }))
-        }
+        },
+        Ok(None) => Ok(HttpResponse::NotFound().json(ErrorResponse {
+            success: false,
+            error: "User not found".to_string(),
+            message: None,
+        })),
         Err(e) => {
             error!("Error updating user profile: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -561,7 +567,7 @@ pub async fn update_current_user(
                 error: "An internal error occurred".to_string(),
                 message: None,
             }))
-        }
+        },
     }
 }
 
@@ -576,7 +582,7 @@ pub async fn change_password(
         Ok(ctx) => ctx,
         Err(response) => return Ok(response),
     };
-    
+
     // Validate new password
     if let Err(msg) = validate_password(&body.new_password) {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
@@ -585,9 +591,9 @@ pub async fn change_password(
             message: Some("Invalid new password".to_string()),
         }));
     }
-    
+
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     // Get user to verify current password
     let user = match db_service.get_user_by_id(auth_ctx.user_id).await {
         Ok(Some(u)) => u,
@@ -597,7 +603,7 @@ pub async fn change_password(
                 error: "User not found".to_string(),
                 message: None,
             }));
-        }
+        },
         Err(e) => {
             error!("Error getting user: {}", e);
             return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -605,22 +611,23 @@ pub async fn change_password(
                 error: "Database error".to_string(),
                 message: None,
             }));
-        }
+        },
     };
-    
+
     // Verify current password
-    let password_valid = match verify_password(body.current_password.clone(), user.password_hash).await {
-        Ok(valid) => valid,
-        Err(e) => {
-            error!("Error verifying password: {}", e);
-            return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
-                success: false,
-                error: "Password verification failed".to_string(),
-                message: None,
-            }));
-        }
-    };
-    
+    let password_valid =
+        match verify_password(body.current_password.clone(), user.password_hash).await {
+            Ok(valid) => valid,
+            Err(e) => {
+                error!("Error verifying password: {}", e);
+                return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                    success: false,
+                    error: "Password verification failed".to_string(),
+                    message: None,
+                }));
+            },
+        };
+
     if !password_valid {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
             success: false,
@@ -628,7 +635,7 @@ pub async fn change_password(
             message: None,
         }));
     }
-    
+
     // Hash new password
     let password_hash = match hash_password(body.new_password.clone()).await {
         Ok(hash) => hash,
@@ -639,11 +646,14 @@ pub async fn change_password(
                 error: "Failed to hash password".to_string(),
                 message: None,
             }));
-        }
+        },
     };
-    
+
     // Update password
-    if let Err(e) = db_service.update_user_password(auth_ctx.user_id, &password_hash).await {
+    if let Err(e) = db_service
+        .update_user_password(auth_ctx.user_id, &password_hash)
+        .await
+    {
         error!("Error updating password: {}", e);
         return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
             success: false,
@@ -651,9 +661,9 @@ pub async fn change_password(
             message: None,
         }));
     }
-    
+
     info!("User {} changed their password", auth_ctx.username);
-    
+
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
         data: None::<()>,
@@ -666,26 +676,24 @@ pub async fn change_password(
 
 /// Get current user's settings
 #[get("/auth/settings")]
-pub async fn get_user_settings(
-    pool: web::Data<Pool>,
-    req: HttpRequest,
-) -> Result<impl Responder> {
+pub async fn get_user_settings(pool: web::Data<Pool>, req: HttpRequest) -> Result<impl Responder> {
     let auth_ctx = match get_auth_context_from_request(&req, pool.get_ref()).await {
         Ok(ctx) => ctx,
         Err(response) => return Ok(response),
     };
-    
+
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
-    match db_service.get_or_create_user_settings(auth_ctx.user_id).await {
-        Ok(settings) => {
-            Ok(HttpResponse::Ok().json(ApiResponse {
-                success: true,
-                data: Some(settings),
-                message: None,
-                error: None,
-            }))
-        }
+
+    match db_service
+        .get_or_create_user_settings(auth_ctx.user_id)
+        .await
+    {
+        Ok(settings) => Ok(HttpResponse::Ok().json(ApiResponse {
+            success: true,
+            data: Some(settings),
+            message: None,
+            error: None,
+        })),
         Err(e) => {
             error!("Error getting user settings: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -693,7 +701,7 @@ pub async fn get_user_settings(
                 error: "An internal error occurred".to_string(),
                 message: None,
             }))
-        }
+        },
     }
 }
 
@@ -708,28 +716,29 @@ pub async fn update_user_settings(
         Ok(ctx) => ctx,
         Err(response) => return Ok(response),
     };
-    
+
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     // Ensure settings exist
-    let _ = db_service.get_or_create_user_settings(auth_ctx.user_id).await;
-    
-    match db_service.update_user_settings(auth_ctx.user_id, body.into_inner()).await {
-        Ok(Some(settings)) => {
-            Ok(HttpResponse::Ok().json(ApiResponse {
-                success: true,
-                data: Some(settings),
-                message: Some("Settings updated successfully".to_string()),
-                error: None,
-            }))
-        }
-        Ok(None) => {
-            Ok(HttpResponse::NotFound().json(ErrorResponse {
-                success: false,
-                error: "Settings not found".to_string(),
-                message: None,
-            }))
-        }
+    let _ = db_service
+        .get_or_create_user_settings(auth_ctx.user_id)
+        .await;
+
+    match db_service
+        .update_user_settings(auth_ctx.user_id, body.into_inner())
+        .await
+    {
+        Ok(Some(settings)) => Ok(HttpResponse::Ok().json(ApiResponse {
+            success: true,
+            data: Some(settings),
+            message: Some("Settings updated successfully".to_string()),
+            error: None,
+        })),
+        Ok(None) => Ok(HttpResponse::NotFound().json(ErrorResponse {
+            success: false,
+            error: "Settings not found".to_string(),
+            message: None,
+        })),
         Err(e) => {
             error!("Error updating user settings: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -737,7 +746,7 @@ pub async fn update_user_settings(
                 error: "An internal error occurred".to_string(),
                 message: None,
             }))
-        }
+        },
     }
 }
 
@@ -745,26 +754,21 @@ pub async fn update_user_settings(
 
 /// Get all users (admin only)
 #[get("/admin/users")]
-pub async fn admin_get_users(
-    pool: web::Data<Pool>,
-    req: HttpRequest,
-) -> Result<impl Responder> {
+pub async fn admin_get_users(pool: web::Data<Pool>, req: HttpRequest) -> Result<impl Responder> {
     let _auth_ctx = match require_admin(&req, pool.get_ref()).await {
         Ok(ctx) => ctx,
         Err(response) => return Ok(response),
     };
-    
+
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     match db_service.get_all_users().await {
-        Ok(users) => {
-            Ok(HttpResponse::Ok().json(ApiResponse {
-                success: true,
-                data: Some(users.clone()),
-                message: Some(format!("Retrieved {} users", users.len())),
-                error: None,
-            }))
-        }
+        Ok(users) => Ok(HttpResponse::Ok().json(ApiResponse {
+            success: true,
+            data: Some(users.clone()),
+            message: Some(format!("Retrieved {} users", users.len())),
+            error: None,
+        })),
         Err(e) => {
             error!("Error getting users: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -772,7 +776,7 @@ pub async fn admin_get_users(
                 error: "An internal error occurred".to_string(),
                 message: None,
             }))
-        }
+        },
     }
 }
 
@@ -787,26 +791,22 @@ pub async fn admin_get_user(
         Ok(ctx) => ctx,
         Err(response) => return Ok(response),
     };
-    
+
     let user_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     match db_service.get_user_by_id(user_id).await {
-        Ok(Some(user)) => {
-            Ok(HttpResponse::Ok().json(ApiResponse {
-                success: true,
-                data: Some(UserResponse::from(user)),
-                message: None,
-                error: None,
-            }))
-        }
-        Ok(None) => {
-            Ok(HttpResponse::NotFound().json(ErrorResponse {
-                success: false,
-                error: "User not found".to_string(),
-                message: None,
-            }))
-        }
+        Ok(Some(user)) => Ok(HttpResponse::Ok().json(ApiResponse {
+            success: true,
+            data: Some(UserResponse::from(user)),
+            message: None,
+            error: None,
+        })),
+        Ok(None) => Ok(HttpResponse::NotFound().json(ErrorResponse {
+            success: false,
+            error: "User not found".to_string(),
+            message: None,
+        })),
         Err(e) => {
             error!("Error getting user: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -814,7 +814,7 @@ pub async fn admin_get_user(
                 error: "An internal error occurred".to_string(),
                 message: None,
             }))
-        }
+        },
     }
 }
 
@@ -829,7 +829,7 @@ pub async fn admin_create_user(
         Ok(ctx) => ctx,
         Err(response) => return Ok(response),
     };
-    
+
     // Validate input
     if let Err(msg) = validate_username(&body.username) {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
@@ -845,9 +845,9 @@ pub async fn admin_create_user(
             message: Some("Invalid password".to_string()),
         }));
     }
-    
+
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     // Check if username already exists
     if let Ok(Some(_)) = db_service.get_user_by_username(&body.username).await {
         return Ok(HttpResponse::Conflict().json(ErrorResponse {
@@ -856,7 +856,7 @@ pub async fn admin_create_user(
             message: None,
         }));
     }
-    
+
     // Hash password
     let password_hash = match hash_password(body.password.clone()).await {
         Ok(hash) => hash,
@@ -867,21 +867,24 @@ pub async fn admin_create_user(
                 error: "Failed to hash password".to_string(),
                 message: None,
             }));
-        }
+        },
     };
-    
+
     // Create user
-    match db_service.create_user(
-        &body.username,
-        &body.full_name,
-        &password_hash,
-        body.is_admin,
-        body.is_active,
-    ).await {
+    match db_service
+        .create_user(
+            &body.username,
+            &body.full_name,
+            &password_hash,
+            body.is_admin,
+            body.is_active,
+        )
+        .await
+    {
         Ok(user) => {
             // Create default settings
             let _ = db_service.create_user_settings(user.id).await;
-            
+
             info!("Admin created new user: {}", user.username);
             Ok(HttpResponse::Created().json(ApiResponse {
                 success: true,
@@ -889,7 +892,7 @@ pub async fn admin_create_user(
                 message: Some("User created successfully".to_string()),
                 error: None,
             }))
-        }
+        },
         Err(e) => {
             error!("Error creating user: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -897,7 +900,7 @@ pub async fn admin_create_user(
                 error: format!("Failed to create user: {}", e),
                 message: None,
             }))
-        }
+        },
     }
 }
 
@@ -913,10 +916,10 @@ pub async fn admin_update_user(
         Ok(ctx) => ctx,
         Err(response) => return Ok(response),
     };
-    
+
     let user_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     // Validate username if provided
     if let Some(ref username) = body.username {
         if let Err(msg) = validate_username(username) {
@@ -927,7 +930,7 @@ pub async fn admin_update_user(
             }));
         }
     }
-    
+
     // Prevent admin from demoting themselves
     if user_id == auth_ctx.user_id {
         if let Some(false) = body.is_admin {
@@ -945,7 +948,7 @@ pub async fn admin_update_user(
             }));
         }
     }
-    
+
     // Protect last admin
     if let Some(false) = body.is_admin {
         let admin_count = db_service.count_admin_users().await.unwrap_or(0);
@@ -960,8 +963,11 @@ pub async fn admin_update_user(
             }
         }
     }
-    
-    match db_service.admin_update_user(user_id, body.into_inner()).await {
+
+    match db_service
+        .admin_update_user(user_id, body.into_inner())
+        .await
+    {
         Ok(Some(user)) => {
             info!("Admin updated user: {}", user.username);
             Ok(HttpResponse::Ok().json(ApiResponse {
@@ -970,14 +976,12 @@ pub async fn admin_update_user(
                 message: Some("User updated successfully".to_string()),
                 error: None,
             }))
-        }
-        Ok(None) => {
-            Ok(HttpResponse::NotFound().json(ErrorResponse {
-                success: false,
-                error: "User not found".to_string(),
-                message: None,
-            }))
-        }
+        },
+        Ok(None) => Ok(HttpResponse::NotFound().json(ErrorResponse {
+            success: false,
+            error: "User not found".to_string(),
+            message: None,
+        })),
         Err(e) => {
             error!("Error updating user: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -985,7 +989,7 @@ pub async fn admin_update_user(
                 error: format!("Failed to update user: {}", e),
                 message: None,
             }))
-        }
+        },
     }
 }
 
@@ -1000,9 +1004,9 @@ pub async fn admin_delete_user(
         Ok(ctx) => ctx,
         Err(response) => return Ok(response),
     };
-    
+
     let user_id = path.into_inner();
-    
+
     // Prevent admin from deleting themselves
     if user_id == auth_ctx.user_id {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
@@ -1011,9 +1015,9 @@ pub async fn admin_delete_user(
             message: None,
         }));
     }
-    
+
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     // Check if this is the last admin
     let target_user = match db_service.get_user_by_id(user_id).await {
         Ok(Some(u)) => u,
@@ -1023,7 +1027,7 @@ pub async fn admin_delete_user(
                 error: "User not found".to_string(),
                 message: None,
             }));
-        }
+        },
         Err(e) => {
             error!("Error getting user: {}", e);
             return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -1031,9 +1035,9 @@ pub async fn admin_delete_user(
                 error: "Database error".to_string(),
                 message: None,
             }));
-        }
+        },
     };
-    
+
     if target_user.is_admin {
         let admin_count = db_service.count_admin_users().await.unwrap_or(0);
         if admin_count <= 1 {
@@ -1044,24 +1048,25 @@ pub async fn admin_delete_user(
             }));
         }
     }
-    
+
     match db_service.delete_user(user_id).await {
         Ok(true) => {
-            info!("Admin deleted user: {} (ID: {})", target_user.username, user_id);
+            info!(
+                "Admin deleted user: {} (ID: {})",
+                target_user.username, user_id
+            );
             Ok(HttpResponse::Ok().json(ApiResponse {
                 success: true,
                 data: None::<()>,
                 message: Some("User deleted successfully".to_string()),
                 error: None,
             }))
-        }
-        Ok(false) => {
-            Ok(HttpResponse::NotFound().json(ErrorResponse {
-                success: false,
-                error: "User not found".to_string(),
-                message: None,
-            }))
-        }
+        },
+        Ok(false) => Ok(HttpResponse::NotFound().json(ErrorResponse {
+            success: false,
+            error: "User not found".to_string(),
+            message: None,
+        })),
         Err(e) => {
             error!("Error deleting user: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -1069,7 +1074,7 @@ pub async fn admin_delete_user(
                 error: format!("Failed to delete user: {}", e),
                 message: None,
             }))
-        }
+        },
     }
 }
 
@@ -1086,12 +1091,15 @@ pub async fn get_inventory_shares(
         Ok(a) => a,
         Err(e) => return Ok(e),
     };
-    
+
     let inventory_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     // Check if user has permission to view shares (must be owner or have All Access)
-    let effective_perms = match db_service.get_effective_permissions(auth.user_id, inventory_id).await {
+    let effective_perms = match db_service
+        .get_effective_permissions(auth.user_id, inventory_id)
+        .await
+    {
         Ok(p) => p,
         Err(e) => {
             error!("Error checking permission: {}", e);
@@ -1100,7 +1108,7 @@ pub async fn get_inventory_shares(
                 error: "An internal error occurred".to_string(),
                 message: None,
             }));
-        }
+        },
     };
 
     if effective_perms.permission_source == PermissionSource::None {
@@ -1110,25 +1118,31 @@ pub async fn get_inventory_shares(
             message: Some("You don't have access to this inventory".to_string()),
         }));
     }
-    
+
     if !effective_perms.can_manage_sharing && !auth.is_admin {
         return Ok(HttpResponse::Forbidden().json(ErrorResponse {
             success: false,
             error: "Insufficient permissions".to_string(),
-            message: Some("Only inventory owners or users with All Access can manage shares".to_string()),
+            message: Some(
+                "Only inventory owners or users with All Access can manage shares".to_string(),
+            ),
         }));
     }
-    
+
     match db_service.get_inventory_shares(inventory_id).await {
         Ok(shares) => {
-            info!("Retrieved {} shares for inventory {}", shares.len(), inventory_id);
+            info!(
+                "Retrieved {} shares for inventory {}",
+                shares.len(),
+                inventory_id
+            );
             Ok(HttpResponse::Ok().json(ApiResponse {
                 success: true,
                 data: Some(shares),
                 message: Some("Shares retrieved successfully".to_string()),
                 error: None,
             }))
-        }
+        },
         Err(e) => {
             error!("Error retrieving shares: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -1136,7 +1150,7 @@ pub async fn get_inventory_shares(
                 error: "An internal error occurred".to_string(),
                 message: None,
             }))
-        }
+        },
     }
 }
 
@@ -1152,12 +1166,15 @@ pub async fn create_inventory_share(
         Ok(a) => a,
         Err(e) => return Ok(e),
     };
-    
+
     let inventory_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     // Check if user has permission to share (must be owner or have All Access)
-    let effective_perms = match db_service.get_effective_permissions(auth.user_id, inventory_id).await {
+    let effective_perms = match db_service
+        .get_effective_permissions(auth.user_id, inventory_id)
+        .await
+    {
         Ok(p) => p,
         Err(e) => {
             error!("Error checking permission: {}", e);
@@ -1166,7 +1183,7 @@ pub async fn create_inventory_share(
                 error: "An internal error occurred".to_string(),
                 message: None,
             }));
-        }
+        },
     };
 
     if effective_perms.permission_source == PermissionSource::None {
@@ -1176,25 +1193,34 @@ pub async fn create_inventory_share(
             message: Some("You don't have access to this inventory".to_string()),
         }));
     }
-    
+
     if !effective_perms.can_manage_sharing && !auth.is_admin {
         return Ok(HttpResponse::Forbidden().json(ErrorResponse {
             success: false,
             error: "Insufficient permissions".to_string(),
-            message: Some("Only inventory owners or users with All Access can share this inventory".to_string()),
+            message: Some(
+                "Only inventory owners or users with All Access can share this inventory"
+                    .to_string(),
+            ),
         }));
     }
-    
+
     // Find the user to share with
-    let target_user = match db_service.get_user_by_username_or_email(&body.shared_with_username).await {
+    let target_user = match db_service
+        .get_user_by_username_or_email(&body.shared_with_username)
+        .await
+    {
         Ok(Some(u)) => u,
         Ok(None) => {
             return Ok(HttpResponse::NotFound().json(ErrorResponse {
                 success: false,
                 error: "User not found".to_string(),
-                message: Some(format!("No user found with username or email: {}", body.shared_with_username)),
+                message: Some(format!(
+                    "No user found with username or email: {}",
+                    body.shared_with_username
+                )),
             }));
-        }
+        },
         Err(e) => {
             error!("Error finding user: {}", e);
             return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -1202,9 +1228,9 @@ pub async fn create_inventory_share(
                 error: "An internal error occurred".to_string(),
                 message: None,
             }));
-        }
+        },
     };
-    
+
     // Don't allow sharing with self
     if target_user.id == auth.user_id {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
@@ -1213,30 +1239,38 @@ pub async fn create_inventory_share(
             message: None,
         }));
     }
-    
-    match db_service.create_inventory_share(
-        inventory_id,
-        target_user.id,
-        auth.user_id,
-        body.permission_level,
-    ).await {
+
+    match db_service
+        .create_inventory_share(
+            inventory_id,
+            target_user.id,
+            auth.user_id,
+            body.permission_level,
+        )
+        .await
+    {
         Ok(share) => {
-            info!("User {} shared inventory {} with {} (permission: {:?})", 
-                auth.username, inventory_id, target_user.username, body.permission_level);
+            info!(
+                "User {} shared inventory {} with {} (permission: {:?})",
+                auth.username, inventory_id, target_user.username, body.permission_level
+            );
             Ok(HttpResponse::Created().json(ApiResponse {
                 success: true,
                 data: Some(share),
                 message: Some(format!("Inventory shared with {}", target_user.username)),
                 error: None,
             }))
-        }
+        },
         Err(e) => {
             // Check for duplicate share
             if e.to_string().contains("duplicate") || e.to_string().contains("unique") {
                 return Ok(HttpResponse::Conflict().json(ErrorResponse {
                     success: false,
                     error: "Already shared".to_string(),
-                    message: Some(format!("This inventory is already shared with {}", target_user.username)),
+                    message: Some(format!(
+                        "This inventory is already shared with {}",
+                        target_user.username
+                    )),
                 }));
             }
             error!("Error creating share: {}", e);
@@ -1245,7 +1279,7 @@ pub async fn create_inventory_share(
                 error: "An internal error occurred".to_string(),
                 message: None,
             }))
-        }
+        },
     }
 }
 
@@ -1261,28 +1295,32 @@ pub async fn update_inventory_share(
         Ok(a) => a,
         Err(e) => return Ok(e),
     };
-    
+
     let share_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     // Update the share permission
-    match db_service.update_inventory_share(share_id, body.permission_level).await {
+    match db_service
+        .update_inventory_share(share_id, body.permission_level)
+        .await
+    {
         Ok(Some(share)) => {
-            info!("Updated share {} permission to {:?}", share_id, body.permission_level);
+            info!(
+                "Updated share {} permission to {:?}",
+                share_id, body.permission_level
+            );
             Ok(HttpResponse::Ok().json(ApiResponse {
                 success: true,
                 data: Some(share),
                 message: Some("Share permission updated".to_string()),
                 error: None,
             }))
-        }
-        Ok(None) => {
-            Ok(HttpResponse::NotFound().json(ErrorResponse {
-                success: false,
-                error: "Share not found".to_string(),
-                message: None,
-            }))
-        }
+        },
+        Ok(None) => Ok(HttpResponse::NotFound().json(ErrorResponse {
+            success: false,
+            error: "Share not found".to_string(),
+            message: None,
+        })),
         Err(e) => {
             error!("Error updating share: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -1290,7 +1328,7 @@ pub async fn update_inventory_share(
                 error: "An internal error occurred".to_string(),
                 message: None,
             }))
-        }
+        },
     }
 }
 
@@ -1305,10 +1343,10 @@ pub async fn delete_inventory_share(
         Ok(a) => a,
         Err(e) => return Ok(e),
     };
-    
+
     let share_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     match db_service.delete_inventory_share(share_id).await {
         Ok(true) => {
             info!("User {} deleted share {}", auth.username, share_id);
@@ -1318,14 +1356,12 @@ pub async fn delete_inventory_share(
                 message: Some("Share removed successfully".to_string()),
                 error: None,
             }))
-        }
-        Ok(false) => {
-            Ok(HttpResponse::NotFound().json(ErrorResponse {
-                success: false,
-                error: "Share not found".to_string(),
-                message: None,
-            }))
-        }
+        },
+        Ok(false) => Ok(HttpResponse::NotFound().json(ErrorResponse {
+            success: false,
+            error: "Share not found".to_string(),
+            message: None,
+        })),
         Err(e) => {
             error!("Error deleting share: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -1333,33 +1369,34 @@ pub async fn delete_inventory_share(
                 error: "An internal error occurred".to_string(),
                 message: None,
             }))
-        }
+        },
     }
 }
 
 /// Get inventories accessible to the current user (owned + shared + all-access)
 #[get("/auth/inventories")]
-pub async fn get_my_inventories(
-    pool: web::Data<Pool>,
-    req: HttpRequest,
-) -> Result<impl Responder> {
+pub async fn get_my_inventories(pool: web::Data<Pool>, req: HttpRequest) -> Result<impl Responder> {
     let auth = match get_auth_context_from_request(&req, pool.get_ref()).await {
         Ok(a) => a,
         Err(e) => return Ok(e),
     };
-    
+
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     match db_service.get_accessible_inventories(auth.user_id).await {
         Ok(inventories) => {
-            info!("User {} retrieved {} accessible inventories", auth.username, inventories.len());
+            info!(
+                "User {} retrieved {} accessible inventories",
+                auth.username,
+                inventories.len()
+            );
             Ok(HttpResponse::Ok().json(ApiResponse {
                 success: true,
                 data: Some(inventories),
                 message: None,
                 error: None,
             }))
-        }
+        },
         Err(e) => {
             error!("Error retrieving inventories: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -1367,7 +1404,7 @@ pub async fn get_my_inventories(
                 error: "An internal error occurred".to_string(),
                 message: None,
             }))
-        }
+        },
     }
 }
 
@@ -1383,19 +1420,26 @@ pub async fn get_my_access_grants(
         Ok(a) => a,
         Err(e) => return Ok(e),
     };
-    
+
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
-    match db_service.get_user_access_grants_by_grantor(auth.user_id).await {
+
+    match db_service
+        .get_user_access_grants_by_grantor(auth.user_id)
+        .await
+    {
         Ok(grants) => {
-            info!("User {} retrieved {} access grants they've made", auth.username, grants.len());
+            info!(
+                "User {} retrieved {} access grants they've made",
+                auth.username,
+                grants.len()
+            );
             Ok(HttpResponse::Ok().json(ApiResponse {
                 success: true,
                 data: Some(grants),
                 message: Some("Access grants retrieved successfully".to_string()),
                 error: None,
             }))
-        }
+        },
         Err(e) => {
             error!("Error retrieving access grants: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -1403,7 +1447,7 @@ pub async fn get_my_access_grants(
                 error: "An internal error occurred".to_string(),
                 message: None,
             }))
-        }
+        },
     }
 }
 
@@ -1417,19 +1461,26 @@ pub async fn get_received_access_grants(
         Ok(a) => a,
         Err(e) => return Ok(e),
     };
-    
+
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
-    match db_service.get_user_access_grants_by_grantee(auth.user_id).await {
+
+    match db_service
+        .get_user_access_grants_by_grantee(auth.user_id)
+        .await
+    {
         Ok(grants) => {
-            info!("User {} retrieved {} received access grants", auth.username, grants.len());
+            info!(
+                "User {} retrieved {} received access grants",
+                auth.username,
+                grants.len()
+            );
             Ok(HttpResponse::Ok().json(ApiResponse {
                 success: true,
                 data: Some(grants),
                 message: Some("Received access grants retrieved successfully".to_string()),
                 error: None,
             }))
-        }
+        },
         Err(e) => {
             error!("Error retrieving received access grants: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -1437,7 +1488,7 @@ pub async fn get_received_access_grants(
                 error: "An internal error occurred".to_string(),
                 message: None,
             }))
-        }
+        },
     }
 }
 
@@ -1452,19 +1503,25 @@ pub async fn create_access_grant(
         Ok(a) => a,
         Err(e) => return Ok(e),
     };
-    
+
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     // Find the user to grant access to
-    let target_user = match db_service.get_user_by_username_or_email(&body.grantee_username).await {
+    let target_user = match db_service
+        .get_user_by_username_or_email(&body.grantee_username)
+        .await
+    {
         Ok(Some(u)) => u,
         Ok(None) => {
             return Ok(HttpResponse::NotFound().json(ErrorResponse {
                 success: false,
                 error: "User not found".to_string(),
-                message: Some(format!("No user found with username or email: {}", body.grantee_username)),
+                message: Some(format!(
+                    "No user found with username or email: {}",
+                    body.grantee_username
+                )),
             }));
-        }
+        },
         Err(e) => {
             error!("Error finding user: {}", e);
             return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -1472,9 +1529,9 @@ pub async fn create_access_grant(
                 error: "An internal error occurred".to_string(),
                 message: None,
             }));
-        }
+        },
     };
-    
+
     // Don't allow granting access to self
     if target_user.id == auth.user_id {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
@@ -1483,25 +1540,36 @@ pub async fn create_access_grant(
             message: None,
         }));
     }
-    
-    match db_service.create_user_access_grant(auth.user_id, target_user.id).await {
+
+    match db_service
+        .create_user_access_grant(auth.user_id, target_user.id)
+        .await
+    {
         Ok(grant) => {
-            info!("User {} granted All Access to {} for all their inventories", 
-                auth.username, target_user.username);
+            info!(
+                "User {} granted All Access to {} for all their inventories",
+                auth.username, target_user.username
+            );
             Ok(HttpResponse::Created().json(ApiResponse {
                 success: true,
                 data: Some(grant),
-                message: Some(format!("{} now has All Access to all your inventories", target_user.username)),
+                message: Some(format!(
+                    "{} now has All Access to all your inventories",
+                    target_user.username
+                )),
                 error: None,
             }))
-        }
+        },
         Err(e) => {
             // Check for duplicate grant
             if e.to_string().contains("duplicate") || e.to_string().contains("unique") {
                 return Ok(HttpResponse::Conflict().json(ErrorResponse {
                     success: false,
                     error: "Already granted".to_string(),
-                    message: Some(format!("{} already has All Access to your inventories", target_user.username)),
+                    message: Some(format!(
+                        "{} already has All Access to your inventories",
+                        target_user.username
+                    )),
                 }));
             }
             error!("Error creating access grant: {}", e);
@@ -1510,7 +1578,7 @@ pub async fn create_access_grant(
                 error: "An internal error occurred".to_string(),
                 message: None,
             }))
-        }
+        },
     }
 }
 
@@ -1525,10 +1593,10 @@ pub async fn delete_access_grant(
         Ok(a) => a,
         Err(e) => return Ok(e),
     };
-    
+
     let grant_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     // Verify the grant belongs to the current user (as grantor)
     let grant = match db_service.get_user_access_grant_by_id(grant_id).await {
         Ok(Some(g)) => g,
@@ -1538,7 +1606,7 @@ pub async fn delete_access_grant(
                 error: "Access grant not found".to_string(),
                 message: None,
             }));
-        }
+        },
         Err(e) => {
             error!("Error finding access grant: {}", e);
             return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -1546,9 +1614,9 @@ pub async fn delete_access_grant(
                 error: "An internal error occurred".to_string(),
                 message: None,
             }));
-        }
+        },
     };
-    
+
     // Only the grantor can revoke their own grants (or admin)
     if grant.grantor_user_id != auth.user_id && !auth.is_admin {
         return Ok(HttpResponse::Forbidden().json(ErrorResponse {
@@ -1557,7 +1625,7 @@ pub async fn delete_access_grant(
             message: Some("You can only revoke access grants you have made".to_string()),
         }));
     }
-    
+
     match db_service.delete_user_access_grant(grant_id).await {
         Ok(true) => {
             info!("User {} revoked access grant {}", auth.username, grant_id);
@@ -1567,14 +1635,12 @@ pub async fn delete_access_grant(
                 message: Some("All Access grant revoked successfully".to_string()),
                 error: None,
             }))
-        }
-        Ok(false) => {
-            Ok(HttpResponse::NotFound().json(ErrorResponse {
-                success: false,
-                error: "Access grant not found".to_string(),
-                message: None,
-            }))
-        }
+        },
+        Ok(false) => Ok(HttpResponse::NotFound().json(ErrorResponse {
+            success: false,
+            error: "Access grant not found".to_string(),
+            message: None,
+        })),
         Err(e) => {
             error!("Error deleting access grant: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -1582,7 +1648,7 @@ pub async fn delete_access_grant(
                 error: "An internal error occurred".to_string(),
                 message: None,
             }))
-        }
+        },
     }
 }
 
@@ -1597,19 +1663,20 @@ pub async fn get_inventory_permissions(
         Ok(a) => a,
         Err(e) => return Ok(e),
     };
-    
+
     let inventory_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
-    match db_service.get_effective_permissions(auth.user_id, inventory_id).await {
-        Ok(permissions) => {
-            Ok(HttpResponse::Ok().json(ApiResponse {
-                success: true,
-                data: Some(permissions),
-                message: None,
-                error: None,
-            }))
-        }
+
+    match db_service
+        .get_effective_permissions(auth.user_id, inventory_id)
+        .await
+    {
+        Ok(permissions) => Ok(HttpResponse::Ok().json(ApiResponse {
+            success: true,
+            data: Some(permissions),
+            message: None,
+            error: None,
+        })),
         Err(e) => {
             error!("Error retrieving permissions: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -1617,7 +1684,7 @@ pub async fn get_inventory_permissions(
                 error: "An internal error occurred".to_string(),
                 message: None,
             }))
-        }
+        },
     }
 }
 
@@ -1636,10 +1703,10 @@ pub async fn transfer_inventory_ownership(
         Ok(a) => a,
         Err(e) => return Ok(e),
     };
-    
+
     let inventory_id = path.into_inner();
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     // Get the inventory to verify ownership and get details
     let inventory = match db_service.get_inventory_by_id(inventory_id).await {
         Ok(Some(inv)) => inv,
@@ -1649,7 +1716,7 @@ pub async fn transfer_inventory_ownership(
                 error: "Inventory not found".to_string(),
                 message: None,
             }));
-        }
+        },
         Err(e) => {
             error!("Error retrieving inventory: {}", e);
             return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -1657,9 +1724,9 @@ pub async fn transfer_inventory_ownership(
                 error: "An internal error occurred".to_string(),
                 message: None,
             }));
-        }
+        },
     };
-    
+
     // Only the owner can transfer ownership (not even All Access users)
     if inventory.user_id != Some(auth.user_id) {
         return Ok(HttpResponse::Forbidden().json(ErrorResponse {
@@ -1668,9 +1735,12 @@ pub async fn transfer_inventory_ownership(
             message: Some("You must be the owner to transfer this inventory".to_string()),
         }));
     }
-    
+
     // Find the target user by username
-    let target_user = match db_service.get_user_by_username(&body.new_owner_username).await {
+    let target_user = match db_service
+        .get_user_by_username(&body.new_owner_username)
+        .await
+    {
         Ok(Some(user)) => user,
         Ok(None) => {
             return Ok(HttpResponse::NotFound().json(ErrorResponse {
@@ -1678,7 +1748,7 @@ pub async fn transfer_inventory_ownership(
                 error: format!("User '{}' not found", body.new_owner_username),
                 message: None,
             }));
-        }
+        },
         Err(e) => {
             error!("Error finding target user: {}", e);
             return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -1686,9 +1756,9 @@ pub async fn transfer_inventory_ownership(
                 error: "An internal error occurred".to_string(),
                 message: None,
             }));
-        }
+        },
     };
-    
+
     // Cannot transfer to yourself
     if target_user.id == auth.user_id {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
@@ -1697,7 +1767,7 @@ pub async fn transfer_inventory_ownership(
             message: None,
         }));
     }
-    
+
     // Check if target user is active
     if !target_user.is_active {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
@@ -1706,7 +1776,7 @@ pub async fn transfer_inventory_ownership(
             message: None,
         }));
     }
-    
+
     // Get current user details for response
     let current_user = match db_service.get_user_by_id(auth.user_id).await {
         Ok(Some(user)) => user,
@@ -1716,7 +1786,7 @@ pub async fn transfer_inventory_ownership(
                 error: "Current user not found".to_string(),
                 message: None,
             }));
-        }
+        },
         Err(e) => {
             error!("Error finding current user: {}", e);
             return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -1724,21 +1794,24 @@ pub async fn transfer_inventory_ownership(
                 error: "An internal error occurred".to_string(),
                 message: None,
             }));
-        }
+        },
     };
-    
+
     // Perform the ownership transfer
-    match db_service.transfer_inventory_ownership(inventory_id, auth.user_id, target_user.id).await {
+    match db_service
+        .transfer_inventory_ownership(inventory_id, auth.user_id, target_user.id)
+        .await
+    {
         Ok((items_transferred, shares_removed)) => {
             let target_full_name = target_user.full_name.clone();
             let target_username = target_user.username.clone();
             let inventory_name = inventory.name.clone();
-            
+
             info!(
                 "User {} transferred ownership of inventory '{}' (ID: {}) to user {}",
                 auth.user_id, inventory_name, inventory_id, target_username
             );
-            
+
             Ok(HttpResponse::Ok().json(ApiResponse {
                 success: true,
                 data: Some(TransferOwnershipResponse {
@@ -1773,7 +1846,7 @@ pub async fn transfer_inventory_ownership(
                 )),
                 error: None,
             }))
-        }
+        },
         Err(e) => {
             error!("Error transferring ownership: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -1781,7 +1854,7 @@ pub async fn transfer_inventory_ownership(
                 error: format!("Failed to transfer ownership: {}", e),
                 message: None,
             }))
-        }
+        },
     }
 }
 
@@ -1800,15 +1873,15 @@ pub async fn generate_recovery_codes(
     };
 
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     // Generate 10 random recovery codes
-    use rand::Rng;
     use rand::distributions::Alphanumeric;
-    
+    use rand::Rng;
+
     let mut rng = rand::thread_rng();
     let mut plain_codes: Vec<String> = Vec::with_capacity(10);
     let mut code_hashes: Vec<String> = Vec::with_capacity(10);
-    
+
     for _ in 0..10 {
         // Generate code in format: XXXX-XXXX-XXXX (12 alphanumeric chars with dashes)
         let code: String = (&mut rng)
@@ -1817,10 +1890,10 @@ pub async fn generate_recovery_codes(
             .map(char::from)
             .collect::<String>()
             .to_uppercase();
-        
+
         // Format with dashes for readability
         let formatted_code = format!("{}-{}-{}", &code[0..4], &code[4..8], &code[8..12]);
-        
+
         // Hash the code for storage
         let hash = match hash_password(formatted_code.clone()).await {
             Ok(h) => h,
@@ -1831,15 +1904,18 @@ pub async fn generate_recovery_codes(
                     error: "Failed to generate recovery codes".to_string(),
                     message: None,
                 }));
-            }
+            },
         };
-        
+
         plain_codes.push(formatted_code);
         code_hashes.push(hash);
     }
-    
+
     // Store the hashed codes
-    if let Err(e) = db_service.store_recovery_codes(auth.user_id, code_hashes).await {
+    if let Err(e) = db_service
+        .store_recovery_codes(auth.user_id, code_hashes)
+        .await
+    {
         error!("Error storing recovery codes: {}", e);
         return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
             success: false,
@@ -1847,9 +1923,9 @@ pub async fn generate_recovery_codes(
             message: None,
         }));
     }
-    
+
     info!("Generated 10 recovery codes for user {}", auth.user_id);
-    
+
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
         data: Some(RecoveryCodesResponse {
@@ -1874,7 +1950,7 @@ pub async fn get_recovery_codes_status(
     };
 
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     match db_service.get_recovery_codes_status(auth.user_id).await {
         Ok((has_codes, confirmed, unused_count, generated_at)) => {
             Ok(HttpResponse::Ok().json(ApiResponse {
@@ -1888,7 +1964,7 @@ pub async fn get_recovery_codes_status(
                 message: None,
                 error: None,
             }))
-        }
+        },
         Err(e) => {
             error!("Error getting recovery codes status: {}", e);
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -1896,7 +1972,7 @@ pub async fn get_recovery_codes_status(
                 error: "Failed to get recovery codes status".to_string(),
                 message: None,
             }))
-        }
+        },
     }
 }
 
@@ -1921,16 +1997,19 @@ pub async fn confirm_recovery_codes(
     }
 
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     // Check if user has codes to confirm
-    match db_service.get_unused_recovery_codes_count(auth.user_id).await {
+    match db_service
+        .get_unused_recovery_codes_count(auth.user_id)
+        .await
+    {
         Ok(count) if count == 0 => {
             return Ok(HttpResponse::BadRequest().json(ErrorResponse {
                 success: false,
                 error: "No recovery codes to confirm".to_string(),
                 message: Some("Please generate recovery codes first".to_string()),
             }));
-        }
+        },
         Err(e) => {
             error!("Error checking recovery codes: {}", e);
             return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -1938,10 +2017,10 @@ pub async fn confirm_recovery_codes(
                 error: "Failed to check recovery codes".to_string(),
                 message: None,
             }));
-        }
-        _ => {}
+        },
+        _ => {},
     }
-    
+
     if let Err(e) = db_service.confirm_recovery_codes(auth.user_id).await {
         error!("Error confirming recovery codes: {}", e);
         return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -1950,13 +2029,19 @@ pub async fn confirm_recovery_codes(
             message: None,
         }));
     }
-    
-    info!("User {} confirmed saving their recovery codes", auth.user_id);
-    
+
+    info!(
+        "User {} confirmed saving their recovery codes",
+        auth.user_id
+    );
+
     Ok(HttpResponse::Ok().json(ApiResponse::<()> {
         success: true,
         data: None,
-        message: Some("Recovery codes confirmed. You can now use them to recover your account if needed.".to_string()),
+        message: Some(
+            "Recovery codes confirmed. You can now use them to recover your account if needed."
+                .to_string(),
+        ),
         error: None,
     }))
 }
@@ -1968,7 +2053,7 @@ pub async fn use_recovery_code(
     body: web::Json<UseRecoveryCodeRequest>,
 ) -> Result<impl Responder> {
     let db_service = DatabaseService::new(pool.get_ref().clone());
-    
+
     // Validate new password
     if let Err(msg) = validate_password(&body.new_password) {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
@@ -1977,19 +2062,22 @@ pub async fn use_recovery_code(
             message: Some("Invalid new password".to_string()),
         }));
     }
-    
+
     // Find user by username
     let user = match db_service.get_user_by_username(&body.username).await {
         Ok(Some(u)) => u,
         Ok(None) => {
             // Don't reveal if user exists
-            warn!("Recovery code attempt for non-existent user: {}", body.username);
+            warn!(
+                "Recovery code attempt for non-existent user: {}",
+                body.username
+            );
             return Ok(HttpResponse::BadRequest().json(ErrorResponse {
                 success: false,
                 error: "Invalid username or recovery code".to_string(),
                 message: None,
             }));
-        }
+        },
         Err(e) => {
             error!("Error finding user: {}", e);
             return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
@@ -1997,9 +2085,9 @@ pub async fn use_recovery_code(
                 error: "An error occurred".to_string(),
                 message: None,
             }));
-        }
+        },
     };
-    
+
     if !user.is_active {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
             success: false,
@@ -2007,7 +2095,7 @@ pub async fn use_recovery_code(
             message: None,
         }));
     }
-    
+
     // Get unused recovery codes for this user
     let codes = match db_service.get_unused_recovery_codes(user.id).await {
         Ok(c) => c,
@@ -2018,9 +2106,9 @@ pub async fn use_recovery_code(
                 error: "An error occurred".to_string(),
                 message: None,
             }));
-        }
+        },
     };
-    
+
     if codes.is_empty() {
         // Don't reveal that user has no codes
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
@@ -2029,16 +2117,19 @@ pub async fn use_recovery_code(
             message: None,
         }));
     }
-    
+
     // Check each code to find a match
     let mut matched_code_id: Option<Uuid> = None;
     for (code_id, code_hash) in &codes {
-        if verify_password(body.recovery_code.clone(), code_hash.clone()).await.unwrap_or(false) {
+        if verify_password(body.recovery_code.clone(), code_hash.clone())
+            .await
+            .unwrap_or(false)
+        {
             matched_code_id = Some(*code_id);
             break;
         }
     }
-    
+
     let code_id = match matched_code_id {
         Some(id) => id,
         None => {
@@ -2048,9 +2139,9 @@ pub async fn use_recovery_code(
                 error: "Invalid username or recovery code".to_string(),
                 message: None,
             }));
-        }
+        },
     };
-    
+
     // Hash new password
     let new_password_hash = match hash_password(body.new_password.clone()).await {
         Ok(h) => h,
@@ -2061,11 +2152,14 @@ pub async fn use_recovery_code(
                 error: "Failed to reset password".to_string(),
                 message: None,
             }));
-        }
+        },
     };
-    
+
     // Update password
-    if let Err(e) = db_service.update_user_password(user.id, &new_password_hash).await {
+    if let Err(e) = db_service
+        .update_user_password(user.id, &new_password_hash)
+        .await
+    {
         error!("Error updating password: {}", e);
         return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
             success: false,
@@ -2073,26 +2167,36 @@ pub async fn use_recovery_code(
             message: None,
         }));
     }
-    
+
     // Mark recovery code as used
     if let Err(e) = db_service.mark_recovery_code_used(code_id).await {
         error!("Error marking recovery code as used: {}", e);
         // Don't fail the request - password was already changed
     }
-    
+
     // Get remaining codes count
-    let remaining = db_service.get_unused_recovery_codes_count(user.id).await.unwrap_or(0);
-    
-    info!("User {} reset password using recovery code. {} codes remaining.", user.username, remaining);
-    
+    let remaining = db_service
+        .get_unused_recovery_codes_count(user.id)
+        .await
+        .unwrap_or(0);
+
+    info!(
+        "User {} reset password using recovery code. {} codes remaining.",
+        user.username, remaining
+    );
+
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
         data: Some(RecoveryCodeUsedResponse {
             success: true,
-            message: "Password reset successfully. You can now log in with your new password.".to_string(),
+            message: "Password reset successfully. You can now log in with your new password."
+                .to_string(),
             remaining_codes: remaining,
         }),
-        message: Some(format!("Password reset successfully. You have {} recovery codes remaining.", remaining)),
+        message: Some(format!(
+            "Password reset successfully. You have {} recovery codes remaining.",
+            remaining
+        )),
         error: None,
     }))
 }

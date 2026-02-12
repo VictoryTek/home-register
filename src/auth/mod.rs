@@ -1,5 +1,5 @@
 //! Authentication and authorization module
-//! 
+//!
 //! Provides JWT token handling, password hashing with Argon2, and auth middleware for Actix-Web.
 
 use actix_web::HttpRequest;
@@ -42,28 +42,29 @@ pub fn get_or_init_jwt_secret() -> &'static str {
                 );
             }
         }
-        
+
         // No valid secret found - auto-generate and try to persist
         log::warn!("No JWT_SECRET found. Auto-generating a random secret.");
-        
+
         let secret = generate_random_secret(64);
-        
+
         // Try to persist to /app/data/jwt_secret for container restarts
         let persist_path = "/app/data/jwt_secret";
         if let Err(e) = std::fs::create_dir_all("/app/data") {
             log::debug!("Could not create /app/data directory: {}", e);
         }
-        
+
         if let Err(e) = std::fs::write(persist_path, &secret) {
             log::warn!(
                 "Failed to persist auto-generated JWT secret to {}: {}. \
                  Tokens will be invalidated on restart.",
-                persist_path, e
+                persist_path,
+                e
             );
         } else {
             log::info!("Auto-generated JWT secret persisted to {}", persist_path);
         }
-        
+
         secret
     })
 }
@@ -80,7 +81,7 @@ fn read_jwt_secret() -> Option<String> {
             }
         }
     }
-    
+
     // 2. Try Docker secret
     if let Ok(content) = std::fs::read_to_string("/run/secrets/jwt_secret") {
         let secret = content.trim().to_string();
@@ -89,7 +90,7 @@ fn read_jwt_secret() -> Option<String> {
             return Some(secret);
         }
     }
-    
+
     // 3. Try persisted auto-generated secret
     if let Ok(content) = std::fs::read_to_string("/app/data/jwt_secret") {
         let secret = content.trim().to_string();
@@ -98,7 +99,7 @@ fn read_jwt_secret() -> Option<String> {
             return Some(secret);
         }
     }
-    
+
     // 4. Try environment variable
     if let Ok(secret) = env::var("JWT_SECRET") {
         if !secret.is_empty() {
@@ -106,7 +107,7 @@ fn read_jwt_secret() -> Option<String> {
             return Some(secret);
         }
     }
-    
+
     None
 }
 
@@ -150,7 +151,11 @@ pub fn generate_token(user: &User) -> Result<String, jsonwebtoken::errors::Error
     };
 
     let header = Header::new(Algorithm::HS256);
-    encode(&header, &claims, &EncodingKey::from_secret(jwt_secret().as_bytes()))
+    encode(
+        &header,
+        &claims,
+        &EncodingKey::from_secret(jwt_secret().as_bytes()),
+    )
 }
 
 /// Verify and decode a JWT token
@@ -158,7 +163,7 @@ pub fn verify_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> 
     let key = DecodingKey::from_secret(jwt_secret().as_bytes());
     let mut validation = Validation::new(Algorithm::HS256);
     validation.set_required_spec_claims(&["sub", "exp", "iat"]);
-    
+
     decode::<Claims>(token, &key, &validation).map(|data| data.claims)
 }
 
@@ -172,12 +177,12 @@ pub fn extract_token(req: &HttpRequest) -> Option<String> {
             }
         }
     }
-    
+
     // Fall back to cookie
     if let Some(cookie) = req.cookie("auth_token") {
         return Some(cookie.value().to_string());
     }
-    
+
     None
 }
 
@@ -198,10 +203,15 @@ pub async fn hash_password(password: String) -> Result<String, argon2::password_
 
 /// Verify a password against a hash
 /// Uses spawn_blocking to avoid blocking the async runtime
-pub async fn verify_password(password: String, hash_str: String) -> Result<bool, argon2::password_hash::Error> {
+pub async fn verify_password(
+    password: String,
+    hash_str: String,
+) -> Result<bool, argon2::password_hash::Error> {
     tokio::task::spawn_blocking(move || {
         let parsed_hash = PasswordHash::new(&hash_str)?;
-        Ok(Argon2::default().verify_password(password.as_bytes(), &parsed_hash).is_ok())
+        Ok(Argon2::default()
+            .verify_password(password.as_bytes(), &parsed_hash)
+            .is_ok())
     })
     .await
     .map_err(|_| argon2::password_hash::Error::Algorithm)?
@@ -249,7 +259,10 @@ pub fn validate_username(username: &str) -> Result<(), &'static str> {
     if username.len() > 50 {
         return Err("Username must be at most 50 characters long");
     }
-    if !username.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-') {
+    if !username
+        .chars()
+        .all(|c| c.is_alphanumeric() || c == '_' || c == '-')
+    {
         return Err("Username can only contain letters, numbers, underscores, and hyphens");
     }
     Ok(())

@@ -1,20 +1,37 @@
 use crate::models::{
-    CreateInventoryRequest, CreateItemRequest, CreateOrganizerOptionRequest,
-    CreateOrganizerTypeRequest, Inventory, Item, ItemOrganizerValue,
-    ItemOrganizerValueWithDetails, OrganizerOption, OrganizerType, OrganizerTypeWithOptions,
-    SetItemOrganizerValueRequest, UpdateItemRequest,
-    UpdateOrganizerOptionRequest, UpdateOrganizerTypeRequest,
+    AdminUpdateUserRequest,
+    CreateInventoryRequest,
+    CreateItemRequest,
+    CreateOrganizerOptionRequest,
+    CreateOrganizerTypeRequest,
+    EffectivePermissions,
+    Inventory,
+    InventoryShare,
+    InventoryShareWithUser,
+    Item,
+    ItemOrganizerValue,
+    ItemOrganizerValueWithDetails,
+    OrganizerOption,
+    OrganizerType,
+    OrganizerTypeWithOptions,
+    PermissionLevel,
+    PermissionSource,
+    SetItemOrganizerValueRequest,
+    UpdateItemRequest,
+    UpdateOrganizerOptionRequest,
+    UpdateOrganizerTypeRequest,
+    UpdateUserSettingsRequest,
     // User-related models
-    User, UserResponse, AdminUpdateUserRequest,
-    UserSettings, UpdateUserSettingsRequest,
-    InventoryShare, InventoryShareWithUser, PermissionLevel,
+    User,
     // User Access Grant models (All Access tier)
-    UserAccessGrant, UserAccessGrantWithUsers,
-    EffectivePermissions, PermissionSource,
+    UserAccessGrant,
+    UserAccessGrantWithUsers,
+    UserResponse,
+    UserSettings,
 };
 use chrono::{DateTime, Utc};
 use deadpool_postgres::{Config, ManagerConfig, Pool, RecyclingMethod};
-use log::{info, error};
+use log::{error, info};
 use std::env;
 use tokio_postgres::NoTls;
 use uuid::Uuid;
@@ -28,16 +45,19 @@ fn escape_like_pattern(input: &str) -> String {
 }
 
 pub async fn get_pool() -> Result<Pool, Box<dyn std::error::Error + Send + Sync>> {
-    let db_url = env::var("DATABASE_URL")
-        .map_err(|_| "DATABASE_URL environment variable must be set")?;
+    let db_url =
+        env::var("DATABASE_URL").map_err(|_| "DATABASE_URL environment variable must be set")?;
 
     // Parse DATABASE_URL: postgres://user:password@host:port/database
-    let url = db_url.strip_prefix("postgres://")
+    let url = db_url
+        .strip_prefix("postgres://")
         .ok_or("Invalid DATABASE_URL format: must start with postgres://")?;
-    
+
     let parts: Vec<&str> = url.split('@').collect();
     if parts.len() != 2 {
-        return Err("Invalid DATABASE_URL format: expected postgres://user:password@host/database".into());
+        return Err(
+            "Invalid DATABASE_URL format: expected postgres://user:password@host/database".into(),
+        );
     }
 
     let auth_parts: Vec<&str> = parts[0].split(':').collect();
@@ -47,7 +67,11 @@ pub async fn get_pool() -> Result<Pool, Box<dyn std::error::Error + Send + Sync>
     let user = auth_parts.get(0).unwrap_or(&"postgres").to_string();
     let password = auth_parts.get(1).unwrap_or(&"password").to_string();
     let host = host_port.get(0).unwrap_or(&"localhost").to_string();
-    let port = host_port.get(1).unwrap_or(&"5432").parse::<u16>().unwrap_or(5432);
+    let port = host_port
+        .get(1)
+        .unwrap_or(&"5432")
+        .parse::<u16>()
+        .unwrap_or(5432);
     let dbname = host_parts.get(1).unwrap_or(&"home_inventory").to_string();
 
     let mut cfg = Config::new();
@@ -151,12 +175,14 @@ impl DatabaseService {
         let client = self.pool.get().await?;
 
         // Convert date strings to proper format or None
-        let purchase_date: Option<chrono::NaiveDate> = request.purchase_date
+        let purchase_date: Option<chrono::NaiveDate> = request
+            .purchase_date
             .as_ref()
             .filter(|s| !s.is_empty())
             .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
-            
-        let warranty_expiry: Option<chrono::NaiveDate> = request.warranty_expiry
+
+        let warranty_expiry: Option<chrono::NaiveDate> = request
+            .warranty_expiry
             .as_ref()
             .filter(|s| !s.is_empty())
             .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
@@ -270,7 +296,7 @@ impl DatabaseService {
             values.push(&purchase_date_val);
             param_count += 1;
         }
-        
+
         let warranty_expiry_val: Option<chrono::NaiveDate>;
         if let Some(ref we) = request.warranty_expiry {
             let date_str = we.trim();
@@ -336,10 +362,7 @@ impl DatabaseService {
         Ok(deleted)
     }
 
-    pub async fn search_items(
-        &self,
-        query: &str,
-    ) -> Result<Vec<Item>, Box<dyn std::error::Error>> {
+    pub async fn search_items(&self, query: &str) -> Result<Vec<Item>, Box<dyn std::error::Error>> {
         let client = self.pool.get().await?;
 
         // Escape SQL LIKE wildcards to prevent pattern injection
@@ -378,7 +401,11 @@ impl DatabaseService {
             items.push(item);
         }
 
-        info!("Found {} items matching search query: '{}'", items.len(), query);
+        info!(
+            "Found {} items matching search query: '{}'",
+            items.len(),
+            query
+        );
         Ok(items)
     }
 
@@ -441,7 +468,10 @@ impl DatabaseService {
             updated_at: row.get::<_, Option<DateTime<Utc>>>(7),
         };
 
-        info!("Created new inventory: {} (ID: {:?})", inventory.name, inventory.id);
+        info!(
+            "Created new inventory: {} (ID: {:?})",
+            inventory.name, inventory.id
+        );
         Ok(inventory)
     }
 
@@ -520,7 +550,10 @@ impl DatabaseService {
 
         let deleted = rows_affected > 0;
         if deleted {
-            info!("Deleted inventory ID: {} (CASCADE: organizers and items)", id);
+            info!(
+                "Deleted inventory ID: {} (CASCADE: organizers and items)",
+                id
+            );
         }
         Ok(deleted)
     }
@@ -559,7 +592,11 @@ impl DatabaseService {
             items.push(item);
         }
 
-        info!("Retrieved {} items for inventory {}", items.len(), inventory_id);
+        info!(
+            "Retrieved {} items for inventory {}",
+            items.len(),
+            inventory_id
+        );
         Ok(items)
     }
 
@@ -594,7 +631,11 @@ impl DatabaseService {
             organizers.push(organizer);
         }
 
-        info!("Retrieved {} organizer types for inventory {}", organizers.len(), inventory_id);
+        info!(
+            "Retrieved {} organizer types for inventory {}",
+            organizers.len(),
+            inventory_id
+        );
         Ok(organizers)
     }
 
@@ -603,7 +644,7 @@ impl DatabaseService {
         inventory_id: i32,
     ) -> Result<Vec<OrganizerTypeWithOptions>, Box<dyn std::error::Error>> {
         let organizer_types = self.get_organizer_types_by_inventory(inventory_id).await?;
-        
+
         let mut result = Vec::new();
         for organizer_type in organizer_types {
             let options = if organizer_type.input_type == "select" {
@@ -612,12 +653,12 @@ impl DatabaseService {
                     None => {
                         error!("Organizer type missing ID for inventory {}", inventory_id);
                         Vec::new()
-                    }
+                    },
                 }
             } else {
                 Vec::new()
             };
-            
+
             result.push(OrganizerTypeWithOptions {
                 organizer_type,
                 options,
@@ -688,7 +729,10 @@ impl DatabaseService {
             updated_at: row.get::<_, Option<DateTime<Utc>>>(7),
         };
 
-        info!("Created organizer type: {} (ID: {:?})", organizer.name, organizer.id);
+        info!(
+            "Created organizer type: {} (ID: {:?})",
+            organizer.name, organizer.id
+        );
         Ok(organizer)
     }
 
@@ -801,7 +845,11 @@ impl DatabaseService {
             options.push(option);
         }
 
-        info!("Retrieved {} options for organizer type {}", options.len(), organizer_type_id);
+        info!(
+            "Retrieved {} options for organizer type {}",
+            options.len(),
+            organizer_type_id
+        );
         Ok(options)
     }
 
@@ -860,7 +908,10 @@ impl DatabaseService {
             updated_at: row.get::<_, Option<DateTime<Utc>>>(5),
         };
 
-        info!("Created organizer option: {} (ID: {:?})", option.name, option.id);
+        info!(
+            "Created organizer option: {} (ID: {:?})",
+            option.name, option.id
+        );
         Ok(option)
     }
 
@@ -918,7 +969,10 @@ impl DatabaseService {
         }
     }
 
-    pub async fn delete_organizer_option(&self, id: i32) -> Result<bool, Box<dyn std::error::Error>> {
+    pub async fn delete_organizer_option(
+        &self,
+        id: i32,
+    ) -> Result<bool, Box<dyn std::error::Error>> {
         let client = self.pool.get().await?;
 
         let rows_affected = client
@@ -973,7 +1027,11 @@ impl DatabaseService {
             values.push(value);
         }
 
-        info!("Retrieved {} organizer values for item {}", values.len(), item_id);
+        info!(
+            "Retrieved {} organizer values for item {}",
+            values.len(),
+            item_id
+        );
         Ok(values)
     }
 
@@ -1006,7 +1064,10 @@ impl DatabaseService {
             updated_at: row.get::<_, Option<DateTime<Utc>>>(6),
         };
 
-        info!("Set organizer value for item {} type {}", item_id, request.organizer_type_id);
+        info!(
+            "Set organizer value for item {} type {}",
+            item_id, request.organizer_type_id
+        );
         Ok(value)
     }
 
@@ -1039,7 +1100,10 @@ impl DatabaseService {
 
         let deleted = rows_affected > 0;
         if deleted {
-            info!("Deleted organizer value for item {} type {}", item_id, organizer_type_id);
+            info!(
+                "Deleted organizer value for item {} type {}",
+                item_id, organizer_type_id
+            );
         }
         Ok(deleted)
     }
@@ -1058,7 +1122,10 @@ impl DatabaseService {
             )
             .await?;
 
-        info!("Cleared {} organizer values for item {}", rows_affected, item_id);
+        info!(
+            "Cleared {} organizer values for item {}",
+            rows_affected, item_id
+        );
         Ok(rows_affected)
     }
 
@@ -1072,7 +1139,10 @@ impl DatabaseService {
     }
 
     /// Get a user by ID
-    pub async fn get_user_by_id(&self, id: Uuid) -> Result<Option<User>, Box<dyn std::error::Error>> {
+    pub async fn get_user_by_id(
+        &self,
+        id: Uuid,
+    ) -> Result<Option<User>, Box<dyn std::error::Error>> {
         let client = self.pool.get().await?;
         let rows = client
             .query(
@@ -1102,7 +1172,10 @@ impl DatabaseService {
     }
 
     /// Get a user by username
-    pub async fn get_user_by_username(&self, username: &str) -> Result<Option<User>, Box<dyn std::error::Error>> {
+    pub async fn get_user_by_username(
+        &self,
+        username: &str,
+    ) -> Result<Option<User>, Box<dyn std::error::Error>> {
         let client = self.pool.get().await?;
         let rows = client
             .query(
@@ -1132,7 +1205,10 @@ impl DatabaseService {
     }
 
     /// Get a user by username or email - now only checks username (for login)
-    pub async fn get_user_by_username_or_email(&self, identifier: &str) -> Result<Option<User>, Box<dyn std::error::Error>> {
+    pub async fn get_user_by_username_or_email(
+        &self,
+        identifier: &str,
+    ) -> Result<Option<User>, Box<dyn std::error::Error>> {
         let client = self.pool.get().await?;
         let rows = client
             .query(
@@ -1391,7 +1467,10 @@ impl DatabaseService {
     // ==================== User Settings Operations ====================
 
     /// Get user settings
-    pub async fn get_user_settings(&self, user_id: Uuid) -> Result<Option<UserSettings>, Box<dyn std::error::Error>> {
+    pub async fn get_user_settings(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Option<UserSettings>, Box<dyn std::error::Error>> {
         let client = self.pool.get().await?;
 
         let rows = client
@@ -1423,7 +1502,10 @@ impl DatabaseService {
     }
 
     /// Create default user settings
-    pub async fn create_user_settings(&self, user_id: Uuid) -> Result<UserSettings, Box<dyn std::error::Error>> {
+    pub async fn create_user_settings(
+        &self,
+        user_id: Uuid,
+    ) -> Result<UserSettings, Box<dyn std::error::Error>> {
         let client = self.pool.get().await?;
 
         let row = client
@@ -1535,7 +1617,10 @@ impl DatabaseService {
     }
 
     /// Get or create user settings
-    pub async fn get_or_create_user_settings(&self, user_id: Uuid) -> Result<UserSettings, Box<dyn std::error::Error>> {
+    pub async fn get_or_create_user_settings(
+        &self,
+        user_id: Uuid,
+    ) -> Result<UserSettings, Box<dyn std::error::Error>> {
         if let Some(settings) = self.get_user_settings(user_id).await? {
             Ok(settings)
         } else {
@@ -1668,7 +1753,7 @@ impl DatabaseService {
                 });
             }
 
-            // Check for All Access grant from the owner  
+            // Check for All Access grant from the owner
             if let Some(owner_uuid) = owner_id {
                 let all_access_rows = client
                     .query(
@@ -1708,7 +1793,7 @@ impl DatabaseService {
         if let Some(row) = share_rows.first() {
             let perm_str: String = row.get(0);
             let permission = perm_str.parse().unwrap_or(PermissionLevel::View);
-            
+
             return Ok(EffectivePermissions {
                 can_view: permission.can_view(),
                 can_edit_items: permission.can_edit_items(),
@@ -1775,7 +1860,10 @@ impl DatabaseService {
     }
 
     /// Delete inventory share
-    pub async fn delete_inventory_share(&self, share_id: Uuid) -> Result<bool, Box<dyn std::error::Error>> {
+    pub async fn delete_inventory_share(
+        &self,
+        share_id: Uuid,
+    ) -> Result<bool, Box<dyn std::error::Error>> {
         let client = self.pool.get().await?;
 
         let rows_affected = client
@@ -1786,7 +1874,10 @@ impl DatabaseService {
     }
 
     /// Get inventories accessible to a user (owned, shared via inventory_shares, or via All Access grants)
-    pub async fn get_accessible_inventories(&self, user_id: Uuid) -> Result<Vec<Inventory>, Box<dyn std::error::Error>> {
+    pub async fn get_accessible_inventories(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<Inventory>, Box<dyn std::error::Error>> {
         let client = self.pool.get().await?;
 
         // Query includes:
@@ -1957,7 +2048,10 @@ impl DatabaseService {
     }
 
     /// Delete a user access grant
-    pub async fn delete_user_access_grant(&self, grant_id: Uuid) -> Result<bool, Box<dyn std::error::Error>> {
+    pub async fn delete_user_access_grant(
+        &self,
+        grant_id: Uuid,
+    ) -> Result<bool, Box<dyn std::error::Error>> {
         let client = self.pool.get().await?;
 
         let rows_affected = client
@@ -2009,7 +2103,7 @@ impl DatabaseService {
         to_user_id: Uuid,
     ) -> Result<(i64, i64), Box<dyn std::error::Error>> {
         let mut client = self.pool.get().await?;
-        
+
         // Start a transaction for atomic operation
         let transaction = client.transaction().await?;
 
@@ -2082,13 +2176,10 @@ impl DatabaseService {
         code_hashes: Vec<String>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let client = self.pool.get().await?;
-        
+
         // Delete any existing recovery codes for this user
         client
-            .execute(
-                "DELETE FROM recovery_codes WHERE user_id = $1",
-                &[&user_id],
-            )
+            .execute("DELETE FROM recovery_codes WHERE user_id = $1", &[&user_id])
             .await?;
 
         // Insert new codes
@@ -2114,9 +2205,12 @@ impl DatabaseService {
     }
 
     /// Confirm that user has saved their recovery codes
-    pub async fn confirm_recovery_codes(&self, user_id: Uuid) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn confirm_recovery_codes(
+        &self,
+        user_id: Uuid,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let client = self.pool.get().await?;
-        
+
         client
             .execute(
                 "UPDATE users SET recovery_codes_confirmed = true WHERE id = $1",
@@ -2129,9 +2223,12 @@ impl DatabaseService {
     }
 
     /// Get all unused recovery code hashes for a user (for verification)
-    pub async fn get_unused_recovery_codes(&self, user_id: Uuid) -> Result<Vec<(Uuid, String)>, Box<dyn std::error::Error>> {
+    pub async fn get_unused_recovery_codes(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<(Uuid, String)>, Box<dyn std::error::Error>> {
         let client = self.pool.get().await?;
-        
+
         let rows = client
             .query(
                 "SELECT id, code_hash FROM recovery_codes WHERE user_id = $1 AND is_used = false",
@@ -2139,18 +2236,18 @@ impl DatabaseService {
             )
             .await?;
 
-        let codes: Vec<(Uuid, String)> = rows
-            .iter()
-            .map(|row| (row.get(0), row.get(1)))
-            .collect();
+        let codes: Vec<(Uuid, String)> = rows.iter().map(|row| (row.get(0), row.get(1))).collect();
 
         Ok(codes)
     }
 
     /// Mark a recovery code as used
-    pub async fn mark_recovery_code_used(&self, code_id: Uuid) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn mark_recovery_code_used(
+        &self,
+        code_id: Uuid,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let client = self.pool.get().await?;
-        
+
         client
             .execute(
                 "UPDATE recovery_codes SET is_used = true, used_at = NOW() WHERE id = $1",
@@ -2163,9 +2260,12 @@ impl DatabaseService {
     }
 
     /// Get count of unused recovery codes for a user
-    pub async fn get_unused_recovery_codes_count(&self, user_id: Uuid) -> Result<i32, Box<dyn std::error::Error>> {
+    pub async fn get_unused_recovery_codes_count(
+        &self,
+        user_id: Uuid,
+    ) -> Result<i32, Box<dyn std::error::Error>> {
         let client = self.pool.get().await?;
-        
+
         let row = client
             .query_one(
                 "SELECT COUNT(*)::int4 FROM recovery_codes WHERE user_id = $1 AND is_used = false",
@@ -2177,9 +2277,12 @@ impl DatabaseService {
     }
 
     /// Get recovery codes status for a user
-    pub async fn get_recovery_codes_status(&self, user_id: Uuid) -> Result<(bool, bool, i32, Option<DateTime<Utc>>), Box<dyn std::error::Error>> {
+    pub async fn get_recovery_codes_status(
+        &self,
+        user_id: Uuid,
+    ) -> Result<(bool, bool, i32, Option<DateTime<Utc>>), Box<dyn std::error::Error>> {
         let client = self.pool.get().await?;
-        
+
         // Get user info
         let user_row = client
             .query_one(

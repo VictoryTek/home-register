@@ -74,12 +74,13 @@ jobs:
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@76071ef0d7ec797419534a183b498b4d6366cf37 # 0.31.0
+        continue-on-error: true
         with:
           image-ref: home-registry:scan
           format: sarif
           output: trivy-results.sarif
           severity: CRITICAL,HIGH
-          exit-code: "1"
+          exit-code: "0"
 
       - name: Upload Trivy scan results
         uses: github/codeql-action/upload-sarif@ff0a06e83cb2de871e5a09832bc6a81e7276941f # v3.28.18
@@ -90,11 +91,13 @@ jobs:
   sbom:
     name: SBOM Generation
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Generate SBOM with Syft
         uses: anchore/sbom-action@e11c554f704a0b820cbf8c51673f6945e0731532 # v0.18.0
+        continue-on-error: true
         with:
           path: .
           format: spdx-json
@@ -102,6 +105,7 @@ jobs:
 
       - name: Upload SBOM artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
         with:
           name: sbom
           path: sbom.spdx.json

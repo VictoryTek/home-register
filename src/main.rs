@@ -6,17 +6,20 @@
 #![warn(clippy::all, clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 
-use actix_web::{web, App, HttpServer, Responder, HttpResponse, middleware::{Logger, DefaultHeaders}};
 use actix_cors::Cors;
-use actix_governor::{Governor, GovernorConfigBuilder};
 use actix_files as fs;
+use actix_governor::{Governor, GovernorConfigBuilder};
+use actix_web::{
+    middleware::{DefaultHeaders, Logger},
+    web, App, HttpResponse, HttpServer, Responder,
+};
 use dotenv::dotenv;
 use std::env;
 
+mod api;
 mod auth;
 mod db;
 mod models;
-mod api;
 
 async fn health() -> impl Responder {
     HttpResponse::Ok().json(serde_json::json!({
@@ -36,27 +39,33 @@ async fn spa_fallback() -> actix_web::Result<fs::NamedFile> {
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
     env_logger::init();
-    
+
     let host = env::var("HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
     let port = env::var("PORT").unwrap_or_else(|_| "8210".to_string());
-    
+
     log::info!("Starting Home Inventory server at http://{}:{}", host, port);
-    log::info!("Environment: {}", env::var("RUST_ENV").unwrap_or_else(|_| "development".to_string()));
-    
+    log::info!(
+        "Environment: {}",
+        env::var("RUST_ENV").unwrap_or_else(|_| "development".to_string())
+    );
+
     // Initialize JWT secret at startup (will auto-generate if not found)
     let _ = auth::get_or_init_jwt_secret();
-    log::info!("JWT token lifetime: {} hours", auth::jwt_token_lifetime_hours());
-    
+    log::info!(
+        "JWT token lifetime: {} hours",
+        auth::jwt_token_lifetime_hours()
+    );
+
     // Initialize database pool with proper error handling (no panics)
     let pool = match db::get_pool().await {
         Ok(p) => {
             log::info!("Database pool initialized successfully");
             p
-        }
+        },
         Err(e) => {
             log::error!("Failed to initialize database pool: {}", e);
             std::process::exit(1);
-        }
+        },
     };
 
     // Rate limiting configuration: 1 request every 100ms (10 per second), burst of 30
@@ -65,7 +74,7 @@ async fn main() -> std::io::Result<()> {
         .burst_size(30)
         .finish()
         .expect("Failed to build rate limiter configuration");
-    
+
     HttpServer::new(move || {
         // Configure CORS
         let cors = Cors::default()

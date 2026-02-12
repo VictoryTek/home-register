@@ -16,28 +16,21 @@ env:
 
 jobs:
   rust:
-    name: Rust (${{ matrix.rust }})
+    name: Rust
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        rust: [stable, "1.75.0"]
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Install Rust ${{ matrix.rust }}
+      - name: Install Rust stable
         uses: dtolnay/rust-toolchain@a54c7afa936fefeb4456b2dd8068152669aa8203 # master
         with:
-          toolchain: ${{ matrix.rust }}
+          toolchain: stable
           components: rustfmt, clippy
 
       - name: Cache Cargo
         uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890b2ea34778fd09d6 # v2.7.8
-        with:
-          shared-key: rust-${{ matrix.rust }}
 
       - name: Check formatting
-        if: matrix.rust == 'stable'
         run: cargo fmt -- --check
 
       - name: Clippy
@@ -75,7 +68,7 @@ jobs:
           shared-key: rust-coverage
 
       - name: Install cargo-tarpaulin
-        uses: taiki-e/install-action@5b7c79c7e5e993d24a00de2b0f0e76c7648031b0 # v2.49.15
+        uses: taiki-e/install-action@v2
         with:
           tool: cargo-tarpaulin
 

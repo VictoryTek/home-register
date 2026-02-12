@@ -2,7 +2,6 @@
 name = "home-registry"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.75.0"  # MSRV - Minimum Supported Rust Version
 license = "MIT"
 repository = "https://github.com/your-org/home-registry"
 readme = "README.md"

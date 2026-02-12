@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use validator::Validate;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -67,12 +67,20 @@ pub struct CreateItemRequest {
     #[validate(length(max = 500, message = "Location must be under 500 characters"))]
     pub location: Option<String>,
     pub purchase_date: Option<String>,
-    #[validate(range(min = 0.0, max = 1_000_000_000.0, message = "Price must be between 0 and 1 billion"))]
+    #[validate(range(
+        min = 0.0,
+        max = 1_000_000_000.0,
+        message = "Price must be between 0 and 1 billion"
+    ))]
     pub purchase_price: Option<f64>,
     pub warranty_expiry: Option<String>,
     #[validate(length(max = 10000, message = "Notes must be under 10000 characters"))]
     pub notes: Option<String>,
-    #[validate(range(min = 0, max = 1_000_000, message = "Quantity must be between 0 and 1 million"))]
+    #[validate(range(
+        min = 0,
+        max = 1_000_000,
+        message = "Quantity must be between 0 and 1 million"
+    ))]
     pub quantity: Option<i32>,
 }
 
@@ -87,12 +95,20 @@ pub struct UpdateItemRequest {
     #[validate(length(max = 500, message = "Location must be under 500 characters"))]
     pub location: Option<String>,
     pub purchase_date: Option<String>,
-    #[validate(range(min = 0.0, max = 1_000_000_000.0, message = "Price must be between 0 and 1 billion"))]
+    #[validate(range(
+        min = 0.0,
+        max = 1_000_000_000.0,
+        message = "Price must be between 0 and 1 billion"
+    ))]
     pub purchase_price: Option<f64>,
     pub warranty_expiry: Option<String>,
     #[validate(length(max = 10000, message = "Notes must be under 10000 characters"))]
     pub notes: Option<String>,
-    #[validate(range(min = 0, max = 1_000_000, message = "Quantity must be between 0 and 1 million"))]
+    #[validate(range(
+        min = 0,
+        max = 1_000_000,
+        message = "Quantity must be between 0 and 1 million"
+    ))]
     pub quantity: Option<i32>,
     pub inventory_id: Option<i32>,
 }
@@ -301,7 +317,7 @@ pub struct ItemOrganizerValueWithDetails {
     pub organizer_type_name: String,
     pub input_type: String,
     pub is_required: bool,
-    pub value: Option<String>,         // Display value (option name or text value)
+    pub value: Option<String>, // Display value (option name or text value)
     pub organizer_option_id: Option<i32>,
     pub text_value: Option<String>,
 }
@@ -316,7 +332,7 @@ pub struct User {
     pub id: Uuid,
     pub username: String,
     pub full_name: String,
-    #[serde(skip_serializing)]  // Never serialize password_hash
+    #[serde(skip_serializing)] // Never serialize password_hash
     pub password_hash: String,
     pub is_admin: bool,
     pub is_active: bool,
@@ -418,11 +434,11 @@ pub struct ChangePasswordRequest {
 /// JWT Claims structure
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
-    pub sub: String,       // User ID
+    pub sub: String, // User ID
     pub username: String,
     pub is_admin: bool,
-    pub exp: usize,        // Expiration time
-    pub iat: usize,        // Issued at
+    pub exp: usize, // Expiration time
+    pub iat: usize, // Issued at
 }
 
 // ==================== Permission Models ====================
@@ -436,9 +452,9 @@ pub struct Claims {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum PermissionLevel {
-    View,           // Can only view inventory and items
-    EditItems,      // Can view and edit item details (not add/remove items)
-    EditInventory,  // Can view, edit items, add/remove items, edit inventory details
+    View,          // Can only view inventory and items
+    EditItems,     // Can view and edit item details (not add/remove items)
+    EditInventory, // Can view, edit items, add/remove items, edit inventory details
 }
 
 impl PermissionLevel {
@@ -449,7 +465,10 @@ impl PermissionLevel {
 
     /// Can edit existing item details (name, description, etc.)
     pub fn can_edit_items(&self) -> bool {
-        matches!(self, PermissionLevel::EditItems | PermissionLevel::EditInventory)
+        matches!(
+            self,
+            PermissionLevel::EditItems | PermissionLevel::EditInventory
+        )
     }
 
     /// Can add new items to inventory
@@ -547,7 +566,7 @@ pub struct InventoryShareWithUser {
 /// Request to share an inventory
 #[derive(Deserialize, Debug)]
 pub struct CreateInventoryShareRequest {
-    pub shared_with_username: String,  // Username of user to share with
+    pub shared_with_username: String, // Username of user to share with
     pub permission_level: PermissionLevel,
 }
 
@@ -564,8 +583,8 @@ pub struct UpdateInventoryShareRequest {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UserAccessGrant {
     pub id: Uuid,
-    pub grantor_user_id: Uuid,  // User granting access
-    pub grantee_user_id: Uuid,  // User receiving access
+    pub grantor_user_id: Uuid, // User granting access
+    pub grantee_user_id: Uuid, // User receiving access
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -583,7 +602,7 @@ pub struct UserAccessGrantWithUsers {
 /// Request to create a user access grant (All Access)
 #[derive(Deserialize, Debug)]
 pub struct CreateUserAccessGrantRequest {
-    pub grantee_username: String,  // Username of user to grant access to
+    pub grantee_username: String, // Username of user to grant access to
 }
 
 // ==================== Ownership Transfer Models ====================
@@ -591,7 +610,7 @@ pub struct CreateUserAccessGrantRequest {
 /// Request to transfer inventory ownership to another user
 #[derive(Deserialize, Debug)]
 pub struct TransferOwnershipRequest {
-    pub new_owner_username: String,  // Username of user to transfer ownership to
+    pub new_owner_username: String, // Username of user to transfer ownership to
 }
 
 /// Response for ownership transfer operation
@@ -617,7 +636,7 @@ pub struct EffectivePermissions {
     pub can_manage_sharing: bool,
     pub can_manage_organizers: bool,
     pub is_owner: bool,
-    pub has_all_access: bool,  // Via UserAccessGrant
+    pub has_all_access: bool, // Via UserAccessGrant
     pub permission_source: PermissionSource,
 }
 
@@ -625,10 +644,10 @@ pub struct EffectivePermissions {
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum PermissionSource {
-    Owner,           // User owns the inventory
-    AllAccess,       // Via UserAccessGrant from owner
-    InventoryShare,  // Via InventoryShare record
-    None,            // No access
+    Owner,          // User owns the inventory
+    AllAccess,      // Via UserAccessGrant from owner
+    InventoryShare, // Via InventoryShare record
+    None,           // No access
 }
 
 // ==================== User Settings Models ====================
@@ -669,7 +688,7 @@ pub struct InitialSetupRequest {
     pub username: String,
     pub full_name: String,
     pub password: String,
-    pub inventory_name: Option<String>,  // Optional first inventory name
+    pub inventory_name: Option<String>, // Optional first inventory name
 }
 
 /// Response for setup status check
