@@ -360,10 +360,10 @@ export function InventoryDetailPage() {
                   <select
                     className="form-select"
                     id={`organizer-${org.id}`}
-                    value={organizerValues[org.id]?.optionId ?? ''}
+                    value={organizerValues[org.id!]?.optionId ?? ''}
                     onChange={(e) => setOrganizerValues({
                       ...organizerValues,
-                      [org.id]: { optionId: e.target.value ? parseInt(e.target.value, 10) : undefined }
+                      [org.id!]: { optionId: e.target.value ? parseInt(e.target.value, 10) : undefined }
                     })}
                   >
                     <option value="">Select {org.name.toLowerCase()}</option>
@@ -377,10 +377,10 @@ export function InventoryDetailPage() {
                     className="form-input"
                     id={`organizer-${org.id}`}
                     placeholder={`Enter ${org.name.toLowerCase()}`}
-                    value={organizerValues[org.id]?.textValue ?? ''}
+                    value={organizerValues[org.id!]?.textValue ?? ''}
                     onChange={(e) => setOrganizerValues({
                       ...organizerValues,
-                      [org.id]: { textValue: e.target.value }
+                      [org.id!]: { textValue: e.target.value }
                     })}
                   />
                 )}

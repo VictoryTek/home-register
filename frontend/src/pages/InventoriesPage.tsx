@@ -27,22 +27,6 @@ export function InventoriesPage() {
   const [imageOption, setImageOption] = useState<'upload' | 'url'>('url');
   const [imagePreview, setImagePreview] = useState<string>('');
 
-  useEffect(() => {
-    void loadInventories();
-  }, [loadInventories]);
-
-  // Auto-navigate to default inventory if set
-  useEffect(() => {
-    if (!loading && !hasAutoNavigated.current && settings?.default_inventory_id && inventories.length > 0) {
-      // Check if the default inventory exists
-      const defaultInventory = inventories.find(inv => inv.id === settings.default_inventory_id);
-      if (defaultInventory) {
-        hasAutoNavigated.current = true;
-        navigate(`/inventory/${settings.default_inventory_id}`);
-      }
-    }
-  }, [loading, settings, inventories, navigate]);
-
   const loadInventories = useCallback(async () => {
     setLoading(true);
     try {
@@ -77,6 +61,22 @@ export function InventoriesPage() {
       setLoading(false);
     }
   }, [showToast, setItems, setInventories]);
+
+  useEffect(() => {
+    void loadInventories();
+  }, [loadInventories]);
+
+  // Auto-navigate to default inventory if set
+  useEffect(() => {
+    if (!loading && !hasAutoNavigated.current && settings?.default_inventory_id && inventories.length > 0) {
+      // Check if the default inventory exists
+      const defaultInventory = inventories.find(inv => inv.id === settings.default_inventory_id);
+      if (defaultInventory) {
+        hasAutoNavigated.current = true;
+        navigate(`/inventory/${settings.default_inventory_id}`);
+      }
+    }
+  }, [loading, settings, inventories, navigate]);
 
   const handleCreateInventory = async () => {
     if (!formData.name.trim()) {

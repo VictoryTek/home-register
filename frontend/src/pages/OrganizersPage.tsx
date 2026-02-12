@@ -88,34 +88,6 @@ export function OrganizersPage() {
     }
   }, [inventoryId, loadData, loadInventories]);
 
-  const loadData = async () => {
-    if (!inventoryId) {return;}
-    setLoading(true);
-    setError(null);
-    try {
-      const [inventoryRes, organizersRes] = await Promise.all([
-        inventoryApi.getById(inventoryId),
-        organizerApi.getByInventory(inventoryId),
-      ]);
-      
-      if (inventoryRes.success && inventoryRes.data) {
-        setInventory(inventoryRes.data);
-      } else {
-        setError('Inventory not found');
-        return;
-      }
-      
-      if (organizersRes.success && organizersRes.data) {
-        setOrganizers(organizersRes.data);
-      }
-    } catch (err) {
-      setError('Failed to load organizers');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const openCreateTypeModal = () => {
     setEditingType(null);
     setTypeName('');
@@ -192,7 +164,7 @@ export function OrganizersPage() {
   };
 
   const handleSaveOption = async () => {
-    if (!optionName.trim() || !selectedTypeForOption) {
+    if (!optionName.trim() || !selectedTypeForOption || !selectedTypeForOption.id) {
       showToast('Please enter a name for the option', 'error');
       return;
     }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import Modal from './Modal';
+import { Modal } from './Modal';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { authApi } from '@/services/api';
