@@ -10,6 +10,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "sync-dist": "node sync-dist.js",
+    "build:full": "npm run build && npm run sync-dist",
+    "clean": "rimraf dist ../static",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
@@ -32,8 +35,10 @@
     "eslint": "9.39.2",
     "eslint-plugin-react-hooks": "5.1.0",
     "eslint-plugin-react-refresh": "0.4.16",
+    "fs-extra": "^11.2.0",
     "globals": "15.14.0",
     "prettier": "3.4.2",
+    "rimraf": "^6.0.1",
     "typescript": "5.6.2",
     "typescript-eslint": "8.18.2",
     "vite": "6.4.1"

@@ -27,6 +27,12 @@ export function InventoriesPage() {
   const [imageOption, setImageOption] = useState<'upload' | 'url'>('url');
   const [imagePreview, setImagePreview] = useState<string>('');
 
+  // CRITICAL FIX: Empty dependency array to prevent infinite loop
+  // - setInventories and setItems are stable (guaranteed by React useState)
+  // - showToast is now stable (wrapped in useCallback in AppContext)
+  // - setLoading is stable (local useState)
+  // Previously, including showToast/setItems/setInventories caused infinite loops
+  // when AppContext re-rendered, recreating function references
   const loadInventories = useCallback(async () => {
     setLoading(true);
     try {
@@ -38,17 +44,27 @@ export function InventoriesPage() {
         const counts: Record<number, number> = {};
         const allItems: Item[] = [];
         
-        for (const inv of result.data) {
-          if (inv.id) {
-            const itemsResult = await inventoryApi.getItems(inv.id);
-            if (itemsResult.success && itemsResult.data) {
-              counts[inv.id] = itemsResult.data.length;
-              allItems.push(...itemsResult.data);
-            } else {
-              counts[inv.id] = 0;
-            }
+        // Parallelize API calls instead of sequential loop to reduce rate limit pressure
+        const itemsPromises = result.data.map(inv => 
+          inv.id ? inventoryApi.getItems(inv.id) : Promise.resolve({ success: false, data: null })
+        );
+        
+        const itemsResults = await Promise.all(itemsPromises);
+        
+        // Explicit null check to satisfy TypeScript type narrowing in forEach callback
+        itemsResults.forEach((itemsResult, index) => {
+          if (!result.data) return; // Type guard: ensure result.data exists
+          
+          const inv = result.data[index];
+          if (!inv?.id) return; // Type guard: ensure inv and inv.id exist
+          
+          if (itemsResult.success && itemsResult.data) {
+            counts[inv.id] = itemsResult.data.length;
+            allItems.push(...itemsResult.data);
+          } else {
+            counts[inv.id] = 0;
           }
-        }
+        });
         
         setItemCounts(counts);
         setItems(allItems); // Update global items state for notifications
@@ -60,7 +76,7 @@ export function InventoriesPage() {
     } finally {
       setLoading(false);
     }
-  }, [showToast, setItems, setInventories]);
+  }, []); // Empty deps - all functions used are stable
 
   useEffect(() => {
     void loadInventories();

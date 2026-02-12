@@ -30,8 +30,12 @@ export function InventoryDetailPage() {
     warranty_expiry: undefined,
     quantity: 1,
   });
-  const [organizerValues, setOrganizerValues] = useState<Record<number, { optionId?: number; textValue?: string }>>({});
+  const [organizerValues, setOrganizerValues] = useState<Record<string, { optionId?: number; textValue?: string }>>({});
 
+  // Empty dependency array - all functions used are stable:
+  // - navigate is stable (from react-router)
+  // - setGlobalItems is a state setter (stable)
+  // - showToast is now wrapped in useCallback (stable)
   const loadInventoryDetail = useCallback(async (inventoryId: number) => {
     setLoading(true);
     try {
@@ -63,7 +67,7 @@ export function InventoryDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [navigate, setGlobalItems, showToast]);
+  }, []); // Empty deps - all functions are stable
 
   useEffect(() => {
     if (id) {
@@ -80,7 +84,7 @@ export function InventoryDetailPage() {
     // Check required organizers
     for (const org of organizers) {
       if (org.is_required && org.id) {
-        const value = organizerValues[org.id];
+        const value = organizerValues[String(org.id)];
         if (!value || (org.input_type === 'select' && !value.optionId) || (org.input_type === 'text' && !value.textValue?.trim())) {
           showToast(`Please fill in the required field: ${org.name}`, 'error');
           return;
@@ -360,10 +364,10 @@ export function InventoryDetailPage() {
                   <select
                     className="form-select"
                     id={`organizer-${org.id}`}
-                    value={organizerValues[org.id]?.optionId ?? ''}
+                    value={organizerValues[String(org.id)]?.optionId ?? ''}
                     onChange={(e) => setOrganizerValues({
                       ...organizerValues,
-                      [org.id]: { optionId: e.target.value ? parseInt(e.target.value, 10) : undefined }
+                      [String(org.id)]: { optionId: e.target.value ? parseInt(e.target.value, 10) : undefined }
                     })}
                   >
                     <option value="">Select {org.name.toLowerCase()}</option>
@@ -377,10 +381,10 @@ export function InventoryDetailPage() {
                     className="form-input"
                     id={`organizer-${org.id}`}
                     placeholder={`Enter ${org.name.toLowerCase()}`}
-                    value={organizerValues[org.id]?.textValue ?? ''}
+                    value={organizerValues[String(org.id)]?.textValue ?? ''}
                     onChange={(e) => setOrganizerValues({
                       ...organizerValues,
-                      [org.id]: { textValue: e.target.value }
+                      [String(org.id)]: { textValue: e.target.value }
                     })}
                   />
                 )}

@@ -66,10 +66,32 @@ async fn main() -> std::io::Result<()> {
         },
     };
 
-    // Rate limiting configuration: 1 request every 100ms (10 per second), burst of 30
+    // Rate limiting configuration from environment variables
+    // These settings provide sensible defaults for a home inventory app:
+    // - 50 requests per second sustained (configurable via RATE_LIMIT_RPS)
+    // - 100 request burst capacity (configurable via RATE_LIMIT_BURST)
+    // This allows rapid page loads while protecting against accidental DoS
+    // NOTE: actix-governor automatically adds Retry-After headers to 429 responses,
+    // telling clients when to retry (compliant with RFC 6585)
+    let requests_per_second = env::var("RATE_LIMIT_RPS")
+        .unwrap_or_else(|_| "50".to_string())
+        .parse::<u64>()
+        .unwrap_or(50);
+
+    let burst_size = env::var("RATE_LIMIT_BURST")
+        .unwrap_or_else(|_| "100".to_string())
+        .parse::<u32>()
+        .unwrap_or(100);
+
+    log::info!(
+        "Rate limiting: {} requests/second, burst size: {}",
+        requests_per_second,
+        burst_size
+    );
+
     let governor_conf = GovernorConfigBuilder::default()
-        .seconds_per_request(1)
-        .burst_size(30)
+        .requests_per_second(requests_per_second)
+        .burst_size(burst_size)
         .finish()
         .expect("Failed to build rate limiter configuration");
 
@@ -103,14 +125,24 @@ async fn main() -> std::io::Result<()> {
                 .add(("X-XSS-Protection", "1; mode=block"))
                 .add(("Referrer-Policy", "strict-origin-when-cross-origin"))
                 .add(("Permissions-Policy", "geolocation=(), microphone=(), camera=()"))
+                // CSP: Allow external resources for fonts (Google Fonts, Font Awesome)
+                // Updated to fix CSP violations for Font Awesome CDN
                 .add(("Content-Security-Policy", 
-                      "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'")))
+                      "default-src 'self'; \
+                       script-src 'self' 'unsafe-inline' 'unsafe-eval' https://use.fontawesome.com https://cdnjs.cloudflare.com; \
+                       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://use.fontawesome.com https://cdnjs.cloudflare.com; \
+                       img-src 'self' data: https:; \
+                       font-src 'self' https://fonts.gstatic.com https://use.fontawesome.com https://cdnjs.cloudflare.com data:; \
+                       connect-src 'self'; \
+                       frame-ancestors 'none'")))
             .wrap(cors)
             .wrap(Logger::default())
-            // Global rate limiting
-            .wrap(Governor::new(&governor_conf))
-            // API routes
-            .service(api::init_routes())
+            // API routes - apply rate limiting ONLY to API endpoints, not static assets
+            // This prevents rate limiting from affecting frontend assets, logos, health checks, etc.
+            .service(
+                api::init_routes()
+                    .wrap(Governor::new(&governor_conf)) // Rate limit scoped to /api/* routes only
+            )
             .route("/health", web::get().to(health))
             // Serve static assets (js, css, images, etc.)
             .service(fs::Files::new("/assets", "static/assets"))

@@ -37,22 +37,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  const toggleTheme = () => {
+  // Wrap toggleTheme in useCallback to create stable reference (prevent unnecessary re-renders)
+  const toggleTheme = useCallback(() => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
-  };
+  }, []);
 
-  const showToast = (message: string, type: ToastMessage['type']) => {
+  // CRITICAL FIX: Wrap showToast in useCallback to prevent infinite loop in components
+  // that depend on this function. Without this, every context re-render creates a new
+  // showToast reference, causing dependent useCallback hooks to recreate, triggering
+  // useEffect hooks, leading to infinite API request loops.
+  const showToast = useCallback((message: string, type: ToastMessage['type']) => {
     const id = Date.now().toString();
     setToasts(prev => [...prev, { id, message, type }]);
     
     setTimeout(() => {
       removeToast(id);
     }, 3000);
-  };
+  }, []); // Empty deps - function is now stable across re-renders
 
-  const removeToast = (id: string) => {
+  // Wrap removeToast in useCallback for consistency and to prevent unnecessary re-renders
+  const removeToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(toast => toast.id !== id));
-  };
+  }, []);
 
   const checkNotifications = useCallback(() => {
     // Check all items from all inventories for warranty notifications

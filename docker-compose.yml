@@ -27,6 +27,8 @@ services:
       RUST_LOG: info
       # JWT_SECRET: "your-secure-secret-here"  # Uncomment and set for production
       # JWT_TOKEN_LIFETIME_HOURS: 24  # Token lifetime in hours (default: 24)
+      RATE_LIMIT_RPS: 100  # Increased from 50 for home use - allows 100 requests/sec sustained
+      RATE_LIMIT_BURST: 200  # Increased from 100 to handle page load spikes (20+ requests)
     ports:
       - "8210:8210"
     volumes:

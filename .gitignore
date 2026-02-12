@@ -20,3 +20,7 @@ frontend/dist/
 frontend/.vite/
 frontend/dist-ssr/
 *.local
+
+# Generated static directory (created by sync-dist.js for local dev)
+# In Docker, this is created from frontend/dist/ during build
+static/
