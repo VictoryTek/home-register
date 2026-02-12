@@ -67,7 +67,13 @@ pub async fn create_test_user(pool: &Pool, username: &str) -> (String, String) {
 
     let db = DatabaseService::new(pool.clone());
     let user = db
-        .create_user(username, &password_hash)
+        .create_user(
+            username,
+            &password_hash,
+            "Test User", // full_name
+            false,       // is_admin
+            false,       // recovery_codes_confirmed
+        )
         .await
         .expect("Failed to create test user");
 

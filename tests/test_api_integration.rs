@@ -27,16 +27,11 @@ async fn test_register_and_login_flow() {
     let username = common::test_username("reg_test");
 
     // Create app with auth routes
-    let app = test::init_service(
-        App::new()
-            .app_data(web::Data::new(pool.clone()))
-            .service(
-                web::scope("/api/auth")
-                    // Note: You'll need to add these routes from your api module
-                    // .service(register)
-                    // .service(login)
-            ),
-    )
+    let app = test::init_service(App::new().app_data(web::Data::new(pool.clone())).service(
+        web::scope("/api/auth"), // Note: You'll need to add these routes from your api module
+                                 // .service(register)
+                                 // .service(login)
+    ))
     .await;
 
     // Test registration

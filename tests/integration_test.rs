@@ -19,10 +19,8 @@ async fn test_health_handler() -> impl actix_web::Responder {
 #[actix_web::test]
 async fn test_health_endpoint() {
     // This test doesn't require database connectivity
-    let app = test::init_service(
-        App::new().route("/health", web::get().to(test_health_handler)),
-    )
-    .await;
+    let app =
+        test::init_service(App::new().route("/health", web::get().to(test_health_handler))).await;
 
     let req = test::TestRequest::get().uri("/health").to_request();
     let resp = test::call_service(&app, req).await;
@@ -34,8 +32,8 @@ async fn test_health_endpoint() {
     assert_eq!(body["service"], "home-registry-test");
 }
 
-#[test]
-fn test_basic_sanity() {
+#[actix_web::test]
+async fn test_basic_sanity() {
     // Keep one simple test that always passes
     assert_eq!(2 + 2, 4);
 }

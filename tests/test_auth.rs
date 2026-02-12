@@ -1,8 +1,6 @@
 // Tests for authentication module
 
-use home_registry::auth::{
-    create_token, validate_password, validate_username, verify_token,
-};
+use home_registry::auth::{create_token, validate_password, validate_username, verify_token};
 
 #[test]
 fn test_password_hashing() {

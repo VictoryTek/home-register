@@ -271,7 +271,6 @@ pub fn validate_username(username: &str) -> Result<(), &'static str> {
 // ==================== Testing Helpers ====================
 
 /// Synchronous password hashing for tests (do not use in async contexts)
-#[cfg(test)]
 pub fn hash_password_sync(password: &str) -> Result<String, argon2::password_hash::Error> {
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
@@ -280,8 +279,10 @@ pub fn hash_password_sync(password: &str) -> Result<String, argon2::password_has
 }
 
 /// Synchronous password verification for tests (do not use in async contexts)
-#[cfg(test)]
-pub fn verify_password_sync(password: &str, hash_str: &str) -> Result<bool, argon2::password_hash::Error> {
+pub fn verify_password_sync(
+    password: &str,
+    hash_str: &str,
+) -> Result<bool, argon2::password_hash::Error> {
     let parsed_hash = PasswordHash::new(hash_str)?;
     Ok(Argon2::default()
         .verify_password(password.as_bytes(), &parsed_hash)
@@ -293,10 +294,14 @@ pub fn create_token(user_id: &Uuid, username: &str) -> Result<String, jsonwebtok
     let user = User {
         id: *user_id,
         username: username.to_string(),
-        password_hash: String::new(), // Not used for token generation
+        password_hash: String::new(),    // Not used for token generation
+        full_name: username.to_string(), // Use username as full_name for test tokens
         is_admin: false,
+        is_active: true, // Active by default for new users
         created_at: Utc::now(),
         updated_at: Utc::now(),
+        recovery_codes_generated_at: None, // Not generated initially
+        recovery_codes_confirmed: false,   // Not confirmed initially
     };
     generate_token(&user)
 }
