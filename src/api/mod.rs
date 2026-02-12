@@ -131,7 +131,7 @@ pub async fn get_inventory(pool: web::Data<Pool>, path: web::Path<i32>) -> Resul
         },
         Ok(None) => Ok(HttpResponse::NotFound().json(ErrorResponse {
             success: false,
-            error: format!("Inventory with id {} not found", inventory_id),
+            error: format!("Inventory with id {inventory_id} not found"),
             message: Some("Inventory not found".to_string()),
         })),
         Err(e) => {
@@ -305,7 +305,7 @@ pub async fn get_item(pool: web::Data<Pool>, path: web::Path<i32>) -> Result<imp
         },
         Ok(None) => Ok(HttpResponse::NotFound().json(ErrorResponse {
             success: false,
-            error: format!("Item with id {} not found", item_id),
+            error: format!("Item with id {item_id} not found"),
             message: Some("Item not found".to_string()),
         })),
         Err(e) => {
@@ -564,7 +564,7 @@ pub async fn get_organizer_type(
         },
         Ok(None) => Ok(HttpResponse::NotFound().json(ErrorResponse {
             success: false,
-            error: format!("Organizer type with id {} not found", organizer_id),
+            error: format!("Organizer type with id {organizer_id} not found"),
             message: Some("Organizer type not found".to_string()),
         })),
         Err(e) => {
@@ -997,6 +997,7 @@ pub fn api_scope() -> Scope {
 }
 
 // Alias for backward compatibility
+#[must_use]
 pub fn init_routes() -> Scope {
     api_scope()
 }

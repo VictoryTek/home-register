@@ -64,15 +64,15 @@ pub fn get_pool() -> Result<Pool, Box<dyn std::error::Error + Send + Sync>> {
     let host_parts: Vec<&str> = parts[1].split('/').collect();
     let host_port: Vec<&str> = host_parts[0].split(':').collect();
 
-    let user = auth_parts.get(0).unwrap_or(&"postgres").to_string();
-    let password = auth_parts.get(1).unwrap_or(&"password").to_string();
-    let host = host_port.get(0).unwrap_or(&"localhost").to_string();
+    let user = (*auth_parts.first().unwrap_or(&"postgres")).to_string();
+    let password = (*auth_parts.get(1).unwrap_or(&"password")).to_string();
+    let host = (*host_port.first().unwrap_or(&"localhost")).to_string();
     let port = host_port
         .get(1)
         .unwrap_or(&"5432")
         .parse::<u16>()
         .unwrap_or(5432);
-    let dbname = host_parts.get(1).unwrap_or(&"home_inventory").to_string();
+    let dbname = (*host_parts.get(1).unwrap_or(&"home_inventory")).to_string();
 
     let mut cfg = Config::new();
     cfg.user = Some(user);
@@ -93,6 +93,7 @@ pub struct DatabaseService {
 }
 
 impl DatabaseService {
+    #[must_use]
     pub fn new(pool: Pool) -> Self {
         Self { pool }
     }
@@ -648,12 +649,11 @@ impl DatabaseService {
         let mut result = Vec::new();
         for organizer_type in organizer_types {
             let options = if organizer_type.input_type == "select" {
-                match organizer_type.id {
-                    Some(id) => self.get_organizer_options(id).await?,
-                    None => {
-                        error!("Organizer type missing ID for inventory {}", inventory_id);
-                        Vec::new()
-                    },
+                if let Some(id) = organizer_type.id {
+                    self.get_organizer_options(id).await?
+                } else {
+                    error!("Organizer type missing ID for inventory {}", inventory_id);
+                    Vec::new()
                 }
             } else {
                 Vec::new()
@@ -1873,7 +1873,7 @@ impl DatabaseService {
         Ok(rows_affected > 0)
     }
 
-    /// Get inventories accessible to a user (owned, shared via inventory_shares, or via All Access grants)
+    /// Get inventories accessible to a user (owned, shared via `inventory_shares`, or via All Access grants)
     pub async fn get_accessible_inventories(
         &self,
         user_id: Uuid,
@@ -2093,7 +2093,7 @@ impl DatabaseService {
 
     /// Transfer ownership of an inventory from one user to another
     /// This operation:
-    /// 1. Updates the inventory's user_id to the new owner
+    /// 1. Updates the inventory's `user_id` to the new owner
     /// 2. Removes all existing shares for the inventory (new owner controls sharing)
     /// 3. The previous owner loses all access
     pub async fn transfer_inventory_ownership(
@@ -2164,7 +2164,10 @@ impl DatabaseService {
             inventory_id, from_user_id, to_user_id, items_count, shares_removed
         );
 
-        Ok((items_count, shares_removed as i64))
+        // Safe cast: shares_removed is clamped to i64::MAX, preventing wrap
+        #[allow(clippy::cast_possible_wrap, reason = "Value is clamped to i64::MAX preventing wrap")]
+        let shares_removed_i64 = shares_removed.min(i64::MAX as u64) as i64;
+        Ok((items_count, shares_removed_i64))
     }
 
     // ==================== Recovery Codes Methods ====================

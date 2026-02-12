@@ -437,8 +437,8 @@ pub struct Claims {
     pub sub: String, // User ID
     pub username: String,
     pub is_admin: bool,
-    pub exp: usize, // Expiration time
-    pub iat: usize, // Issued at
+    pub exp: u64, // Expiration time (Unix timestamp)
+    pub iat: u64, // Issued at (Unix timestamp)
 }
 
 // ==================== Permission Models ====================
@@ -446,9 +446,9 @@ pub struct Claims {
 /// Permission levels for shared inventories (per-inventory)
 /// The 4-tier system:
 /// 1. View - View shared inventory and its items
-/// 2. EditItems - View + Edit item details only (not add/remove)
-/// 3. EditInventory - EditItems + Edit inventory details, add/remove items
-/// 4. AllAccess - User-to-user grant via UserAccessGrant table (full access to ALL grantor's inventories)
+/// 2. `EditItems` - View + Edit item details only (not add/remove)
+/// 3. `EditInventory` - `EditItems` + Edit inventory details, add/remove items
+/// 4. `AllAccess` - User-to-user grant via `UserAccessGrant` table (full access to ALL grantor's inventories)
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum PermissionLevel {
@@ -459,11 +459,13 @@ pub enum PermissionLevel {
 
 impl PermissionLevel {
     /// Can view inventory and items
+    #[must_use = "permission check result should be used to enforce access control"]
     pub fn can_view(&self) -> bool {
         true // All levels can view
     }
 
     /// Can edit existing item details (name, description, etc.)
+    #[must_use = "permission check result should be used to enforce access control"]
     pub fn can_edit_items(&self) -> bool {
         matches!(
             self,
@@ -472,21 +474,25 @@ impl PermissionLevel {
     }
 
     /// Can add new items to inventory
+    #[must_use = "permission check result should be used to enforce access control"]
     pub fn can_add_items(&self) -> bool {
         matches!(self, PermissionLevel::EditInventory)
     }
 
     /// Can remove items from inventory
+    #[must_use = "permission check result should be used to enforce access control"]
     pub fn can_remove_items(&self) -> bool {
         matches!(self, PermissionLevel::EditInventory)
     }
 
     /// Can edit inventory details (name, description, etc.)
+    #[must_use = "permission check result should be used to enforce access control"]
     pub fn can_edit_inventory(&self) -> bool {
         matches!(self, PermissionLevel::EditInventory)
     }
 
     /// Can manage organizers for inventory
+    #[must_use = "permission check result should be used to enforce access control"]
     pub fn can_manage_organizers(&self) -> bool {
         matches!(self, PermissionLevel::EditInventory)
     }
@@ -494,6 +500,7 @@ impl PermissionLevel {
     // Legacy method - maps to can_edit_items for backward compatibility
     #[deprecated(note = "Use can_edit_items() instead")]
     #[allow(dead_code)]
+    #[must_use = "permission check result should be used to enforce access control"]
     pub fn can_edit(&self) -> bool {
         self.can_edit_items()
     }
@@ -501,6 +508,7 @@ impl PermissionLevel {
     // Legacy method - only owner or AllAccess users can delete inventory
     #[deprecated(note = "Deletion requires ownership or AllAccess grant")]
     #[allow(dead_code)]
+    #[must_use = "permission check result should be used to enforce access control"]
     pub fn can_delete(&self) -> bool {
         false // Per-inventory shares cannot delete - requires ownership or AllAccess
     }
@@ -508,6 +516,7 @@ impl PermissionLevel {
     // Legacy method - only owner or AllAccess users can manage sharing
     #[deprecated(note = "Sharing management requires ownership or AllAccess grant")]
     #[allow(dead_code)]
+    #[must_use = "permission check result should be used to enforce access control"]
     pub fn can_manage_sharing(&self) -> bool {
         false // Per-inventory shares cannot manage sharing - requires ownership or AllAccess
     }
@@ -529,11 +538,8 @@ impl std::str::FromStr for PermissionLevel {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "view" => Ok(PermissionLevel::View),
-            "edit_items" => Ok(PermissionLevel::EditItems),
-            "edit_inventory" => Ok(PermissionLevel::EditInventory),
-            // Legacy value mappings for backward compatibility
-            "edit" => Ok(PermissionLevel::EditItems),
-            "full" => Ok(PermissionLevel::EditInventory),
+            "edit_items" | "edit" => Ok(PermissionLevel::EditItems),
+            "edit_inventory" | "full" => Ok(PermissionLevel::EditInventory),
             _ => Err(format!("Invalid permission level: {s}")),
         }
     }
@@ -624,7 +630,9 @@ pub struct TransferOwnershipResponse {
     pub shares_removed: i64,
 }
 
-/// Summary of effective permissions a user has for an inventory
+/// Summary of effective permissions a user has for an inventory.
+/// This is a data transfer object (DTO) for API responses.
+#[allow(clippy::struct_excessive_bools, reason = "DTO for API responses where explicit booleans improve clarity")]
 #[derive(Serialize, Debug, Clone)]
 pub struct EffectivePermissions {
     pub can_view: bool,

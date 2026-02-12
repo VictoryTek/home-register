@@ -6,6 +6,8 @@
 use actix_web::{delete, get, post, put, web, HttpRequest, HttpResponse, Responder, Result};
 use deadpool_postgres::Pool;
 use log::{error, info, warn};
+use rand::distributions::Alphanumeric;
+use rand::Rng;
 use uuid::Uuid;
 
 use crate::auth::{
@@ -29,15 +31,12 @@ pub async fn get_auth_context_from_request(
     req: &HttpRequest,
     pool: &Pool,
 ) -> Result<AuthContext, HttpResponse> {
-    let token = match extract_token(req) {
-        Some(t) => t,
-        None => {
-            return Err(HttpResponse::Unauthorized().json(ErrorResponse {
-                success: false,
-                error: "No authentication token provided".to_string(),
-                message: Some("Please log in to access this resource".to_string()),
-            }));
-        },
+    let Some(token) = extract_token(req) else {
+        return Err(HttpResponse::Unauthorized().json(ErrorResponse {
+            success: false,
+            error: "No authentication token provided".to_string(),
+            message: Some("Please log in to access this resource".to_string()),
+        }));
     };
 
     let claims = match verify_token(&token) {
@@ -51,15 +50,12 @@ pub async fn get_auth_context_from_request(
         },
     };
 
-    let auth_ctx = match AuthContext::from_claims(&claims) {
-        Ok(ctx) => ctx,
-        Err(_) => {
-            return Err(HttpResponse::Unauthorized().json(ErrorResponse {
-                success: false,
-                error: "Invalid user ID in token".to_string(),
-                message: Some("Please log in again".to_string()),
-            }));
-        },
+    let Ok(auth_ctx) = AuthContext::from_claims(&claims) else {
+        return Err(HttpResponse::Unauthorized().json(ErrorResponse {
+            success: false,
+            error: "Invalid user ID in token".to_string(),
+            message: Some("Please log in again".to_string()),
+        }));
     };
 
     // Verify user still exists and is active
@@ -377,7 +373,7 @@ pub async fn register(
 
     // Check that at least one user exists (initial setup has been done)
     match db_service.get_user_count().await {
-        Ok(count) if count == 0 => {
+        Ok(0) => {
             return Ok(HttpResponse::BadRequest().json(ErrorResponse {
                 success: false,
                 error: "Initial setup required".to_string(),
@@ -954,7 +950,7 @@ pub async fn admin_update_user(
         let admin_count = db_service.count_admin_users().await.unwrap_or(0);
         if admin_count <= 1 {
             let target_user = db_service.get_user_by_id(user_id).await.ok().flatten();
-            if target_user.map(|u| u.is_admin).unwrap_or(false) {
+            if target_user.is_some_and(|u| u.is_admin) {
                 return Ok(HttpResponse::BadRequest().json(ErrorResponse {
                     success: false,
                     error: "Cannot remove admin privileges from the last admin".to_string(),
@@ -1878,9 +1874,6 @@ pub async fn generate_recovery_codes(
     let db_service = DatabaseService::new(pool.get_ref().clone());
 
     // Generate 10 random recovery codes
-    use rand::distributions::Alphanumeric;
-    use rand::Rng;
-
     let mut rng = rand::thread_rng();
     let mut plain_codes: Vec<String> = Vec::with_capacity(10);
     let mut code_hashes: Vec<String> = Vec::with_capacity(10);
@@ -2006,7 +1999,7 @@ pub async fn confirm_recovery_codes(
         .get_unused_recovery_codes_count(auth.user_id)
         .await
     {
-        Ok(count) if count == 0 => {
+        Ok(0) => {
             return Ok(HttpResponse::BadRequest().json(ErrorResponse {
                 success: false,
                 error: "No recovery codes to confirm".to_string(),
@@ -2133,16 +2126,13 @@ pub async fn use_recovery_code(
         }
     }
 
-    let code_id = match matched_code_id {
-        Some(id) => id,
-        None => {
-            warn!("Invalid recovery code attempt for user {}", user.username);
-            return Ok(HttpResponse::BadRequest().json(ErrorResponse {
-                success: false,
-                error: "Invalid username or recovery code".to_string(),
-                message: None,
-            }));
-        },
+    let Some(code_id) = matched_code_id else {
+        warn!("Invalid recovery code attempt for user {}", user.username);
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: "Invalid username or recovery code".to_string(),
+            message: None,
+        }));
     };
 
     // Hash new password

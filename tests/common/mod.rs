@@ -1,12 +1,12 @@
 // Common test utilities
 
-use actix_web::{test, web, App};
 use deadpool_postgres::{Config, ManagerConfig, Pool, RecyclingMethod, Runtime};
 use std::env;
 use tokio_postgres::NoTls;
 
 /// Create a test database pool
-/// Uses TEST_DATABASE_URL env var if set, otherwise falls back to default test DB
+/// Uses `TEST_DATABASE_URL` env var if set, otherwise falls back to default test DB
+#[allow(dead_code)]
 pub fn create_test_pool() -> Pool {
     let database_url = env::var("TEST_DATABASE_URL").unwrap_or_else(|_| {
         env::var("DATABASE_URL").unwrap_or_else(|_| {
@@ -47,16 +47,19 @@ pub fn create_test_pool() -> Pool {
 }
 
 /// Generate a unique test username
+#[allow(dead_code)]
 pub fn test_username(prefix: &str) -> String {
     format!("{}_{}", prefix, uuid::Uuid::new_v4())
 }
 
 /// Generate a test password
+#[allow(dead_code)]
 pub fn test_password() -> String {
     "TestPassword123!".to_string()
 }
 
 /// Create a test user and return their credentials
+#[allow(dead_code)]
 pub async fn create_test_user(pool: &Pool, username: &str) -> (String, String) {
     use home_registry::db::DatabaseService;
 
@@ -81,6 +84,7 @@ pub async fn create_test_user(pool: &Pool, username: &str) -> (String, String) {
 }
 
 /// Get a JWT token for a test user
+#[allow(dead_code)]
 pub async fn get_test_token(pool: &Pool, username: &str) -> String {
     use home_registry::auth::{create_token, get_or_init_jwt_secret};
     use home_registry::db::DatabaseService;

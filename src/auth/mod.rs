@@ -22,10 +22,10 @@ static JWT_SECRET: OnceLock<String> = OnceLock::new();
 
 /// Initialize and get JWT secret
 /// Tries multiple sources in order:
-/// 1. Docker secret file (/run/secrets/jwt_secret)
-/// 2. Custom path via JWT_SECRET_FILE env var
-/// 3. JWT_SECRET environment variable
-/// 4. Auto-generated secret persisted to /app/data/jwt_secret
+/// 1. Docker secret file (`/run/secrets/jwt_secret`)
+/// 2. Custom path via `JWT_SECRET_FILE` env var
+/// 3. `JWT_SECRET` environment variable
+/// 4. Auto-generated secret persisted to `/app/data/jwt_secret`
 /// 5. Fallback to auto-generated (not persisted, will change on restart)
 pub fn get_or_init_jwt_secret() -> &'static str {
     JWT_SECRET.get_or_init(|| {
@@ -34,13 +34,12 @@ pub fn get_or_init_jwt_secret() -> &'static str {
             if secret.len() >= 32 {
                 log::info!("Using existing JWT secret");
                 return secret;
-            } else {
-                log::warn!(
-                    "JWT_SECRET must be at least 32 characters for cryptographic security. \
-                     Current length: {}. Generate a secure secret with: openssl rand -base64 32",
-                    secret.len()
-                );
             }
+            log::warn!(
+                "JWT_SECRET must be at least 32 characters for cryptographic security. \
+                 Current length: {}. Generate a secure secret with: openssl rand -base64 32",
+                secret.len()
+            );
         }
 
         // No valid secret found - auto-generate and try to persist
@@ -124,11 +123,13 @@ fn generate_random_secret(length: usize) -> String {
 // ==================== JWT Token Handling ====================
 
 /// Get JWT secret - wrapper for the cached secret
+#[must_use]
 pub fn jwt_secret() -> String {
     get_or_init_jwt_secret().to_string()
 }
 
 /// Get JWT token lifetime in hours from environment
+#[must_use]
 pub fn jwt_token_lifetime_hours() -> i64 {
     env::var("JWT_TOKEN_LIFETIME_HOURS")
         .ok()
@@ -140,14 +141,19 @@ pub fn jwt_token_lifetime_hours() -> i64 {
 pub fn generate_token(user: &User) -> Result<String, jsonwebtoken::errors::Error> {
     let now = Utc::now();
     let token_lifetime_hours = jwt_token_lifetime_hours();
-    let expiration = (now + chrono::Duration::hours(token_lifetime_hours)).timestamp() as usize;
+    // Safe cast: Unix timestamps are always positive, max(0) ensures non-negative
+    #[allow(clippy::cast_sign_loss, reason = "Unix timestamps are always positive; max(0) ensures safety")]
+    let expiration = (now + chrono::Duration::hours(token_lifetime_hours))
+        .timestamp()
+        .max(0) as u64;
 
     let claims = Claims {
         sub: user.id.to_string(),
         username: user.username.clone(),
         is_admin: user.is_admin,
         exp: expiration,
-        iat: now.timestamp() as usize,
+        #[allow(clippy::cast_sign_loss, reason = "Unix timestamps are always positive; max(0) ensures safety")]
+        iat: now.timestamp().max(0) as u64,
     };
 
     let header = Header::new(Algorithm::HS256);
@@ -167,7 +173,8 @@ pub fn verify_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> 
     decode::<Claims>(token, &key, &validation).map(|data| data.claims)
 }
 
-/// Extract JWT token from Authorization header or auth_token cookie
+/// Extract JWT token from Authorization header or `auth_token` cookie
+#[must_use]
 pub fn extract_token(req: &HttpRequest) -> Option<String> {
     // Try Authorization header first (Bearer token)
     if let Some(auth_header) = req.headers().get("Authorization") {
@@ -189,7 +196,7 @@ pub fn extract_token(req: &HttpRequest) -> Option<String> {
 // ==================== Password Hashing ====================
 
 /// Hash a password using Argon2id
-/// Uses spawn_blocking to avoid blocking the async runtime
+/// Uses `spawn_blocking` to avoid blocking the async runtime
 pub async fn hash_password(password: String) -> Result<String, argon2::password_hash::Error> {
     tokio::task::spawn_blocking(move || {
         let salt = SaltString::generate(&mut OsRng);
@@ -202,7 +209,7 @@ pub async fn hash_password(password: String) -> Result<String, argon2::password_
 }
 
 /// Verify a password against a hash
-/// Uses spawn_blocking to avoid blocking the async runtime
+/// Uses `spawn_blocking` to avoid blocking the async runtime
 pub async fn verify_password(
     password: String,
     hash_str: String,
@@ -289,7 +296,7 @@ pub fn verify_password_sync(
         .is_ok())
 }
 
-/// Alias for generate_token to match common naming convention
+/// Alias for `generate_token` to match common naming convention
 pub fn create_token(user_id: &Uuid, username: &str) -> Result<String, jsonwebtoken::errors::Error> {
     let user = User {
         id: *user_id,

@@ -18,7 +18,7 @@ fn test_create_inventory_validation() {
 
     // Invalid: empty name
     let invalid = CreateInventoryRequest {
-        name: "".to_string(),
+        name: String::new(),
         description: None,
         location: None,
         image_url: None,
@@ -64,7 +64,7 @@ fn test_create_item_validation() {
     // Invalid: empty name
     let invalid = CreateItemRequest {
         inventory_id: Some(1),
-        name: "".to_string(),
+        name: String::new(),
         description: None,
         category: None,
         location: None,
@@ -159,7 +159,7 @@ fn test_update_inventory_validation() {
 
     // Invalid: empty name
     let invalid = UpdateInventoryRequest {
-        name: Some("".to_string()),
+        name: Some(String::new()),
         description: None,
         location: None,
         image_url: None,
@@ -201,7 +201,7 @@ fn test_update_item_validation() {
 
     // Invalid: empty name
     let invalid = UpdateItemRequest {
-        name: Some("".to_string()),
+        name: Some(String::new()),
         description: None,
         category: None,
         location: None,
