@@ -7,10 +7,10 @@
 #![allow(clippy::module_name_repetitions)]
 
 use actix_cors::Cors;
-use actix_files as fs;
 use actix_extensible_rate_limit::{
     backend::memory::InMemoryBackend, backend::SimpleInput, RateLimiter,
 };
+use actix_files as fs;
 use actix_web::{
     dev::ServiceRequest,
     middleware::{DefaultHeaders, Logger},
