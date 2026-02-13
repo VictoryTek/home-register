@@ -40,7 +40,7 @@ exclude:
   - "**/tmp/**"
   - "**/temp/**"
   - "**/*.log"
-  - "analysis/**"
+  - "./analysis/**"
 
 # Parallelism for scanning
 parallelism: 4
