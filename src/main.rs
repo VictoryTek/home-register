@@ -8,13 +8,16 @@
 
 use actix_cors::Cors;
 use actix_files as fs;
-use actix_governor::{Governor, GovernorConfigBuilder};
+use actix_extensible_rate_limit::{
+    backend::memory::InMemoryBackend, backend::SimpleInput, RateLimiter,
+};
 use actix_web::{
+    dev::ServiceRequest,
     middleware::{DefaultHeaders, Logger},
     web, App, HttpResponse, HttpServer, Responder,
 };
 use dotenv::dotenv;
-use std::env;
+use std::{env, time::Duration};
 
 // Use the library crate
 use home_registry::{api, auth, db};
@@ -67,12 +70,12 @@ async fn main() -> std::io::Result<()> {
     };
 
     // Rate limiting configuration from environment variables
+    // Migrated from actix-governor (GPL-3.0) to actix-extensible-rate-limit (MIT/Apache-2.0)
     // These settings provide sensible defaults for a home inventory app:
     // - 50 requests per second sustained (configurable via RATE_LIMIT_RPS)
     // - 100 request burst capacity (configurable via RATE_LIMIT_BURST)
     // This allows rapid page loads while protecting against accidental DoS
-    // NOTE: actix-governor automatically adds Retry-After headers to 429 responses,
-    // telling clients when to retry (compliant with RFC 6585)
+    // NOTE: actix-extensible-rate-limit adds Retry-After headers to 429 responses
     let requests_per_second = env::var("RATE_LIMIT_RPS")
         .unwrap_or_else(|_| "50".to_string())
         .parse::<u64>()
@@ -80,7 +83,7 @@ async fn main() -> std::io::Result<()> {
 
     let burst_size = env::var("RATE_LIMIT_BURST")
         .unwrap_or_else(|_| "100".to_string())
-        .parse::<u32>()
+        .parse::<u64>()
         .unwrap_or(100);
 
     log::info!(
@@ -89,13 +92,31 @@ async fn main() -> std::io::Result<()> {
         burst_size
     );
 
-    let governor_conf = GovernorConfigBuilder::default()
-        .requests_per_second(requests_per_second)
-        .burst_size(burst_size)
-        .finish()
-        .expect("Failed to build rate limiter configuration");
-
     HttpServer::new(move || {
+        // Create in-memory rate limiter backend
+        // Must be created inside HttpServer closure since it's not Send
+        let backend = InMemoryBackend::builder().build();
+
+        // Configure rate limiter to key by client IP address
+        // SimpleInput includes interval, max_requests, and key for rate limiting
+        let rate_limiter = RateLimiter::builder(backend, move |req: &ServiceRequest| {
+            let rps = requests_per_second;
+            let burst = burst_size;
+            // Extract the key before entering the async block to avoid lifetime issues
+            let key = req
+                .peer_addr()
+                .map(|addr| addr.ip().to_string())
+                .unwrap_or_else(|| "unknown".to_string());
+            async move {
+                Ok(SimpleInput {
+                    interval: Duration::from_millis(1000 / rps),
+                    max_requests: burst,
+                    key,
+                })
+            }
+        })
+        .add_headers()
+        .build();
         // Configure CORS
         let cors = Cors::default()
             .allowed_origin_fn(|origin, _req_head| {
@@ -141,7 +162,7 @@ async fn main() -> std::io::Result<()> {
             // This prevents rate limiting from affecting frontend assets, logos, health checks, etc.
             .service(
                 api::init_routes()
-                    .wrap(Governor::new(&governor_conf)) // Rate limit scoped to /api/* routes only
+                    .wrap(rate_limiter.clone()) // Rate limit scoped to /api/* routes only
             )
             .route("/health", web::get().to(health))
             // Serve static assets (js, css, images, etc.)
