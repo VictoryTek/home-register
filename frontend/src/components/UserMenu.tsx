@@ -66,15 +66,13 @@ export function UserMenu() {
   return (
     <>
       <div className="user-menu" ref={menuRef}>
-        <button 
+        <button
           className="user-menu-trigger"
           onClick={() => setIsOpen(!isOpen)}
           aria-expanded={isOpen}
           aria-haspopup="true"
         >
-          <div className="user-avatar">
-            {getInitials(user.full_name || user.username)}
-          </div>
+          <div className="user-avatar">{getInitials(user.full_name || user.username)}</div>
           <div className="user-details">
             <span className="user-name">{user.full_name || user.username}</span>
             <span className="user-role">{user.is_admin ? 'Admin' : 'User'}</span>
@@ -85,27 +83,25 @@ export function UserMenu() {
         {isOpen && (
           <div className="user-menu-dropdown">
             <div className="menu-header">
-              <div className="menu-user-avatar">
-                {getInitials(user.full_name || user.username)}
-              </div>
+              <div className="menu-user-avatar">{getInitials(user.full_name || user.username)}</div>
               <div className="menu-user-info">
                 <span className="menu-user-name">{user.full_name || user.username}</span>
                 <span className="menu-user-email">@{user.username}</span>
               </div>
             </div>
-            
+
             <div className="menu-divider"></div>
-            
+
             <div className="menu-section">
               <span className="menu-section-title">Account</span>
-              <button 
+              <button
                 className="menu-item"
                 onClick={() => handleMenuItemClick(() => setShowProfileModal(true))}
               >
                 <i className="fas fa-user-edit"></i>
                 <span>Edit Profile</span>
               </button>
-              <button 
+              <button
                 className="menu-item"
                 onClick={() => handleMenuItemClick(() => setShowPasswordModal(true))}
               >
@@ -113,10 +109,10 @@ export function UserMenu() {
                 <span>Change Password</span>
               </button>
             </div>
-            
+
             <div className="menu-divider"></div>
-            
-            <button 
+
+            <button
               className="menu-item menu-item-danger"
               onClick={() => handleMenuItemClick(logout)}
             >
@@ -127,13 +123,9 @@ export function UserMenu() {
         )}
       </div>
 
-      {showPasswordModal && (
-        <ChangePasswordModal onClose={() => setShowPasswordModal(false)} />
-      )}
+      {showPasswordModal && <ChangePasswordModal onClose={() => setShowPasswordModal(false)} />}
 
-      {showProfileModal && (
-        <EditProfileModal onClose={() => setShowProfileModal(false)} />
-      )}
+      {showProfileModal && <EditProfileModal onClose={() => setShowProfileModal(false)} />}
     </>
   );
 }

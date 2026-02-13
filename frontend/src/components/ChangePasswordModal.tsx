@@ -66,7 +66,10 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
         onClose();
       } else {
         const errorMsg = result.error ?? 'Failed to change password';
-        if (errorMsg.toLowerCase().includes('current password') || errorMsg.toLowerCase().includes('incorrect')) {
+        if (
+          errorMsg.toLowerCase().includes('current password') ||
+          errorMsg.toLowerCase().includes('incorrect')
+        ) {
           setErrors({ currentPassword: 'Current password is incorrect' });
         } else {
           showToast(errorMsg, 'error');
@@ -80,18 +83,17 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
     }
   };
 
-  const handleInputChange = (field: keyof typeof form) => (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setForm(prev => ({ ...prev, [field]: e.target.value }));
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => {
-        const { [field]: _removed, ...next } = prev;
-        return next;
-      });
-    }
-  };
+  const handleInputChange =
+    (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      setForm((prev) => ({ ...prev, [field]: e.target.value }));
+      // Clear error when user starts typing
+      if (errors[field]) {
+        setErrors((prev) => {
+          const { [field]: _removed, ...next } = prev;
+          return next;
+        });
+      }
+    };
 
   return (
     <Modal
@@ -101,16 +103,16 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
       subtitle="Enter your current password and choose a new one"
       footer={
         <div className="modal-actions">
-          <button 
-            type="button" 
-            className="btn btn-secondary" 
+          <button
+            type="button"
+            className="btn btn-secondary"
             onClick={onClose}
             disabled={isLoading}
           >
             Cancel
           </button>
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="btn btn-primary"
             form="change-password-form"
             disabled={isLoading}
@@ -152,9 +154,7 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
               <i className={`fas fa-eye${showCurrentPassword ? '-slash' : ''}`}></i>
             </button>
           </div>
-          {errors.currentPassword && (
-            <span className="form-error">{errors.currentPassword}</span>
-          )}
+          {errors.currentPassword && <span className="form-error">{errors.currentPassword}</span>}
         </div>
 
         <div className={`form-group ${errors.newPassword ? 'has-error' : ''}`}>
@@ -178,9 +178,7 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
               <i className={`fas fa-eye${showNewPassword ? '-slash' : ''}`}></i>
             </button>
           </div>
-          {errors.newPassword && (
-            <span className="form-error">{errors.newPassword}</span>
-          )}
+          {errors.newPassword && <span className="form-error">{errors.newPassword}</span>}
           <span className="form-hint">Must be at least 8 characters</span>
         </div>
 
@@ -205,9 +203,7 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
               <i className={`fas fa-eye${showConfirmPassword ? '-slash' : ''}`}></i>
             </button>
           </div>
-          {errors.confirmPassword && (
-            <span className="form-error">{errors.confirmPassword}</span>
-          )}
+          {errors.confirmPassword && <span className="form-error">{errors.confirmPassword}</span>}
         </div>
       </form>
     </Modal>

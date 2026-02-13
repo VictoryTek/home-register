@@ -11,7 +11,9 @@
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   padding: 1.25rem;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .organizer-card:hover {
@@ -219,7 +221,7 @@
   font-size: 0.9rem;
 }
 
-.checkbox-label input[type="checkbox"] {
+.checkbox-label input[type='checkbox'] {
   width: 1rem;
   height: 1rem;
   cursor: pointer;
@@ -262,7 +264,7 @@
   margin: 0;
 }
 
-.form-checkbox input[type="checkbox"] {
+.form-checkbox input[type='checkbox'] {
   width: 1.25rem;
   height: 1.25rem;
   accent-color: var(--primary-color);
@@ -340,7 +342,9 @@
 .organizer-inventory-action {
   color: var(--text-tertiary);
   font-size: 1rem;
-  transition: color 0.2s ease, transform 0.2s ease;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .organizer-inventory-item:hover .organizer-inventory-action {

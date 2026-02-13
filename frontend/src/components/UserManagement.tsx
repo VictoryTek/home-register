@@ -105,7 +105,9 @@ export function UserManagement() {
   };
 
   const handleUpdateUser = async () => {
-    if (!editingUser) {return;}
+    if (!editingUser) {
+      return;
+    }
 
     if (!formData.full_name.trim()) {
       showToast('Please fill in all required fields', 'error');
@@ -142,7 +144,9 @@ export function UserManagement() {
   };
 
   const handleDeleteUser = async () => {
-    if (!deletingUser) {return;}
+    if (!deletingUser) {
+      return;
+    }
 
     try {
       const result = await authApi.deleteUser(deletingUser.id);
@@ -181,7 +185,14 @@ export function UserManagement() {
         {users.map((user) => (
           <div key={user.id} className="setting-item" style={{ alignItems: 'flex-start' }}>
             <div className="setting-info" style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  marginBottom: '0.5rem',
+                }}
+              >
                 <div>
                   <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                     {user.full_name}
@@ -248,7 +259,9 @@ export function UserManagement() {
         }
       >
         <div className="form-group">
-          <label className="form-label" htmlFor="create-username">Username *</label>
+          <label className="form-label" htmlFor="create-username">
+            Username *
+          </label>
           <input
             type="text"
             className="form-input"
@@ -260,7 +273,9 @@ export function UserManagement() {
         </div>
 
         <div className="form-group">
-          <label className="form-label" htmlFor="create-full-name">Full Name *</label>
+          <label className="form-label" htmlFor="create-full-name">
+            Full Name *
+          </label>
           <input
             type="text"
             className="form-input"
@@ -271,7 +286,9 @@ export function UserManagement() {
         </div>
 
         <div className="form-group">
-          <label className="form-label" htmlFor="create-password">Password *</label>
+          <label className="form-label" htmlFor="create-password">
+            Password *
+          </label>
           <input
             type="password"
             className="form-input"
@@ -305,9 +322,7 @@ export function UserManagement() {
             />
             <span className="form-checkbox-label">Account Active</span>
           </label>
-          <p className="form-hint">
-            Inactive users cannot log in
-          </p>
+          <p className="form-hint">Inactive users cannot log in</p>
         </div>
       </Modal>
 
@@ -336,13 +351,19 @@ export function UserManagement() {
             className="form-input"
             value={formData.username}
             disabled
-            style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)', cursor: 'not-allowed' }}
+            style={{
+              background: 'var(--bg-secondary)',
+              color: 'var(--text-tertiary)',
+              cursor: 'not-allowed',
+            }}
           />
           <p className="form-hint">Username cannot be changed</p>
         </div>
 
         <div className="form-group">
-          <label className="form-label" htmlFor="edit-full-name">Full Name *</label>
+          <label className="form-label" htmlFor="edit-full-name">
+            Full Name *
+          </label>
           <input
             type="text"
             className="form-input"
@@ -353,7 +374,9 @@ export function UserManagement() {
         </div>
 
         <div className="form-group">
-          <label className="form-label" htmlFor="edit-password">New Password</label>
+          <label className="form-label" htmlFor="edit-password">
+            New Password
+          </label>
           <input
             type="password"
             className="form-input"

@@ -25,7 +25,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem('theme');
     return saved ? (saved as Theme) : 'light';
   });
-  
+
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [currentInventoryId, setCurrentInventoryId] = useState<number | null>(null);
   const [inventories, setInventories] = useState<Inventory[]>([]);
@@ -39,7 +39,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Wrap toggleTheme in useCallback to create stable reference (prevent unnecessary re-renders)
   const toggleTheme = useCallback(() => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   }, []);
 
   // CRITICAL FIX: Wrap showToast in useCallback to prevent infinite loop in components
@@ -48,16 +48,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // useEffect hooks, leading to infinite API request loops.
   const showToast = useCallback((message: string, type: ToastMessage['type']) => {
     const id = Date.now().toString();
-    setToasts(prev => [...prev, { id, message, type }]);
-    
+    setToasts((prev) => [...prev, { id, message, type }]);
+
     setTimeout(() => {
       removeToast(id);
     }, 3000);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty deps - function is now stable across re-renders
 
   // Wrap removeToast in useCallback for consistency and to prevent unnecessary re-renders
   const removeToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }, []);
 
   const checkNotifications = useCallback(() => {
@@ -72,21 +73,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [checkNotifications]);
 
   return (
-    <AppContext.Provider value={{
-      theme,
-      toggleTheme,
-      toasts,
-      showToast,
-      removeToast,
-      currentInventoryId,
-      setCurrentInventoryId,
-      inventories,
-      setInventories,
-      items,
-      setItems,
-      warrantyNotifications,
-      checkNotifications,
-    }}>
+    <AppContext.Provider
+      value={{
+        theme,
+        toggleTheme,
+        toasts,
+        showToast,
+        removeToast,
+        currentInventoryId,
+        setCurrentInventoryId,
+        inventories,
+        setInventories,
+        items,
+        setItems,
+        warrantyNotifications,
+        checkNotifications,
+      }}
+    >
       {children}
     </AppContext.Provider>
   );

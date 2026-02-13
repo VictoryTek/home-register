@@ -10,7 +10,7 @@ export function RecoveryPage() {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [remainingCodes, setRemainingCodes] = useState<number | null>(null);
-  
+
   const [formData, setFormData] = useState({
     username: '',
     recoveryCode: '',
@@ -20,7 +20,7 @@ export function RecoveryPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
     setError(null);
   };
 
@@ -36,33 +36,33 @@ export function RecoveryPage() {
     }
     // Limit to 14 characters (XXXX-XXXX-XXXX)
     value = value.slice(0, 14);
-    setFormData(prev => ({ ...prev, recoveryCode: value }));
+    setFormData((prev) => ({ ...prev, recoveryCode: value }));
     setError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.username.trim()) {
       setError('Please enter your username');
       return;
     }
-    
+
     if (!formData.recoveryCode || formData.recoveryCode.length < 14) {
       setError('Please enter a valid recovery code (format: XXXX-XXXX-XXXX)');
       return;
     }
-    
+
     if (!formData.newPassword) {
       setError('Please enter a new password');
       return;
     }
-    
+
     if (formData.newPassword.length < 8) {
       setError('Password must be at least 8 characters long');
       return;
     }
-    
+
     if (formData.newPassword !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -77,7 +77,7 @@ export function RecoveryPage() {
         formData.recoveryCode,
         formData.newPassword
       );
-      
+
       if (result.success && result.data) {
         setRemainingCodes(result.data.remaining_codes);
         setStep('success');
@@ -87,7 +87,7 @@ export function RecoveryPage() {
     } catch {
       setError('An error occurred. Please try again.');
     }
-    
+
     setIsLoading(false);
   };
 
@@ -99,50 +99,61 @@ export function RecoveryPage() {
           <div className="auth-gradient-orb auth-gradient-orb-2"></div>
           <div className="auth-gradient-orb auth-gradient-orb-3"></div>
         </div>
-        
+
         <div className="auth-container">
           <div className="auth-card">
             <div className="auth-header">
               <div className="auth-logo">
                 <img src="/logo_full.png" alt="Home Registry" className="auth-logo-img" />
               </div>
-              <div style={{ 
-                width: '60px', 
-                height: '60px', 
-                borderRadius: '50%', 
-                background: 'var(--success-bg, #d4edda)', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                margin: '1rem auto',
-              }}>
-                <i className="fas fa-check" style={{ fontSize: '24px', color: 'var(--success, #28a745)' }}></i>
+              <div
+                style={{
+                  width: '60px',
+                  height: '60px',
+                  borderRadius: '50%',
+                  background: 'var(--success-bg, #d4edda)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '1rem auto',
+                }}
+              >
+                <i
+                  className="fas fa-check"
+                  style={{ fontSize: '24px', color: 'var(--success, #28a745)' }}
+                ></i>
               </div>
               <h1 className="auth-title">Password Reset!</h1>
               <p className="auth-subtitle">Your password has been successfully changed.</p>
             </div>
 
-            <div style={{ 
-              padding: '1rem', 
-              background: 'var(--surface-alt, #f8f9fa)', 
-              borderRadius: '8px',
-              marginBottom: '1.5rem',
-              textAlign: 'center',
-            }}>
+            <div
+              style={{
+                padding: '1rem',
+                background: 'var(--surface-alt, #f8f9fa)',
+                borderRadius: '8px',
+                marginBottom: '1.5rem',
+                textAlign: 'center',
+              }}
+            >
               <p style={{ margin: 0, fontSize: '0.9rem' }}>
-                You have <strong>{remainingCodes}</strong> recovery code{remainingCodes !== 1 ? 's' : ''} remaining.
+                You have <strong>{remainingCodes}</strong> recovery code
+                {remainingCodes !== 1 ? 's' : ''} remaining.
                 {remainingCodes !== null && remainingCodes <= 2 && (
-                  <span style={{ display: 'block', marginTop: '0.5rem', color: 'var(--warning, #ffc107)' }}>
+                  <span
+                    style={{
+                      display: 'block',
+                      marginTop: '0.5rem',
+                      color: 'var(--warning, #ffc107)',
+                    }}
+                  >
                     ⚠️ Consider generating new recovery codes in Settings.
                   </span>
                 )}
               </p>
             </div>
 
-            <button 
-              onClick={() => navigate('/login')} 
-              className="auth-submit-btn"
-            >
+            <button onClick={() => navigate('/login')} className="auth-submit-btn">
               <i className="fas fa-sign-in-alt"></i>
               Go to Login
             </button>
@@ -159,7 +170,7 @@ export function RecoveryPage() {
         <div className="auth-gradient-orb auth-gradient-orb-2"></div>
         <div className="auth-gradient-orb auth-gradient-orb-3"></div>
       </div>
-      
+
       <div className="auth-container">
         <div className="auth-card">
           <div className="auth-header">
@@ -270,7 +281,11 @@ export function RecoveryPage() {
           </form>
 
           <div className="auth-footer">
-            <p><Link to="/login" className="auth-link">Back to Login</Link></p>
+            <p>
+              <Link to="/login" className="auth-link">
+                Back to Login
+              </Link>
+            </p>
           </div>
         </div>
       </div>

@@ -8,7 +8,6 @@ The following licenses are pre-approved for use in this project:
 ### Permissive Licenses (Preferred)
 - MIT
 - Apache-2.0
-- Apache-2.0 WITH LLVM-exception
 - BSD-2-Clause
 - BSD-3-Clause
 - ISC
@@ -24,7 +23,6 @@ The following licenses are pre-approved for use in this project:
 ### Special Cases (Pre-Approved)
 - OpenSSL (historical, for ring crate)
 - Unicode-3.0
-- Unicode-DFS-2016
 
 ## Denied Licenses
 

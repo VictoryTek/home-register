@@ -27,7 +27,7 @@ export function SettingsPage() {
   const [inventories, setInventories] = useState<Inventory[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  
+
   const [form, setForm] = useState({
     date_format: 'MM/DD/YYYY',
     currency: 'USD',
@@ -77,7 +77,7 @@ export function SettingsPage() {
         default_inventory_id: form.default_inventory_id,
         notifications_enabled: form.notifications_enabled,
       });
-      
+
       if (success) {
         showToast('Settings saved successfully', 'success');
       } else {
@@ -91,12 +91,12 @@ export function SettingsPage() {
     }
   };
 
-  const hasChanges = settings && (
-    form.date_format !== (settings.date_format || 'MM/DD/YYYY') ||
-    form.currency !== (settings.currency || 'USD') ||
-    form.default_inventory_id !== settings.default_inventory_id ||
-    form.notifications_enabled !== settings.notifications_enabled
-  );
+  const hasChanges =
+    settings &&
+    (form.date_format !== (settings.date_format || 'MM/DD/YYYY') ||
+      form.currency !== (settings.currency || 'USD') ||
+      form.default_inventory_id !== settings.default_inventory_id ||
+      form.notifications_enabled !== settings.notifications_enabled);
 
   return (
     <>
@@ -105,7 +105,7 @@ export function SettingsPage() {
         subtitle="Configure your application preferences"
         icon="fas fa-cog"
       />
-      
+
       <div className="content">
         <div className="settings-container">
           {/* Display Preferences */}
@@ -121,38 +121,46 @@ export function SettingsPage() {
                 </p>
               </div>
             </div>
-            
+
             <div className="settings-group">
               <div className="setting-item">
                 <div className="setting-info">
-                  <label htmlFor="date_format" className="setting-label">Date Format</label>
+                  <label htmlFor="date_format" className="setting-label">
+                    Date Format
+                  </label>
                   <p className="setting-description">Choose how dates are displayed</p>
                 </div>
                 <select
                   id="date_format"
                   className="setting-select"
                   value={form.date_format}
-                  onChange={(e) => setForm(prev => ({ ...prev, date_format: e.target.value }))}
+                  onChange={(e) => setForm((prev) => ({ ...prev, date_format: e.target.value }))}
                 >
-                  {DATE_FORMAT_OPTIONS.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  {DATE_FORMAT_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div className="setting-item">
                 <div className="setting-info">
-                  <label htmlFor="currency" className="setting-label">Currency</label>
+                  <label htmlFor="currency" className="setting-label">
+                    Currency
+                  </label>
                   <p className="setting-description">Default currency for prices</p>
                 </div>
                 <select
                   id="currency"
                   className="setting-select"
                   value={form.currency}
-                  onChange={(e) => setForm(prev => ({ ...prev, currency: e.target.value }))}
+                  onChange={(e) => setForm((prev) => ({ ...prev, currency: e.target.value }))}
                 >
-                  {CURRENCY_OPTIONS.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  {CURRENCY_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -172,26 +180,32 @@ export function SettingsPage() {
                 </p>
               </div>
             </div>
-            
+
             <div className="settings-group">
               <div className="setting-item">
                 <div className="setting-info">
-                  <label htmlFor="default_inventory" className="setting-label">Default Inventory</label>
+                  <label htmlFor="default_inventory" className="setting-label">
+                    Default Inventory
+                  </label>
                   <p className="setting-description">Inventory to show when opening the app</p>
                 </div>
                 <select
                   id="default_inventory"
                   className="setting-select"
                   value={form.default_inventory_id ?? ''}
-                  onChange={(e) => setForm(prev => ({ 
-                    ...prev, 
-                    default_inventory_id: e.target.value ? Number(e.target.value) : undefined 
-                  }))}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      default_inventory_id: e.target.value ? Number(e.target.value) : undefined,
+                    }))
+                  }
                   disabled={isLoading}
                 >
                   <option value="">None (show all inventories)</option>
-                  {inventories.map(inv => (
-                    <option key={inv.id} value={inv.id}>{inv.name}</option>
+                  {inventories.map((inv) => (
+                    <option key={inv.id} value={inv.id}>
+                      {inv.name}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -206,24 +220,28 @@ export function SettingsPage() {
               </div>
               <div>
                 <h2 className="settings-section-title">Notifications</h2>
-                <p className="settings-section-description">
-                  Manage notification preferences
-                </p>
+                <p className="settings-section-description">Manage notification preferences</p>
               </div>
             </div>
-            
+
             <div className="settings-group">
               <div className="setting-item">
                 <div className="setting-info">
-                  <label htmlFor="notifications" className="setting-label">Enable Notifications</label>
-                  <p className="setting-description">Receive alerts for warranty expirations and reminders</p>
+                  <label htmlFor="notifications" className="setting-label">
+                    Enable Notifications
+                  </label>
+                  <p className="setting-description">
+                    Receive alerts for warranty expirations and reminders
+                  </p>
                 </div>
                 <label className="toggle-switch">
                   <input
                     type="checkbox"
                     id="notifications"
                     checked={form.notifications_enabled}
-                    onChange={(e) => setForm(prev => ({ ...prev, notifications_enabled: e.target.checked }))}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, notifications_enabled: e.target.checked }))
+                    }
                   />
                   <span className="toggle-slider"></span>
                 </label>
@@ -244,7 +262,7 @@ export function SettingsPage() {
                 </p>
               </div>
             </div>
-            
+
             <RecoveryCodesSection />
           </section>
 
@@ -262,7 +280,7 @@ export function SettingsPage() {
                   </p>
                 </div>
               </div>
-              
+
               <UserManagement />
             </section>
           )}
@@ -280,7 +298,7 @@ export function SettingsPage() {
                 </p>
               </div>
             </div>
-            
+
             <AllAccessManagement />
           </section>
 

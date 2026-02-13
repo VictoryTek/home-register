@@ -11,23 +11,26 @@ export type DateFormatType = 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD' | 'DD.MM
  * @param format - Desired date format
  * @returns Formatted date string
  */
-export function formatDate(dateString: string | undefined | null, format: DateFormatType = 'MM/DD/YYYY'): string {
+export function formatDate(
+  dateString: string | undefined | null,
+  format: DateFormatType = 'MM/DD/YYYY'
+): string {
   if (!dateString) {
     return '';
   }
-  
+
   try {
     const date = new Date(dateString);
-    
+
     // Check if date is valid
     if (isNaN(date.getTime())) {
       return '';
     }
-    
+
     const day = date.getDate().toString().padStart(2, '0');
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const year = date.getFullYear();
-    
+
     switch (format) {
       case 'MM/DD/YYYY':
         return `${month}/${day}/${year}`;

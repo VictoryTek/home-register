@@ -1,12 +1,25 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Header, LoadingState, EmptyState, Modal, WarrantyNotificationBanner, ShareInventoryModal } from '@/components';
+import {
+  Header,
+  LoadingState,
+  EmptyState,
+  Modal,
+  WarrantyNotificationBanner,
+  ShareInventoryModal,
+} from '@/components';
 import { inventoryApi, itemApi, organizerApi } from '@/services/api';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { formatDate, type DateFormatType } from '@/utils/dateFormat';
 import { formatCurrency, type CurrencyType } from '@/utils/currencyFormat';
-import type { Inventory, Item, CreateItemRequest, OrganizerTypeWithOptions, SetItemOrganizerValueRequest } from '@/types';
+import type {
+  Inventory,
+  Item,
+  CreateItemRequest,
+  OrganizerTypeWithOptions,
+  SetItemOrganizerValueRequest,
+} from '@/types';
 
 export function InventoryDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -30,7 +43,9 @@ export function InventoryDetailPage() {
     warranty_expiry: undefined,
     quantity: 1,
   });
-  const [organizerValues, setOrganizerValues] = useState<Record<string, { optionId?: number; textValue?: string }>>({});
+  const [organizerValues, setOrganizerValues] = useState<
+    Record<string, { optionId?: number; textValue?: string }>
+  >({});
 
   // Empty dependency array - all functions used are stable:
   // - navigate is stable (from react-router)
@@ -67,6 +82,7 @@ export function InventoryDetailPage() {
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty deps - all functions are stable
 
   useEffect(() => {
@@ -85,7 +101,11 @@ export function InventoryDetailPage() {
     for (const org of organizers) {
       if (org.is_required && org.id) {
         const value = organizerValues[String(org.id)];
-        if (!value || (org.input_type === 'select' && !value.optionId) || (org.input_type === 'text' && !value.textValue?.trim())) {
+        if (
+          !value ||
+          (org.input_type === 'select' && !value.optionId) ||
+          (org.input_type === 'text' && !value.textValue?.trim())
+        ) {
           showToast(`Please fill in the required field: ${org.name}`, 'error');
           return;
         }
@@ -185,12 +205,19 @@ export function InventoryDetailPage() {
         subtitle={inventory.description ?? 'Manage and organize your inventory collections'}
         icon="fas fa-warehouse"
       />
-      
+
       <div className="content">
         <div className="inventory-detail">
           <WarrantyNotificationBanner />
-          
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '1.5rem',
+            }}
+          >
             <button className="btn btn-ghost" onClick={() => navigate('/')}>
               <i className="fas fa-arrow-left"></i>
               Back to Inventories
@@ -200,7 +227,10 @@ export function InventoryDetailPage() {
                 <i className="fas fa-share-nodes"></i>
                 Share
               </button>
-              <button className="btn btn-secondary" onClick={() => navigate(`/inventory/${id}/organizers`)}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => navigate(`/inventory/${id}/organizers`)}
+              >
                 <i className="fas fa-folder-tree"></i>
                 Organizers
               </button>
@@ -211,7 +241,10 @@ export function InventoryDetailPage() {
             </div>
           </div>
 
-          <div className="stats-row" style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+          <div
+            className="stats-row"
+            style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}
+          >
             <div className="stat-card">
               <div className="stat-icon" style={{ background: 'var(--primary-color)' }}>
                 <i className="fas fa-boxes"></i>
@@ -227,7 +260,9 @@ export function InventoryDetailPage() {
               </div>
               <div className="stat-content">
                 <div className="stat-label">Total Value</div>
-                <div className="stat-value">{formatCurrency(totalValue, (settings?.currency ?? 'USD') as CurrencyType)}</div>
+                <div className="stat-value">
+                  {formatCurrency(totalValue, (settings?.currency ?? 'USD') as CurrencyType)}
+                </div>
               </div>
             </div>
           </div>
@@ -276,25 +311,49 @@ export function InventoryDetailPage() {
                           {item.purchase_date && (
                             <div className="detail-item">
                               <i className="fas fa-calendar-alt"></i>
-                              <span>Purchased: {formatDate(item.purchase_date, (settings?.date_format ?? 'MM/DD/YYYY') as DateFormatType)}</span>
+                              <span>
+                                Purchased:{' '}
+                                {formatDate(
+                                  item.purchase_date,
+                                  (settings?.date_format ?? 'MM/DD/YYYY') as DateFormatType
+                                )}
+                              </span>
                             </div>
                           )}
                           {item.purchase_price && (
                             <div className="detail-item">
                               <i className="fas fa-tag"></i>
-                              <span>{formatCurrency(item.purchase_price, (settings?.currency ?? 'USD') as CurrencyType)} ea</span>
+                              <span>
+                                {formatCurrency(
+                                  item.purchase_price,
+                                  (settings?.currency ?? 'USD') as CurrencyType
+                                )}{' '}
+                                ea
+                              </span>
                             </div>
                           )}
                           {itemValue > 0 && (
                             <div className="detail-item">
                               <i className="fas fa-coins"></i>
-                              <span>Total: {formatCurrency(itemValue, (settings?.currency ?? 'USD') as CurrencyType)}</span>
+                              <span>
+                                Total:{' '}
+                                {formatCurrency(
+                                  itemValue,
+                                  (settings?.currency ?? 'USD') as CurrencyType
+                                )}
+                              </span>
                             </div>
                           )}
                           {item.warranty_expiry && (
                             <div className="detail-item">
                               <i className="fas fa-shield-alt"></i>
-                              <span>Warranty: {formatDate(item.warranty_expiry, (settings?.date_format ?? 'MM/DD/YYYY') as DateFormatType)}</span>
+                              <span>
+                                Warranty:{' '}
+                                {formatDate(
+                                  item.warranty_expiry,
+                                  (settings?.date_format ?? 'MM/DD/YYYY') as DateFormatType
+                                )}
+                              </span>
                             </div>
                           )}
                         </div>
@@ -341,7 +400,9 @@ export function InventoryDetailPage() {
         }
       >
         <div className="form-group">
-          <label className="form-label" htmlFor="item-name">Item Name *</label>
+          <label className="form-label" htmlFor="item-name">
+            Item Name *
+          </label>
           <input
             type="text"
             className="form-input"
@@ -355,48 +416,62 @@ export function InventoryDetailPage() {
         {/* Dynamic Organizer Fields */}
         {organizers.length > 0 && (
           <div className="organizer-fields">
-            {organizers.map((org) => org.id && (
-              <div className="form-group" key={org.id}>
-                <label className="form-label" htmlFor={`organizer-${org.id}`}>
-                  {org.name}{org.is_required ? ' *' : ''}
-                </label>
-                {org.input_type === 'select' ? (
-                  <select
-                    className="form-select"
-                    id={`organizer-${org.id}`}
-                    value={organizerValues[String(org.id)]?.optionId ?? ''}
-                    onChange={(e) => setOrganizerValues({
-                      ...organizerValues,
-                      [String(org.id)]: { optionId: e.target.value ? parseInt(e.target.value, 10) : undefined }
-                    })}
-                  >
-                    <option value="">Select {org.name.toLowerCase()}</option>
-                    {org.options.map((opt) => (
-                      <option key={opt.id} value={opt.id}>{opt.name}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    className="form-input"
-                    id={`organizer-${org.id}`}
-                    placeholder={`Enter ${org.name.toLowerCase()}`}
-                    value={organizerValues[String(org.id)]?.textValue ?? ''}
-                    onChange={(e) => setOrganizerValues({
-                      ...organizerValues,
-                      [String(org.id)]: { textValue: e.target.value }
-                    })}
-                  />
-                )}
-              </div>
-            ))}
+            {organizers.map(
+              (org) =>
+                org.id && (
+                  <div className="form-group" key={org.id}>
+                    <label className="form-label" htmlFor={`organizer-${org.id}`}>
+                      {org.name}
+                      {org.is_required ? ' *' : ''}
+                    </label>
+                    {org.input_type === 'select' ? (
+                      <select
+                        className="form-select"
+                        id={`organizer-${org.id}`}
+                        value={organizerValues[String(org.id)]?.optionId ?? ''}
+                        onChange={(e) =>
+                          setOrganizerValues({
+                            ...organizerValues,
+                            [String(org.id)]: {
+                              optionId: e.target.value ? parseInt(e.target.value, 10) : undefined,
+                            },
+                          })
+                        }
+                      >
+                        <option value="">Select {org.name.toLowerCase()}</option>
+                        {org.options.map((opt) => (
+                          <option key={opt.id} value={opt.id}>
+                            {opt.name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        className="form-input"
+                        id={`organizer-${org.id}`}
+                        placeholder={`Enter ${org.name.toLowerCase()}`}
+                        value={organizerValues[String(org.id)]?.textValue ?? ''}
+                        onChange={(e) =>
+                          setOrganizerValues({
+                            ...organizerValues,
+                            [String(org.id)]: { textValue: e.target.value },
+                          })
+                        }
+                      />
+                    )}
+                  </div>
+                )
+            )}
           </div>
         )}
 
         {organizers.length === 0 && (
           <div className="form-row">
             <div className="form-group">
-              <label className="form-label" htmlFor="item-category">Category</label>
+              <label className="form-label" htmlFor="item-category">
+                Category
+              </label>
               <input
                 type="text"
                 className="form-input"
@@ -408,7 +483,9 @@ export function InventoryDetailPage() {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="item-location">Location</label>
+              <label className="form-label" htmlFor="item-location">
+                Location
+              </label>
               <input
                 type="text"
                 className="form-input"
@@ -423,7 +500,9 @@ export function InventoryDetailPage() {
 
         <div className="form-row">
           <div className="form-group">
-            <label className="form-label" htmlFor="item-price">Purchase Price</label>
+            <label className="form-label" htmlFor="item-price">
+              Purchase Price
+            </label>
             <input
               type="number"
               className="form-input"
@@ -432,12 +511,19 @@ export function InventoryDetailPage() {
               step="0.01"
               min="0"
               value={newItem.purchase_price ?? ''}
-              onChange={(e) => setNewItem({ ...newItem, purchase_price: e.target.value ? parseFloat(e.target.value) : undefined })}
+              onChange={(e) =>
+                setNewItem({
+                  ...newItem,
+                  purchase_price: e.target.value ? parseFloat(e.target.value) : undefined,
+                })
+              }
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="item-quantity">Quantity</label>
+            <label className="form-label" htmlFor="item-quantity">
+              Quantity
+            </label>
             <input
               type="number"
               className="form-input"
@@ -445,14 +531,18 @@ export function InventoryDetailPage() {
               placeholder="1"
               min="1"
               value={newItem.quantity ?? 1}
-              onChange={(e) => setNewItem({ ...newItem, quantity: parseInt(e.target.value, 10) || 1 })}
+              onChange={(e) =>
+                setNewItem({ ...newItem, quantity: parseInt(e.target.value, 10) || 1 })
+              }
             />
           </div>
         </div>
 
         <div className="form-row">
           <div className="form-group">
-            <label className="form-label" htmlFor="item-purchase-date">Purchase Date</label>
+            <label className="form-label" htmlFor="item-purchase-date">
+              Purchase Date
+            </label>
             <input
               type="date"
               className="form-input"
@@ -463,7 +553,9 @@ export function InventoryDetailPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="item-warranty">Warranty Expiry</label>
+            <label className="form-label" htmlFor="item-warranty">
+              Warranty Expiry
+            </label>
             <input
               type="date"
               className="form-input"
@@ -475,7 +567,9 @@ export function InventoryDetailPage() {
         </div>
 
         <div className="form-group">
-          <label className="form-label" htmlFor="item-description">Description</label>
+          <label className="form-label" htmlFor="item-description">
+            Description
+          </label>
           <textarea
             className="form-input"
             id="item-description"

@@ -11,7 +11,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
           <img src="/logo_full.png" alt="Home Registry" />
         </a>
       </div>
-      
+
       <nav className="nav-menu">
         <div className="nav-section">
           <div className="nav-section-title">Overview</div>

@@ -122,7 +122,13 @@ export interface UpdateItemRequest {
 // UI state types
 export type Theme = 'light' | 'dark';
 
-export type Page = 'inventories' | 'categories' | 'tags' | 'settings' | 'inventory-detail' | 'organizers';
+export type Page =
+  | 'inventories'
+  | 'categories'
+  | 'tags'
+  | 'settings'
+  | 'inventory-detail'
+  | 'organizers';
 
 export interface ToastMessage {
   id: string;

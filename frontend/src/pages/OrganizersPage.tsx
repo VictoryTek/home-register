@@ -3,12 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import { organizerApi, inventoryApi } from '@/services/api';
 import { Header, Modal, ConfirmModal, LoadingState, EmptyState } from '@/components';
-import type { 
-  OrganizerTypeWithOptions, 
+import type {
+  OrganizerTypeWithOptions,
   OrganizerOption,
   CreateOrganizerTypeRequest,
   CreateOrganizerOptionRequest,
-  Inventory 
+  Inventory,
 } from '@/types';
 
 export function OrganizersPage() {
@@ -16,26 +16,30 @@ export function OrganizersPage() {
   const navigate = useNavigate();
   const { showToast } = useApp();
   const inventoryId = id ? parseInt(id, 10) : null;
-  
+
   const [inventories, setInventories] = useState<Inventory[]>([]);
   const [inventory, setInventory] = useState<Inventory | null>(null);
   const [organizers, setOrganizers] = useState<OrganizerTypeWithOptions[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Modal states
   const [showTypeModal, setShowTypeModal] = useState(false);
   const [showOptionModal, setShowOptionModal] = useState(false);
   const [showDeleteTypeModal, setShowDeleteTypeModal] = useState(false);
   const [showDeleteOptionModal, setShowDeleteOptionModal] = useState(false);
-  
+
   // Edit states
   const [editingType, setEditingType] = useState<OrganizerTypeWithOptions | null>(null);
   const [editingOption, setEditingOption] = useState<OrganizerOption | null>(null);
-  const [selectedTypeForOption, setSelectedTypeForOption] = useState<OrganizerTypeWithOptions | null>(null);
+  const [selectedTypeForOption, setSelectedTypeForOption] =
+    useState<OrganizerTypeWithOptions | null>(null);
   const [typeToDelete, setTypeToDelete] = useState<OrganizerTypeWithOptions | null>(null);
-  const [optionToDelete, setOptionToDelete] = useState<{ option: OrganizerOption; type: OrganizerTypeWithOptions } | null>(null);
-  
+  const [optionToDelete, setOptionToDelete] = useState<{
+    option: OrganizerOption;
+    type: OrganizerTypeWithOptions;
+  } | null>(null);
+
   // Form states
   const [typeName, setTypeName] = useState('');
   const [typeInputType, setTypeInputType] = useState<'select' | 'text'>('select');
@@ -43,7 +47,9 @@ export function OrganizersPage() {
   const [optionName, setOptionName] = useState('');
 
   const loadData = useCallback(async () => {
-    if (!inventoryId) {return;}
+    if (!inventoryId) {
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -206,7 +212,7 @@ export function OrganizersPage() {
     if (!typeToDelete?.id) {
       return;
     }
-    
+
     try {
       const res = await organizerApi.deleteType(typeToDelete.id);
       if (res.success) {
@@ -233,7 +239,7 @@ export function OrganizersPage() {
     if (!optionToDelete?.option.id) {
       return;
     }
-    
+
     try {
       const res = await organizerApi.deleteOption(optionToDelete.option.id);
       if (res.success) {
@@ -323,17 +329,17 @@ export function OrganizersPage() {
 
   return (
     <>
-      <Header
-        title="Organizers"
-        subtitle={inventory.name}
-        icon="fas fa-folder-tree"
-      />
-      
+      <Header title="Organizers" subtitle={inventory.name} icon="fas fa-folder-tree" />
+
       <div className="content">
-        <button className="btn btn-icon" onClick={() => navigate(`/inventory/${inventoryId}`)} title="Back to Inventory">
+        <button
+          className="btn btn-icon"
+          onClick={() => navigate(`/inventory/${inventoryId}`)}
+          title="Back to Inventory"
+        >
           <i className="fas fa-arrow-left"></i>
         </button>
-        
+
         <div className="page-actions">
           <button className="btn btn-primary" onClick={openCreateTypeModal}>
             <i className="fas fa-plus"></i>
@@ -350,211 +356,220 @@ export function OrganizersPage() {
           />
         ) : (
           <div className="organizers-grid">
-          {[...organizers].sort((a, b) => a.name.localeCompare(b.name)).map((organizer) => (
-            <div key={organizer.id} className="organizer-card">
-              <div className="organizer-header">
-                <div className="organizer-info">
-                  <h3>{organizer.name}</h3>
-                  <div className="organizer-meta">
-                    <span className={`badge badge-${organizer.input_type === 'select' ? 'primary' : 'secondary'}`}>
-                      {organizer.input_type === 'select' ? 'Dropdown' : 'Text Input'}
-                    </span>
-                    {organizer.is_required && (
-                      <span className="badge badge-warning">Required</span>
-                    )}
+            {[...organizers]
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((organizer) => (
+                <div key={organizer.id} className="organizer-card">
+                  <div className="organizer-header">
+                    <div className="organizer-info">
+                      <h3>{organizer.name}</h3>
+                      <div className="organizer-meta">
+                        <span
+                          className={`badge badge-${organizer.input_type === 'select' ? 'primary' : 'secondary'}`}
+                        >
+                          {organizer.input_type === 'select' ? 'Dropdown' : 'Text Input'}
+                        </span>
+                        {organizer.is_required && (
+                          <span className="badge badge-warning">Required</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="organizer-actions">
+                      <button
+                        className="btn btn-icon btn-ghost"
+                        onClick={() => openEditTypeModal(organizer)}
+                        title="Edit"
+                      >
+                        <i className="fas fa-edit"></i>
+                      </button>
+                      <button
+                        className="btn btn-icon btn-ghost btn-danger"
+                        onClick={() => confirmDeleteType(organizer)}
+                        title="Delete"
+                      >
+                        <i className="fas fa-trash"></i>
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <div className="organizer-actions">
-                  <button
-                    className="btn btn-icon btn-ghost"
-                    onClick={() => openEditTypeModal(organizer)}
-                    title="Edit"
-                  >
-                    <i className="fas fa-edit"></i>
-                  </button>
-                  <button
-                    className="btn btn-icon btn-ghost btn-danger"
-                    onClick={() => confirmDeleteType(organizer)}
-                    title="Delete"
-                  >
-                    <i className="fas fa-trash"></i>
-                  </button>
-                </div>
-              </div>
 
-              {organizer.input_type === 'select' && (
-                <div className="organizer-options">
-                  <div className="options-header">
-                    <span className="options-count">
-                      {organizer.options.length} option{organizer.options.length !== 1 ? 's' : ''}
-                    </span>
-                    <button
-                      className="btn btn-sm btn-ghost"
-                      onClick={() => openCreateOptionModal(organizer)}
-                    >
-                      <i className="fas fa-plus"></i>
-                      <span>Add Option</span>
-                    </button>
-                  </div>
-                  
-                  {organizer.options.length > 0 ? (
-                    <ul className="options-list">
-                      {organizer.options.map((option) => (
-                        <li key={option.id} className="option-item">
-                          <span className="option-name">{option.name}</span>
-                          <div className="option-actions">
-                            <button
-                              className="btn btn-icon btn-sm btn-ghost"
-                              onClick={() => openEditOptionModal(option, organizer)}
-                              title="Edit"
-                            >
-                              <i className="fas fa-edit"></i>
-                            </button>
-                            <button
-                              className="btn btn-icon btn-sm btn-ghost btn-danger"
-                              onClick={() => confirmDeleteOption(option, organizer)}
-                              title="Delete"
-                            >
-                              <i className="fas fa-times"></i>
-                            </button>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="options-empty">No options defined yet</p>
+                  {organizer.input_type === 'select' && (
+                    <div className="organizer-options">
+                      <div className="options-header">
+                        <span className="options-count">
+                          {organizer.options.length} option
+                          {organizer.options.length !== 1 ? 's' : ''}
+                        </span>
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          onClick={() => openCreateOptionModal(organizer)}
+                        >
+                          <i className="fas fa-plus"></i>
+                          <span>Add Option</span>
+                        </button>
+                      </div>
+
+                      {organizer.options.length > 0 ? (
+                        <ul className="options-list">
+                          {organizer.options.map((option) => (
+                            <li key={option.id} className="option-item">
+                              <span className="option-name">{option.name}</span>
+                              <div className="option-actions">
+                                <button
+                                  className="btn btn-icon btn-sm btn-ghost"
+                                  onClick={() => openEditOptionModal(option, organizer)}
+                                  title="Edit"
+                                >
+                                  <i className="fas fa-edit"></i>
+                                </button>
+                                <button
+                                  className="btn btn-icon btn-sm btn-ghost btn-danger"
+                                  onClick={() => confirmDeleteOption(option, organizer)}
+                                  title="Delete"
+                                >
+                                  <i className="fas fa-times"></i>
+                                </button>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="options-empty">No options defined yet</p>
+                      )}
+                    </div>
+                  )}
+
+                  {organizer.input_type === 'text' && (
+                    <div className="organizer-text-info">
+                      <i className="fas fa-keyboard"></i>
+                      <span>Users will enter free-form text</span>
+                    </div>
                   )}
                 </div>
-              )}
+              ))}
+          </div>
+        )}
 
-              {organizer.input_type === 'text' && (
-                <div className="organizer-text-info">
-                  <i className="fas fa-keyboard"></i>
-                  <span>Users will enter free-form text</span>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Create/Edit Type Modal */}
-      <Modal
-        isOpen={showTypeModal}
-        onClose={() => setShowTypeModal(false)}
-        title={editingType ? 'Edit Organizer' : 'Create Organizer'}
-        footer={
-          <>
-            <button className="btn btn-secondary" onClick={() => setShowTypeModal(false)}>
-              Cancel
-            </button>
-            <button className="btn btn-primary" onClick={handleSaveType}>
-              <i className={`fas fa-${editingType ? 'save' : 'plus'}`}></i>
-              {editingType ? 'Save Changes' : 'Create Organizer'}
-            </button>
-          </>
-        }
-      >
-        <div className="form-group">
-          <label className="form-label" htmlFor="typeName">Organizer Name *</label>
-          <input
-            className="form-input"
-            id="typeName"
-            type="text"
-            value={typeName}
-            onChange={(e) => setTypeName(e.target.value)}
-            placeholder="e.g., Brand, Color, Condition, Room"
-            autoFocus
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="form-label" htmlFor="typeInputType">Input Type</label>
-          <select
-            className="form-select"
-            id="typeInputType"
-            value={typeInputType}
-            onChange={(e) => setTypeInputType(e.target.value as 'select' | 'text')}
-          >
-            <option value="select">Dropdown (Select from options)</option>
-            <option value="text">Text Input (Free-form entry)</option>
-          </select>
-          <p className="form-hint">
-            {typeInputType === 'select'
-              ? 'Users will select from predefined options you create after saving.'
-              : 'Users can enter any text value (e.g., serial numbers, custom notes).'}
-          </p>
-        </div>
-
-        <div className="form-group">
-          <label className="form-checkbox">
+        {/* Create/Edit Type Modal */}
+        <Modal
+          isOpen={showTypeModal}
+          onClose={() => setShowTypeModal(false)}
+          title={editingType ? 'Edit Organizer' : 'Create Organizer'}
+          footer={
+            <>
+              <button className="btn btn-secondary" onClick={() => setShowTypeModal(false)}>
+                Cancel
+              </button>
+              <button className="btn btn-primary" onClick={handleSaveType}>
+                <i className={`fas fa-${editingType ? 'save' : 'plus'}`}></i>
+                {editingType ? 'Save Changes' : 'Create Organizer'}
+              </button>
+            </>
+          }
+        >
+          <div className="form-group">
+            <label className="form-label" htmlFor="typeName">
+              Organizer Name *
+            </label>
             <input
-              type="checkbox"
-              checked={typeIsRequired}
-              onChange={(e) => setTypeIsRequired(e.target.checked)}
+              className="form-input"
+              id="typeName"
+              type="text"
+              value={typeName}
+              onChange={(e) => setTypeName(e.target.value)}
+              placeholder="e.g., Brand, Color, Condition, Room"
+              autoFocus
             />
-            <span className="form-checkbox-label">Required when adding items</span>
-          </label>
-          <p className="form-hint">
-            If checked, users must provide a value for this organizer when creating items.
-          </p>
-        </div>
-      </Modal>
+          </div>
 
-      {/* Create/Edit Option Modal */}
-      <Modal
-        isOpen={showOptionModal}
-        onClose={() => setShowOptionModal(false)}
-        title={editingOption ? 'Edit Option' : 'Add Option'}
-        subtitle={selectedTypeForOption ? `Adding to "${selectedTypeForOption.name}"` : undefined}
-        footer={
-          <>
-            <button className="btn btn-secondary" onClick={() => setShowOptionModal(false)}>
-              Cancel
-            </button>
-            <button className="btn btn-primary" onClick={handleSaveOption}>
-              <i className={`fas fa-${editingOption ? 'save' : 'plus'}`}></i>
-              {editingOption ? 'Save Changes' : 'Add Option'}
-            </button>
-          </>
-        }
-      >
-        <div className="form-group">
-          <label className="form-label" htmlFor="optionName">Option Name *</label>
-          <input
-            className="form-input"
-            id="optionName"
-            type="text"
-            value={optionName}
-            onChange={(e) => setOptionName(e.target.value)}
-            placeholder="Enter option value"
-            autoFocus
-          />
-          <p className="form-hint">
-            This will appear as a selectable choice in the dropdown.
-          </p>
-        </div>
-      </Modal>
+          <div className="form-group">
+            <label className="form-label" htmlFor="typeInputType">
+              Input Type
+            </label>
+            <select
+              className="form-select"
+              id="typeInputType"
+              value={typeInputType}
+              onChange={(e) => setTypeInputType(e.target.value as 'select' | 'text')}
+            >
+              <option value="select">Dropdown (Select from options)</option>
+              <option value="text">Text Input (Free-form entry)</option>
+            </select>
+            <p className="form-hint">
+              {typeInputType === 'select'
+                ? 'Users will select from predefined options you create after saving.'
+                : 'Users can enter any text value (e.g., serial numbers, custom notes).'}
+            </p>
+          </div>
 
-      {/* Delete Type Confirmation */}
-      <ConfirmModal
-        isOpen={showDeleteTypeModal}
-        onClose={() => setShowDeleteTypeModal(false)}
-        onConfirm={handleDeleteType}
-        title="Delete Organizer"
-        message={`Are you sure you want to delete "${typeToDelete?.name}"? This will also remove all options and item values associated with this organizer.`}
-        confirmText="Delete"
-      />
+          <div className="form-group">
+            <label className="form-checkbox">
+              <input
+                type="checkbox"
+                checked={typeIsRequired}
+                onChange={(e) => setTypeIsRequired(e.target.checked)}
+              />
+              <span className="form-checkbox-label">Required when adding items</span>
+            </label>
+            <p className="form-hint">
+              If checked, users must provide a value for this organizer when creating items.
+            </p>
+          </div>
+        </Modal>
 
-      {/* Delete Option Confirmation */}
-      <ConfirmModal
-        isOpen={showDeleteOptionModal}
-        onClose={() => setShowDeleteOptionModal(false)}
-        onConfirm={handleDeleteOption}
-        title="Delete Option"
-        message={`Are you sure you want to delete "${optionToDelete?.option.name}" from "${optionToDelete?.type.name}"?`}
-        confirmText="Delete"
-      />
+        {/* Create/Edit Option Modal */}
+        <Modal
+          isOpen={showOptionModal}
+          onClose={() => setShowOptionModal(false)}
+          title={editingOption ? 'Edit Option' : 'Add Option'}
+          subtitle={selectedTypeForOption ? `Adding to "${selectedTypeForOption.name}"` : undefined}
+          footer={
+            <>
+              <button className="btn btn-secondary" onClick={() => setShowOptionModal(false)}>
+                Cancel
+              </button>
+              <button className="btn btn-primary" onClick={handleSaveOption}>
+                <i className={`fas fa-${editingOption ? 'save' : 'plus'}`}></i>
+                {editingOption ? 'Save Changes' : 'Add Option'}
+              </button>
+            </>
+          }
+        >
+          <div className="form-group">
+            <label className="form-label" htmlFor="optionName">
+              Option Name *
+            </label>
+            <input
+              className="form-input"
+              id="optionName"
+              type="text"
+              value={optionName}
+              onChange={(e) => setOptionName(e.target.value)}
+              placeholder="Enter option value"
+              autoFocus
+            />
+            <p className="form-hint">This will appear as a selectable choice in the dropdown.</p>
+          </div>
+        </Modal>
+
+        {/* Delete Type Confirmation */}
+        <ConfirmModal
+          isOpen={showDeleteTypeModal}
+          onClose={() => setShowDeleteTypeModal(false)}
+          onConfirm={handleDeleteType}
+          title="Delete Organizer"
+          message={`Are you sure you want to delete "${typeToDelete?.name}"? This will also remove all options and item values associated with this organizer.`}
+          confirmText="Delete"
+        />
+
+        {/* Delete Option Confirmation */}
+        <ConfirmModal
+          isOpen={showDeleteOptionModal}
+          onClose={() => setShowDeleteOptionModal(false)}
+          onConfirm={handleDeleteOption}
+          title="Delete Option"
+          message={`Are you sure you want to delete "${optionToDelete?.option.name}" from "${optionToDelete?.type.name}"?`}
+          confirmText="Delete"
+        />
       </div>
     </>
   );

@@ -1,10 +1,10 @@
-import type { 
-  ApiResponse, 
-  Inventory, 
-  Item, 
+import type {
+  ApiResponse,
+  Inventory,
+  Item,
   CreateInventoryRequest,
   UpdateInventoryRequest,
-  CreateItemRequest, 
+  CreateItemRequest,
   UpdateItemRequest,
   OrganizerTypeWithOptions,
   OrganizerType,
@@ -58,14 +58,14 @@ function getHeaders(includeAuth = true): Record<string, string> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
-  
+
   if (includeAuth) {
     const token = getToken();
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
   }
-  
+
   return headers;
 }
 
@@ -75,11 +75,14 @@ async function handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem('home_registry_user');
     // Only redirect if not already on login/setup page
-    if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/setup')) {
+    if (
+      !window.location.pathname.includes('/login') &&
+      !window.location.pathname.includes('/setup')
+    ) {
       window.location.href = '/login';
     }
   }
-  
+
   // Check if response is JSON
   const contentType = response.headers.get('content-type');
   if (!contentType?.includes('application/json')) {
@@ -92,9 +95,9 @@ async function handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
       data: undefined,
     };
   }
-  
+
   try {
-    const data = await response.json() as ApiResponse<T>;
+    const data = (await response.json()) as ApiResponse<T>;
     return data;
   } catch {
     console.error('Failed to parse JSON response');
@@ -113,7 +116,7 @@ async function handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
  * Sleep for the specified number of milliseconds
  */
 async function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -143,7 +146,7 @@ function parseRetryAfter(response: Response): number | null {
   if (!retryAfter) {
     return null;
   }
-  
+
   // Retry-After can be either:
   // 1. Number of seconds: "120"
   // 2. HTTP date: "Wed, 21 Oct 2015 07:28:00 GMT"
@@ -151,7 +154,7 @@ function parseRetryAfter(response: Response): number | null {
   if (!isNaN(seconds)) {
     return seconds * 1000; // Convert to milliseconds
   }
-  
+
   // Try parsing as HTTP date
   try {
     const date = new Date(retryAfter);
@@ -165,13 +168,13 @@ function parseRetryAfter(response: Response): number | null {
 
 /**
  * Fetch with automatic retry logic for rate limiting and transient errors
- * 
+ *
  * Implements:
  * - Exponential backoff (1s, 2s, 4s, 8s, 16s)
  * - Retry-After header parsing for rate limits
  * - Jitter to prevent thundering herd
  * - Max 5 retries
- * 
+ *
  * @param url - URL to fetch
  * @param options - Fetch options (method, headers, body, etc.)
  * @param maxRetries - Maximum number of retries (default: 5)
@@ -183,11 +186,11 @@ async function fetchWithRetry(
   maxRetries = 5
 ): Promise<Response> {
   let lastError: Error | null = null;
-  
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const response = await fetch(url, options);
-      
+
       // Handle rate limiting (429 Too Many Requests)
       if (response.status === 429) {
         if (attempt === maxRetries) {
@@ -195,11 +198,11 @@ async function fetchWithRetry(
           console.error(`Rate limit exceeded after ${maxRetries} retries`);
           return response;
         }
-        
+
         // Parse Retry-After header or use exponential backoff
         const retryAfterMs = parseRetryAfter(response);
         let waitMs: number;
-        
+
         if (retryAfterMs !== null) {
           // Use server-provided retry delay
           waitMs = retryAfterMs;
@@ -207,33 +210,37 @@ async function fetchWithRetry(
         } else {
           // Use exponential backoff with jitter
           waitMs = addJitter(calculateBackoff(attempt));
-          console.warn(`Rate limited. Retrying after ${Math.round(waitMs)}ms (attempt ${attempt + 1}/${maxRetries + 1})`);
+          console.warn(
+            `Rate limited. Retrying after ${Math.round(waitMs)}ms (attempt ${attempt + 1}/${maxRetries + 1})`
+          );
         }
-        
+
         await sleep(waitMs);
         continue; // Retry
       }
-      
+
       // Success or non-retriable error - return response
       return response;
-      
     } catch (error) {
       // Network error or fetch failed
       lastError = error as Error;
-      
+
       if (attempt === maxRetries) {
         // Last attempt - throw the error
         console.error(`Request failed after ${maxRetries} retries:`, lastError);
         throw lastError;
       }
-      
+
       // Retry with exponential backoff
       const waitMs = addJitter(calculateBackoff(attempt));
-      console.warn(`Network error. Retrying after ${Math.round(waitMs)}ms (attempt ${attempt + 1}/${maxRetries + 1}):`, error);
+      console.warn(
+        `Network error. Retrying after ${Math.round(waitMs)}ms (attempt ${attempt + 1}/${maxRetries + 1}):`,
+        error
+      );
       await sleep(waitMs);
     }
   }
-  
+
   // Should never reach here, but TypeScript requires it
   throw lastError ?? new Error('Request failed after retries');
 }
@@ -344,7 +351,10 @@ export const itemApi = {
     return handleResponse<ItemOrganizerValueWithDetails[]>(response);
   },
 
-  async setOrganizerValues(itemId: number, data: SetItemOrganizerValuesRequest): Promise<ApiResponse<ItemOrganizerValue[]>> {
+  async setOrganizerValues(
+    itemId: number,
+    data: SetItemOrganizerValuesRequest
+  ): Promise<ApiResponse<ItemOrganizerValue[]>> {
     const response = await fetchWithRetry(`${API_BASE}/items/${itemId}/organizer-values`, {
       method: 'PUT',
       headers: getHeaders(),
@@ -364,7 +374,10 @@ export const organizerApi = {
     return handleResponse<OrganizerTypeWithOptions[]>(response);
   },
 
-  async createType(inventoryId: number, data: CreateOrganizerTypeRequest): Promise<ApiResponse<OrganizerType>> {
+  async createType(
+    inventoryId: number,
+    data: CreateOrganizerTypeRequest
+  ): Promise<ApiResponse<OrganizerType>> {
     const response = await fetchWithRetry(`${API_BASE}/inventories/${inventoryId}/organizers`, {
       method: 'POST',
       headers: getHeaders(),
@@ -380,7 +393,10 @@ export const organizerApi = {
     return handleResponse<OrganizerType>(response);
   },
 
-  async updateType(id: number, data: UpdateOrganizerTypeRequest): Promise<ApiResponse<OrganizerType>> {
+  async updateType(
+    id: number,
+    data: UpdateOrganizerTypeRequest
+  ): Promise<ApiResponse<OrganizerType>> {
     const response = await fetchWithRetry(`${API_BASE}/organizers/${id}`, {
       method: 'PUT',
       headers: getHeaders(),
@@ -405,7 +421,10 @@ export const organizerApi = {
     return handleResponse<OrganizerOption[]>(response);
   },
 
-  async createOption(organizerTypeId: number, data: CreateOrganizerOptionRequest): Promise<ApiResponse<OrganizerOption>> {
+  async createOption(
+    organizerTypeId: number,
+    data: CreateOrganizerOptionRequest
+  ): Promise<ApiResponse<OrganizerOption>> {
     const response = await fetchWithRetry(`${API_BASE}/organizers/${organizerTypeId}/options`, {
       method: 'POST',
       headers: getHeaders(),
@@ -414,7 +433,10 @@ export const organizerApi = {
     return handleResponse<OrganizerOption>(response);
   },
 
-  async updateOption(optionId: number, data: UpdateOrganizerOptionRequest): Promise<ApiResponse<OrganizerOption>> {
+  async updateOption(
+    optionId: number,
+    data: UpdateOrganizerOptionRequest
+  ): Promise<ApiResponse<OrganizerOption>> {
     const response = await fetchWithRetry(`${API_BASE}/organizer-options/${optionId}`, {
       method: 'PUT',
       headers: getHeaders(),
@@ -472,7 +494,11 @@ export const authApi = {
   },
 
   // Register new user (after initial setup)
-  async register(data: { username: string; full_name: string; password: string }): Promise<ApiResponse<LoginResponse>> {
+  async register(data: {
+    username: string;
+    full_name: string;
+    password: string;
+  }): Promise<ApiResponse<LoginResponse>> {
     const response = await fetchWithRetry(`${API_BASE}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -492,7 +518,7 @@ export const authApi = {
         headers.Authorization = `Bearer ${storedToken}`;
       }
     }
-    
+
     const response = await fetchWithRetry(`${API_BASE}/auth/me`, {
       headers,
     });
@@ -530,7 +556,7 @@ export const authApi = {
         headers.Authorization = `Bearer ${storedToken}`;
       }
     }
-    
+
     const response = await fetchWithRetry(`${API_BASE}/auth/settings`, {
       headers,
     });
@@ -538,12 +564,15 @@ export const authApi = {
   },
 
   // Update user settings
-  async updateSettings(token: string, data: Partial<UpdateUserSettingsRequest>): Promise<ApiResponse<UserSettings>> {
+  async updateSettings(
+    token: string,
+    data: Partial<UpdateUserSettingsRequest>
+  ): Promise<ApiResponse<UserSettings>> {
     const response = await fetchWithRetry(`${API_BASE}/auth/settings`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(data),
     });
@@ -606,7 +635,10 @@ export const authApi = {
   },
 
   // Share an inventory with another user
-  async shareInventory(inventoryId: number, data: CreateInventoryShareRequest): Promise<ApiResponse<InventoryShare>> {
+  async shareInventory(
+    inventoryId: number,
+    data: CreateInventoryShareRequest
+  ): Promise<ApiResponse<InventoryShare>> {
     const response = await fetchWithRetry(`${API_BASE}/inventories/${inventoryId}/shares`, {
       method: 'POST',
       headers: getHeaders(),
@@ -616,7 +648,10 @@ export const authApi = {
   },
 
   // Update share permission
-  async updateInventoryShare(shareId: string, data: UpdateInventoryShareRequest): Promise<ApiResponse<InventoryShare>> {
+  async updateInventoryShare(
+    shareId: string,
+    data: UpdateInventoryShareRequest
+  ): Promise<ApiResponse<InventoryShare>> {
     const response = await fetchWithRetry(`${API_BASE}/shares/${shareId}`, {
       method: 'PUT',
       headers: getHeaders(),
@@ -645,12 +680,18 @@ export const authApi = {
   // ==================== Ownership Transfer ====================
 
   // Transfer ownership of an inventory to another user
-  async transferOwnership(inventoryId: number, data: TransferOwnershipRequest): Promise<ApiResponse<TransferOwnershipResponse>> {
-    const response = await fetchWithRetry(`${API_BASE}/inventories/${inventoryId}/transfer-ownership`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify(data),
-    });
+  async transferOwnership(
+    inventoryId: number,
+    data: TransferOwnershipRequest
+  ): Promise<ApiResponse<TransferOwnershipResponse>> {
+    const response = await fetchWithRetry(
+      `${API_BASE}/inventories/${inventoryId}/transfer-ownership`,
+      {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      }
+    );
     return handleResponse<TransferOwnershipResponse>(response);
   },
 
@@ -673,7 +714,9 @@ export const authApi = {
   },
 
   // Grant All Access to another user
-  async createAccessGrant(data: CreateUserAccessGrantRequest): Promise<ApiResponse<UserAccessGrant>> {
+  async createAccessGrant(
+    data: CreateUserAccessGrantRequest
+  ): Promise<ApiResponse<UserAccessGrant>> {
     const response = await fetchWithRetry(`${API_BASE}/auth/access-grants`, {
       method: 'POST',
       headers: getHeaders(),
@@ -721,7 +764,11 @@ export const authApi = {
   },
 
   // Use a recovery code to reset password (no auth required)
-  async useRecoveryCode(username: string, recoveryCode: string, newPassword: string): Promise<ApiResponse<RecoveryCodeUsedResponse>> {
+  async useRecoveryCode(
+    username: string,
+    recoveryCode: string,
+    newPassword: string
+  ): Promise<ApiResponse<RecoveryCodeUsedResponse>> {
     const response = await fetchWithRetry(`${API_BASE}/auth/recovery-codes/use`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

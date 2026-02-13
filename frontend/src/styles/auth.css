@@ -30,14 +30,14 @@
   inset: 0;
   overflow: hidden;
   z-index: 0;
-  background: 
-    radial-gradient(ellipse at 20% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+  background: radial-gradient(ellipse at 20% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
     radial-gradient(ellipse at 80% 80%, rgba(249, 115, 22, 0.06) 0%, transparent 50%);
   animation: subtle-shift 20s ease-in-out infinite;
 }
 
 @keyframes subtle-shift {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -67,7 +67,7 @@
   border: 2px solid #f97316;
   border-radius: 24px;
   padding: 2.5rem;
-  box-shadow: 
+  box-shadow:
     0 25px 50px -12px rgba(0, 0, 0, 0.5),
     0 0 20px rgba(249, 115, 22, 0.3),
     0 0 0 1px rgba(249, 115, 22, 0.2) inset;
@@ -583,7 +583,7 @@
   font-size: 0.95rem;
 }
 
-.checkbox-label input[type="checkbox"] {
+.checkbox-label input[type='checkbox'] {
   margin-top: 0.2rem;
   width: 18px;
   height: 18px;
@@ -607,15 +607,16 @@
   .auth-actions {
     flex-direction: column;
   }
-  
+
   .codes-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .recovery-actions {
     flex-direction: column;
   }
-  
+
   .recovery-actions button {
-    width: 100%;  }
+    width: 100%;
+  }
 }

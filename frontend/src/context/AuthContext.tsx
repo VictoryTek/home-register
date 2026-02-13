@@ -41,13 +41,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const parsedUser = JSON.parse(storedUser) as User;
           setToken(storedToken);
           setUser(parsedUser);
-          
+
           // Verify token is still valid by fetching profile
           const profileResult = await authApi.getProfile(storedToken);
           if (profileResult.success && profileResult.data) {
             setUser(profileResult.data);
             localStorage.setItem(USER_KEY, JSON.stringify(profileResult.data));
-            
+
             // Fetch user settings
             const settingsResult = await authApi.getSettings(storedToken);
             if (settingsResult.success && settingsResult.data) {
@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     void initAuth();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkSetupStatus = useCallback(async (): Promise<SetupStatusResponse | null> => {
@@ -85,36 +85,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   }, []);
 
-  const login = useCallback(async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const result = await authApi.login({ username, password });
-      
-      if (result.success && result.data) {
-        const { token: newToken, user: newUser } = result.data;
-        
-        // Store auth data
-        localStorage.setItem(TOKEN_KEY, newToken);
-        localStorage.setItem(USER_KEY, JSON.stringify(newUser));
-        
-        setToken(newToken);
-        setUser(newUser);
-        setNeedsSetup(false);
-        
-        // Fetch user settings
-        const settingsResult = await authApi.getSettings(newToken);
-        if (settingsResult.success && settingsResult.data) {
-          setSettings(settingsResult.data);
+  const login = useCallback(
+    async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
+      try {
+        const result = await authApi.login({ username, password });
+
+        if (result.success && result.data) {
+          const { token: newToken, user: newUser } = result.data;
+
+          // Store auth data
+          localStorage.setItem(TOKEN_KEY, newToken);
+          localStorage.setItem(USER_KEY, JSON.stringify(newUser));
+
+          setToken(newToken);
+          setUser(newUser);
+          setNeedsSetup(false);
+
+          // Fetch user settings
+          const settingsResult = await authApi.getSettings(newToken);
+          if (settingsResult.success && settingsResult.data) {
+            setSettings(settingsResult.data);
+          }
+
+          return { success: true };
+        } else {
+          return { success: false, error: result.error ?? 'Login failed' };
         }
-        
-        return { success: true };
-      } else {
-        return { success: false, error: result.error ?? 'Login failed' };
+      } catch (error) {
+        console.error('Login error:', error);
+        return { success: false, error: 'Network error. Please try again.' };
       }
-    } catch (error) {
-      console.error('Login error:', error);
-      return { success: false, error: 'Network error. Please try again.' };
-    }
-  }, []);
+    },
+    []
+  );
 
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
@@ -128,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!token) {
       return;
     }
-    
+
     try {
       const result = await authApi.getProfile(token);
       if (result.success && result.data) {
@@ -144,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!token) {
       return;
     }
-    
+
     try {
       const result = await authApi.getSettings(token);
       if (result.success && result.data) {
@@ -155,22 +158,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [token]);
 
-  const updateSettings = useCallback(async (newSettings: Partial<UserSettings>): Promise<boolean> => {
-    if (!token) {
-      return false;
-    }
-    
-    try {
-      const result = await authApi.updateSettings(token, newSettings);
-      if (result.success && result.data) {
-        setSettings(result.data);
-        return true;
+  const updateSettings = useCallback(
+    async (newSettings: Partial<UserSettings>): Promise<boolean> => {
+      if (!token) {
+        return false;
       }
-    } catch (error) {
-      console.error('Error updating settings:', error);
-    }
-    return false;
-  }, [token]);
+
+      try {
+        const result = await authApi.updateSettings(token, newSettings);
+        if (result.success && result.data) {
+          setSettings(result.data);
+          return true;
+        }
+      } catch (error) {
+        console.error('Error updating settings:', error);
+      }
+      return false;
+    },
+    [token]
+  );
 
   return (
     <AuthContext.Provider
@@ -215,7 +221,7 @@ export function getAuthHeaders(): Record<string, string> {
   const token = getAuthToken();
   if (token) {
     return {
-      'Authorization': `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     };
   }

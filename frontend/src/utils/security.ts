@@ -30,10 +30,10 @@ export function createSafePrintWindow(
 
   // Build document structure safely
   printWindow.document.title = title;
-  
+
   // Call the content builder to populate the document body
   contentBuilder(printWindow.document);
-  
+
   printWindow.document.close();
   printWindow.focus();
   printWindow.print();

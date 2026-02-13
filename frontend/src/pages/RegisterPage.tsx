@@ -14,7 +14,7 @@ export function RegisterPage() {
   const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
   const [codesConfirmed, setCodesConfirmed] = useState(false);
   const codesRef = useRef<HTMLDivElement>(null);
-  
+
   const [formData, setFormData] = useState({
     username: '',
     full_name: '',
@@ -24,7 +24,7 @@ export function RegisterPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
     setError(null);
   };
 
@@ -58,8 +58,10 @@ export function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) {return;}
+
+    if (!validateForm()) {
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
@@ -75,7 +77,7 @@ export function RegisterPage() {
         // Store auth data
         localStorage.setItem('home_registry_token', result.data.token);
         localStorage.setItem('home_registry_user', JSON.stringify(result.data.user));
-        
+
         // Generate recovery codes
         const codesResponse = await authApi.generateRecoveryCodes();
         if (codesResponse.success && codesResponse.data) {
@@ -104,7 +106,7 @@ export function RegisterPage() {
     try {
       setIsLoading(true);
       await authApi.confirmRecoveryCodes();
-      
+
       // Redirect to app
       navigate('/');
       window.location.reload();
@@ -118,7 +120,7 @@ export function RegisterPage() {
     if (!recoveryCodes) {
       return;
     }
-    
+
     const content = `Home Registry Recovery Codes\n\nUsername: ${formData.username}\nGenerated: ${new Date().toLocaleString()}\n\nSave these codes in a secure location. Each code can only be used once.\n\n${recoveryCodes.join('\n')}\n`;
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -132,19 +134,25 @@ export function RegisterPage() {
   };
 
   const printCodes = () => {
-    if (!recoveryCodes) {return;}
-    
+    if (!recoveryCodes) {
+      return;
+    }
+
     const printWindow = window.open('', '', 'width=800,height=600');
-    if (!printWindow) {return;}
-    
+    if (!printWindow) {
+      return;
+    }
+
     // Build document safely without using document.write with user content
     const doc = printWindow.document;
     doc.open();
-    
+
     // Create safe HTML with escaped user content
     const safeUsername = escapeHtml(formData.username);
-    const safeCodes = recoveryCodes.map(code => `<div class="code">${escapeHtml(code)}</div>`).join('');
-    
+    const safeCodes = recoveryCodes
+      .map((code) => `<div class="code">${escapeHtml(code)}</div>`)
+      .join('');
+
     doc.write(`
       <html>
         <head>
@@ -180,8 +188,10 @@ export function RegisterPage() {
   };
 
   const copyCodes = async () => {
-    if (!recoveryCodes) {return;}
-    
+    if (!recoveryCodes) {
+      return;
+    }
+
     try {
       await navigator.clipboard.writeText(recoveryCodes.join('\n'));
     } catch (err) {
@@ -196,9 +206,11 @@ export function RegisterPage() {
         <div className="auth-gradient-orb auth-gradient-orb-2"></div>
         <div className="auth-gradient-orb auth-gradient-orb-3"></div>
       </div>
-      
+
       <div className="auth-container">
-        <div className={`auth-card ${showRecoveryCodes ? 'setup-card wide' : 'auth-card-register'}`}>
+        <div
+          className={`auth-card ${showRecoveryCodes ? 'setup-card wide' : 'auth-card-register'}`}
+        >
           <div className="auth-header">
             <div className="auth-logo">
               <img src="/logo_full.png" alt="Home Registry" className="auth-logo-img" />
@@ -215,177 +227,186 @@ export function RegisterPage() {
           )}
 
           {!showRecoveryCodes ? (
-          <>
-          <form onSubmit={handleSubmit} className="auth-form">
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="full_name">
-                  <i className="fas fa-id-card"></i>
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  id="full_name"
-                  name="full_name"
-                  value={formData.full_name}
-                  onChange={handleInputChange}
-                  placeholder="Enter your full name"
-                  autoFocus
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="username">
-                  <i className="fas fa-user"></i>
-                  Username
-                </label>
-                <input
-                  type="text"
-                  id="username"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  placeholder="Choose a username"
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="password">
-                  <i className="fas fa-lock"></i>
-                  Password
-                </label>
-                <div className="input-with-icon">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    id="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    placeholder="Min 8 characters"
-                  />
-                  <button
-                    type="button"
-                    className="password-toggle"
-                    onClick={() => setShowPassword(!showPassword)}
-                    tabIndex={-1}
-                  >
-                    <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                  </button>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="confirmPassword">
-                  <i className="fas fa-lock"></i>
-                  Confirm Password
-                </label>
-                <div className="input-with-icon">
-                  <input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                    placeholder="Confirm password"
-                  />
-                  <button
-                    type="button"
-                    className="password-toggle"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    tabIndex={-1}
-                  >
-                    <i className={`fas ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <button type="submit" className="auth-submit-btn" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <span className="btn-spinner"></span>
-                  Creating Account...
-                </>
-              ) : (
-                <>
-                  <i className="fas fa-user-plus"></i>
-                  Create Account
-                </>
-              )}
-            </button>
-          </form>
-
-          <div className="auth-footer">
-            <p>Already have an account? <Link to="/login" className="auth-link">Sign in</Link></p>
-          </div>
-          </>
-          ) : (
-          <div className="auth-step">
-            <h2 style={{ marginBottom: '0.5rem' }}>Save Your Recovery Codes</h2>
-            <p className="step-description" style={{ marginBottom: '0.75rem', fontSize: '0.9rem' }}>
-              These codes can be used to recover your account if you forget your password. Each code can only be used once.
-            </p>
-            
-            <div className="recovery-codes-display" ref={codesRef}>
-              <div className="codes-grid">
-                {recoveryCodes?.map((code, index) => (
-                  <div key={index} className="code-item">
-                    {code}
+            <>
+              <form onSubmit={handleSubmit} className="auth-form">
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="full_name">
+                      <i className="fas fa-id-card"></i>
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      id="full_name"
+                      name="full_name"
+                      value={formData.full_name}
+                      onChange={handleInputChange}
+                      placeholder="Enter your full name"
+                      autoFocus
+                    />
                   </div>
-                ))}
+
+                  <div className="form-group">
+                    <label htmlFor="username">
+                      <i className="fas fa-user"></i>
+                      Username
+                    </label>
+                    <input
+                      type="text"
+                      id="username"
+                      name="username"
+                      value={formData.username}
+                      onChange={handleInputChange}
+                      placeholder="Choose a username"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="password">
+                      <i className="fas fa-lock"></i>
+                      Password
+                    </label>
+                    <div className="input-with-icon">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        id="password"
+                        name="password"
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        placeholder="Min 8 characters"
+                      />
+                      <button
+                        type="button"
+                        className="password-toggle"
+                        onClick={() => setShowPassword(!showPassword)}
+                        tabIndex={-1}
+                      >
+                        <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="confirmPassword">
+                      <i className="fas fa-lock"></i>
+                      Confirm Password
+                    </label>
+                    <div className="input-with-icon">
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleInputChange}
+                        placeholder="Confirm password"
+                      />
+                      <button
+                        type="button"
+                        className="password-toggle"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        tabIndex={-1}
+                      >
+                        <i className={`fas ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <button type="submit" className="auth-submit-btn" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <span className="btn-spinner"></span>
+                      Creating Account...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-user-plus"></i>
+                      Create Account
+                    </>
+                  )}
+                </button>
+              </form>
+
+              <div className="auth-footer">
+                <p>
+                  Already have an account?{' '}
+                  <Link to="/login" className="auth-link">
+                    Sign in
+                  </Link>
+                </p>
               </div>
-            </div>
+            </>
+          ) : (
+            <div className="auth-step">
+              <h2 style={{ marginBottom: '0.5rem' }}>Save Your Recovery Codes</h2>
+              <p
+                className="step-description"
+                style={{ marginBottom: '0.75rem', fontSize: '0.9rem' }}
+              >
+                These codes can be used to recover your account if you forget your password. Each
+                code can only be used once.
+              </p>
 
-            <div className="recovery-actions">
-              <button type="button" className="btn-secondary" onClick={downloadCodes}>
-                📥 Download
+              <div className="recovery-codes-display" ref={codesRef}>
+                <div className="codes-grid">
+                  {recoveryCodes?.map((code, index) => (
+                    <div key={index} className="code-item">
+                      {code}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="recovery-actions">
+                <button type="button" className="btn-secondary" onClick={downloadCodes}>
+                  📥 Download
+                </button>
+                <button type="button" className="btn-secondary" onClick={copyCodes}>
+                  📋 Copy All
+                </button>
+                <button type="button" className="btn-secondary" onClick={printCodes}>
+                  🖨️ Print
+                </button>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={codesConfirmed}
+                    onChange={(e) => setCodesConfirmed(e.target.checked)}
+                  />
+                  <span>I have saved these recovery codes in a secure location</span>
+                </label>
+              </div>
+
+              <div className="auth-warning">
+                <strong>⚠️ Important:</strong> You will not be able to see these codes again. Make
+                sure to save them before continuing.
+              </div>
+
+              <button
+                type="button"
+                className="auth-submit-btn"
+                onClick={handleCompleteRegistration}
+                disabled={isLoading || !codesConfirmed}
+                style={{ marginTop: '1rem' }}
+              >
+                {isLoading ? (
+                  <>
+                    <span className="btn-spinner"></span>
+                    Finishing...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-check"></i>
+                    Continue to Home Registry
+                  </>
+                )}
               </button>
-              <button type="button" className="btn-secondary" onClick={copyCodes}>
-                📋 Copy All
-              </button>
-              <button type="button" className="btn-secondary" onClick={printCodes}>
-                🖨️ Print
-              </button>
             </div>
-
-            <div className="form-group" style={{ marginBottom: '0.75rem' }}>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={codesConfirmed}
-                  onChange={(e) => setCodesConfirmed(e.target.checked)}
-                />
-                <span>I have saved these recovery codes in a secure location</span>
-              </label>
-            </div>
-
-            <div className="auth-warning">
-              <strong>⚠️ Important:</strong> You will not be able to see these codes again. 
-              Make sure to save them before continuing.
-            </div>
-
-            <button 
-              type="button" 
-              className="auth-submit-btn" 
-              onClick={handleCompleteRegistration}
-              disabled={isLoading || !codesConfirmed}
-              style={{ marginTop: '1rem' }}
-            >
-              {isLoading ? (
-                <>
-                  <span className="btn-spinner"></span>
-                  Finishing...
-                </>
-              ) : (
-                <>
-                  <i className="fas fa-check"></i>
-                  Continue to Home Registry
-                </>
-              )}
-            </button>
-          </div>
           )}
         </div>
       </div>

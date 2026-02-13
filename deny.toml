@@ -26,12 +26,7 @@ unmaintained = "all"
 # Threshold for yanked crates
 yanked = "deny"
 # List of ignored advisories (add with reason if needed)
-ignore = [
-    # RUSTSEC-2026-0003: cmov advisory uses CVSS 4.0 which cargo-deny doesn't support yet
-    # TODO: Remove this when cargo-deny supports CVSS 4.0
-    # Last reviewed: 2026-02-13
-    "RUSTSEC-2026-0003",
-]
+ignore = []
 
 # ------------------------------------------------------------------------------
 # LICENSES - Ensure dependencies use acceptable licenses
@@ -47,12 +42,11 @@ unused-allowed-license = "warn"
 allow = [
     "MIT",                          # Most common Rust license (actix-web, tokio, serde, etc.)
     "Apache-2.0",                   # Common Rust license (often dual-licensed with MIT)
-    "Apache-2.0 WITH LLVM-exception", # Used by some compiler-related crates
     "BSD-2-Clause",                 # Permissive BSD license
     "BSD-3-Clause",                 # Permissive BSD license
     "ISC",                          # Similar to MIT, used by ring crate
     "Zlib",                         # Permissive license
-    "Unicode-DFS-2016",             # Unicode data files license
+    "Unicode-3.0",                  # Unicode license (used by unicode-ident, etc.)
 ]
 # Crates with non-standard but acceptable licenses
 exceptions = []
@@ -83,10 +77,8 @@ deny = [
 skip = []
 skip-tree = []
 
-# Build script configuration
-[bans.build]
-# Allow all crates to use build scripts
-allow-build-scripts = ["*"]
+# Build script configuration: omitting [bans.build] and allow-build-scripts
+# allows all crates to have build scripts by default
 
 # ------------------------------------------------------------------------------
 # SOURCES - Restrict where crates can be fetched from

@@ -67,21 +67,18 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
     }
   };
 
-  const handleInputChange = (field: keyof typeof form) => (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setForm(prev => ({ ...prev, [field]: e.target.value }));
-    if (errors[field]) {
-      setErrors(prev => {
-        const { [field]: _removed, ...next } = prev;
-        return next;
-      });
-    }
-  };
+  const handleInputChange =
+    (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      setForm((prev) => ({ ...prev, [field]: e.target.value }));
+      if (errors[field]) {
+        setErrors((prev) => {
+          const { [field]: _removed, ...next } = prev;
+          return next;
+        });
+      }
+    };
 
-  const hasChanges = user && (
-    form.full_name.trim() !== (user.full_name || '')
-  );
+  const hasChanges = user && form.full_name.trim() !== (user.full_name || '');
 
   return (
     <Modal
@@ -91,16 +88,16 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
       subtitle="Update your account information"
       footer={
         <div className="modal-actions">
-          <button 
-            type="button" 
-            className="btn btn-secondary" 
+          <button
+            type="button"
+            className="btn btn-secondary"
             onClick={onClose}
             disabled={isLoading}
           >
             Cancel
           </button>
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="btn btn-primary"
             form="edit-profile-form"
             disabled={isLoading || !hasChanges}
@@ -143,15 +140,15 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
             placeholder="Enter your display name"
             disabled={isLoading}
           />
-          {errors.full_name && (
-            <span className="form-error">{errors.full_name}</span>
-          )}
+          {errors.full_name && <span className="form-error">{errors.full_name}</span>}
         </div>
 
         <div className="form-group">
           <label>Account Status</label>
           <div className="account-info">
-            <span className={`status-badge ${user?.is_active ? 'status-active' : 'status-inactive'}`}>
+            <span
+              className={`status-badge ${user?.is_active ? 'status-active' : 'status-inactive'}`}
+            >
               <i className={`fas fa-${user?.is_active ? 'check-circle' : 'times-circle'}`}></i>
               {user?.is_active ? 'Active' : 'Inactive'}
             </span>
@@ -168,7 +165,10 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
           <label>Member Since</label>
           <input
             type="text"
-            value={formatDate(user?.created_at, (settings?.date_format ?? 'MM/DD/YYYY') as DateFormatType)}
+            value={formatDate(
+              user?.created_at,
+              (settings?.date_format ?? 'MM/DD/YYYY') as DateFormatType
+            )}
             disabled
             className="input-disabled"
           />

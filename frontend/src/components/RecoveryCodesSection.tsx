@@ -85,7 +85,9 @@ export function RecoveryCodesSection({ onCodesGenerated }: RecoveryCodesSectionP
   };
 
   const handleCopyAll = async () => {
-    if (!codes) {return;}
+    if (!codes) {
+      return;
+    }
     try {
       await navigator.clipboard.writeText(codes.join('\n'));
       showToast('Codes copied to clipboard!', 'success');
@@ -95,7 +97,9 @@ export function RecoveryCodesSection({ onCodesGenerated }: RecoveryCodesSectionP
   };
 
   const handleDownload = () => {
-    if (!codes) {return;}
+    if (!codes) {
+      return;
+    }
     const content = [
       'Home Registry - Recovery Codes',
       '================================',
@@ -121,18 +125,22 @@ export function RecoveryCodesSection({ onCodesGenerated }: RecoveryCodesSectionP
   };
 
   const handlePrint = () => {
-    if (!codes) {return;}
-    
+    if (!codes) {
+      return;
+    }
+
     const printWindow = window.open('', '_blank');
-    if (!printWindow) {return;}
-    
+    if (!printWindow) {
+      return;
+    }
+
     // Build document safely without using innerHTML
     const doc = printWindow.document;
     doc.open();
-    
+
     // Create safe HTML with escaped content - build from data, not DOM
-    const safeCodes = codes.map(code => `<div class="code">${escapeHtml(code)}</div>`).join('');
-    
+    const safeCodes = codes.map((code) => `<div class="code">${escapeHtml(code)}</div>`).join('');
+
     doc.write(`
       <html>
         <head>
@@ -178,42 +186,85 @@ export function RecoveryCodesSection({ onCodesGenerated }: RecoveryCodesSectionP
       {!codes && status && (
         <div className="recovery-codes-status" style={{ marginBottom: '1.5rem' }}>
           {status.has_codes ? (
-            <div className="status-card" style={{ 
-              padding: '1rem', 
-              background: status.codes_confirmed ? 'var(--success-bg, #d4edda)' : 'var(--warning-bg, #fff3cd)',
-              borderRadius: '8px',
-              border: `1px solid ${status.codes_confirmed ? 'var(--success-border, #c3e6cb)' : 'var(--warning-border, #ffeeba)'}`,
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                <i className={`fas ${status.codes_confirmed ? 'fa-check-circle' : 'fa-exclamation-triangle'}`} 
-                   style={{ color: status.codes_confirmed ? 'var(--success, #28a745)' : 'var(--warning, #ffc107)' }}></i>
-                <strong>{status.codes_confirmed ? 'Recovery codes active' : 'Recovery codes pending confirmation'}</strong>
+            <div
+              className="status-card"
+              style={{
+                padding: '1rem',
+                background: status.codes_confirmed
+                  ? 'var(--success-bg, #d4edda)'
+                  : 'var(--warning-bg, #fff3cd)',
+                borderRadius: '8px',
+                border: `1px solid ${status.codes_confirmed ? 'var(--success-border, #c3e6cb)' : 'var(--warning-border, #ffeeba)'}`,
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  marginBottom: '0.5rem',
+                }}
+              >
+                <i
+                  className={`fas ${status.codes_confirmed ? 'fa-check-circle' : 'fa-exclamation-triangle'}`}
+                  style={{
+                    color: status.codes_confirmed
+                      ? 'var(--success, #28a745)'
+                      : 'var(--warning, #ffc107)',
+                  }}
+                ></i>
+                <strong>
+                  {status.codes_confirmed
+                    ? 'Recovery codes active'
+                    : 'Recovery codes pending confirmation'}
+                </strong>
               </div>
               <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                You have <strong>{status.unused_count}</strong> unused recovery code{status.unused_count !== 1 ? 's' : ''}.
+                You have <strong>{status.unused_count}</strong> unused recovery code
+                {status.unused_count !== 1 ? 's' : ''}.
                 {status.generated_at && (
                   <span> Generated on {new Date(status.generated_at).toLocaleDateString()}.</span>
                 )}
               </p>
               {!status.codes_confirmed && (
-                <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem', color: 'var(--warning-dark, #856404)' }}>
+                <p
+                  style={{
+                    margin: '0.5rem 0 0',
+                    fontSize: '0.85rem',
+                    color: 'var(--warning-dark, #856404)',
+                  }}
+                >
                   ⚠️ Please generate new codes and confirm you've saved them.
                 </p>
               )}
             </div>
           ) : (
-            <div className="status-card" style={{ 
-              padding: '1rem', 
-              background: 'var(--danger-bg, #f8d7da)',
-              borderRadius: '8px',
-              border: '1px solid var(--danger-border, #f5c6cb)',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                <i className="fas fa-exclamation-circle" style={{ color: 'var(--danger, #dc3545)' }}></i>
+            <div
+              className="status-card"
+              style={{
+                padding: '1rem',
+                background: 'var(--danger-bg, #f8d7da)',
+                borderRadius: '8px',
+                border: '1px solid var(--danger-border, #f5c6cb)',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  marginBottom: '0.5rem',
+                }}
+              >
+                <i
+                  className="fas fa-exclamation-circle"
+                  style={{ color: 'var(--danger, #dc3545)' }}
+                ></i>
                 <strong>No recovery codes</strong>
               </div>
               <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                Generate recovery codes to ensure you can regain access to your account if you forget your password.
+                Generate recovery codes to ensure you can regain access to your account if you
+                forget your password.
               </p>
             </div>
           )}
@@ -222,8 +273,8 @@ export function RecoveryCodesSection({ onCodesGenerated }: RecoveryCodesSectionP
 
       {/* Generate button */}
       {!codes && (
-        <button 
-          className="btn btn-primary" 
+        <button
+          className="btn btn-primary"
           onClick={handleGenerate}
           disabled={generating}
           style={{ marginBottom: '1rem' }}
@@ -245,7 +296,7 @@ export function RecoveryCodesSection({ onCodesGenerated }: RecoveryCodesSectionP
       {/* Confirmation dialog for regenerating */}
       {showConfirmDialog && (
         <div className="modal-overlay" onClick={() => setShowConfirmDialog(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
             <div className="modal-header">
               <h3>Regenerate Recovery Codes?</h3>
               <button className="modal-close" onClick={() => setShowConfirmDialog(false)}>
@@ -278,33 +329,45 @@ export function RecoveryCodesSection({ onCodesGenerated }: RecoveryCodesSectionP
             <div>
               <strong>Save these codes now!</strong>
               <p style={{ margin: '0.5rem 0 0', fontSize: '0.9rem' }}>
-                You won't be able to see these codes again. Store them somewhere safe like a password manager.
+                You won't be able to see these codes again. Store them somewhere safe like a
+                password manager.
               </p>
             </div>
           </div>
 
-          <div ref={codesRef} className="codes-grid" style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: '0.5rem',
-            marginBottom: '1rem',
-          }}>
+          <div
+            ref={codesRef}
+            className="codes-grid"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, 1fr)',
+              gap: '0.5rem',
+              marginBottom: '1rem',
+            }}
+          >
             {codes.map((code, index) => (
-              <div key={index} className="code" style={{
-                fontFamily: 'monospace',
-                fontSize: '1rem',
-                padding: '0.75rem',
-                background: 'var(--surface-alt, #f8f9fa)',
-                borderRadius: '4px',
-                textAlign: 'center',
-                userSelect: 'all',
-              }}>
+              <div
+                key={index}
+                className="code"
+                style={{
+                  fontFamily: 'monospace',
+                  fontSize: '1rem',
+                  padding: '0.75rem',
+                  background: 'var(--surface-alt, #f8f9fa)',
+                  borderRadius: '4px',
+                  textAlign: 'center',
+                  userSelect: 'all',
+                }}
+              >
                 {code}
               </div>
             ))}
           </div>
 
-          <div className="codes-actions" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+          <div
+            className="codes-actions"
+            style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}
+          >
             <button className="btn btn-secondary btn-sm" onClick={handleCopyAll}>
               <i className="fas fa-copy"></i> Copy All
             </button>
@@ -316,23 +379,39 @@ export function RecoveryCodesSection({ onCodesGenerated }: RecoveryCodesSectionP
             </button>
           </div>
 
-          <div style={{ 
-            padding: '1rem', 
-            background: 'var(--surface-alt, #f8f9fa)', 
-            borderRadius: '8px',
-            border: '1px solid var(--border, #dee2e6)',
-          }}>
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', cursor: 'pointer' }}>
-              <input 
-                type="checkbox" 
+          <div
+            style={{
+              padding: '1rem',
+              background: 'var(--surface-alt, #f8f9fa)',
+              borderRadius: '8px',
+              border: '1px solid var(--border, #dee2e6)',
+            }}
+          >
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '0.75rem',
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
                 onChange={(e) => e.target.checked && handleConfirmSaved()}
                 disabled={confirming}
                 style={{ marginTop: '0.25rem' }}
               />
               <span>
                 <strong>I have saved these recovery codes</strong>
-                <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  I understand that I won't be able to see these codes again and that each code can only be used once.
+                <p
+                  style={{
+                    margin: '0.25rem 0 0',
+                    fontSize: '0.85rem',
+                    color: 'var(--text-secondary)',
+                  }}
+                >
+                  I understand that I won't be able to see these codes again and that each code can
+                  only be used once.
                 </p>
               </span>
             </label>

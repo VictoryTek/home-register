@@ -46,7 +46,7 @@
   gap: 0.5rem;
 }
 
-[data-theme="dark"] .page-title {
+[data-theme='dark'] .page-title {
   background: linear-gradient(135deg, #f8fafc, var(--accent-light));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;

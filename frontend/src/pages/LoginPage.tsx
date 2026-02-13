@@ -9,7 +9,7 @@ export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -17,18 +17,18 @@ export function LoginPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
     setError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.username.trim()) {
       setError('Please enter your username or email');
       return;
     }
-    
+
     if (!formData.password) {
       setError('Please enter your password');
       return;
@@ -38,13 +38,13 @@ export function LoginPage() {
     setError(null);
 
     const result = await login(formData.username, formData.password);
-    
+
     if (result.success) {
       navigate('/');
     } else {
       setError(result.error ?? 'Login failed. Please check your credentials.');
     }
-    
+
     setIsLoading(false);
   };
 
@@ -55,7 +55,7 @@ export function LoginPage() {
         <div className="auth-gradient-orb auth-gradient-orb-2"></div>
         <div className="auth-gradient-orb auth-gradient-orb-3"></div>
       </div>
-      
+
       <div className="auth-container">
         <div className="auth-card">
           <div className="auth-header">
@@ -133,9 +133,16 @@ export function LoginPage() {
           </form>
 
           <div className="auth-footer">
-            <p>Don't have an account? <Link to="/register" className="auth-link">Create one</Link></p>
+            <p>
+              Don't have an account?{' '}
+              <Link to="/register" className="auth-link">
+                Create one
+              </Link>
+            </p>
             <p style={{ marginTop: '0.5rem' }}>
-              <Link to="/recover" className="auth-link">Forgot your password?</Link>
+              <Link to="/recover" className="auth-link">
+                Forgot your password?
+              </Link>
             </p>
           </div>
         </div>

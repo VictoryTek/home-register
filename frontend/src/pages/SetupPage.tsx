@@ -12,7 +12,7 @@ export function SetupPage() {
   const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
   const [codesConfirmed, setCodesConfirmed] = useState(false);
   const codesRef = useRef<HTMLDivElement>(null);
-  
+
   const [formData, setFormData] = useState({
     username: '',
     full_name: '',
@@ -23,7 +23,7 @@ export function SetupPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
     setError(null);
   };
 
@@ -69,7 +69,7 @@ export function SetupPage() {
 
   const handleBack = () => {
     setError(null);
-    setStep(prev => Math.max(1, prev - 1));
+    setStep((prev) => Math.max(1, prev - 1));
   };
 
   const handleStep3Submit = async () => {
@@ -100,7 +100,7 @@ export function SetupPage() {
         // Store auth data
         localStorage.setItem('home_registry_token', result.data.token);
         localStorage.setItem('home_registry_user', JSON.stringify(result.data.user));
-        
+
         // Generate recovery codes
         const codesResponse = await authApi.generateRecoveryCodes();
         if (codesResponse.success && codesResponse.data) {
@@ -130,7 +130,7 @@ export function SetupPage() {
     try {
       setIsLoading(true);
       await authApi.confirmRecoveryCodes();
-      
+
       // Redirect to app
       navigate('/');
       window.location.reload();
@@ -144,7 +144,7 @@ export function SetupPage() {
     if (!recoveryCodes) {
       return;
     }
-    
+
     const content = `Home Registry Recovery Codes\n\nUsername: ${formData.username}\nGenerated: ${new Date().toLocaleString()}\n\nSave these codes in a secure location. Each code can only be used once.\n\n${recoveryCodes.join('\n')}\n`;
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -161,20 +161,22 @@ export function SetupPage() {
     if (!recoveryCodes) {
       return;
     }
-    
+
     const printWindow = window.open('', '', 'width=800,height=600');
     if (!printWindow) {
       return;
     }
-    
+
     // Build document safely without using document.write with user content
     const doc = printWindow.document;
     doc.open();
-    
+
     // Create safe HTML with escaped user content
     const safeUsername = escapeHtml(formData.username);
-    const safeCodes = recoveryCodes.map(code => `<div class="code">${escapeHtml(code)}</div>`).join('');
-    
+    const safeCodes = recoveryCodes
+      .map((code) => `<div class="code">${escapeHtml(code)}</div>`)
+      .join('');
+
     doc.write(`
       <html>
         <head>
@@ -213,7 +215,7 @@ export function SetupPage() {
     if (!recoveryCodes) {
       return;
     }
-    
+
     try {
       await navigator.clipboard.writeText(recoveryCodes.join('\n'));
     } catch {
@@ -228,211 +230,230 @@ export function SetupPage() {
         <div className="auth-gradient-orb auth-gradient-orb-2"></div>
         <div className="auth-gradient-orb auth-gradient-orb-3"></div>
       </div>
-      
+
       <div className="auth-container">
-      <div className={`auth-card setup-card ${step === 4 ? 'wide' : ''}`}>
-        <div className="auth-header">
-          <div className="auth-logo">
-            <img src="/logo_full.png" alt="Home Registry" className="auth-logo-img" />
+        <div className={`auth-card setup-card ${step === 4 ? 'wide' : ''}`}>
+          <div className="auth-header">
+            <div className="auth-logo">
+              <img src="/logo_full.png" alt="Home Registry" className="auth-logo-img" />
+            </div>
+            <p className="auth-subtitle">Welcome! Let's set up your account.</p>
           </div>
-          <p className="auth-subtitle">Welcome! Let's set up your account.</p>
-        </div>
 
-        {/* Progress indicator */}
-        <div className="setup-progress">
-          <div className={`progress-step ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}>
-            <div className="step-number">1</div>
-            <span>Account</span>
+          {/* Progress indicator */}
+          <div className="setup-progress">
+            <div
+              className={`progress-step ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}
+            >
+              <div className="step-number">1</div>
+              <span>Account</span>
+            </div>
+            <div className="progress-line"></div>
+            <div
+              className={`progress-step ${step >= 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''}`}
+            >
+              <div className="step-number">2</div>
+              <span>Security</span>
+            </div>
+            <div className="progress-line"></div>
+            <div
+              className={`progress-step ${step >= 3 ? 'active' : ''} ${step > 3 ? 'completed' : ''}`}
+            >
+              <div className="step-number">3</div>
+              <span>Inventory</span>
+            </div>
+            <div className="progress-line"></div>
+            <div className={`progress-step ${step >= 4 ? 'active' : ''}`}>
+              <div className="step-number">4</div>
+              <span>Recovery</span>
+            </div>
           </div>
-          <div className="progress-line"></div>
-          <div className={`progress-step ${step >= 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''}`}>
-            <div className="step-number">2</div>
-            <span>Security</span>
-          </div>
-          <div className="progress-line"></div>
-          <div className={`progress-step ${step >= 3 ? 'active' : ''} ${step > 3 ? 'completed' : ''}`}>
-            <div className="step-number">3</div>
-            <span>Inventory</span>
-          </div>
-          <div className="progress-line"></div>
-          <div className={`progress-step ${step >= 4 ? 'active' : ''}`}>
-            <div className="step-number">4</div>
-            <span>Recovery</span>
-          </div>
-        </div>
 
-        {error && (
-          <div className="auth-error">
-            <span className="error-icon">⚠️</span>
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit}>
-          {/* Step 1: Account Details */}
-          {step === 1 && (
-            <div className="auth-step">
-              <h2>Create Admin Account</h2>
-              <p className="step-description">This will be the administrator account for your Home Registry.</p>
-              
-              <div className="form-group">
-                <label htmlFor="full_name">Full Name</label>
-                <input
-                  type="text"
-                  id="full_name"
-                  name="full_name"
-                  value={formData.full_name}
-                  onChange={handleInputChange}
-                  placeholder="Enter your full name"
-                  autoFocus
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="username">Username</label>
-                <input
-                  type="text"
-                  id="username"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  placeholder="Enter username"
-                />
-              </div>
+          {error && (
+            <div className="auth-error">
+              <span className="error-icon">⚠️</span>
+              {error}
             </div>
           )}
 
-          {/* Step 2: Password */}
-          {step === 2 && (
-            <div className="auth-step">
-              <h2>Set Password</h2>
-              <p className="step-description">Choose a strong password to secure your account.</p>
-              
-              <div className="form-group">
-                <label htmlFor="password">Password</label>
-                <input
-                  type="password"
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  placeholder="Enter password (min 8 characters)"
-                  autoFocus
-                />
-              </div>
+          <form onSubmit={handleSubmit}>
+            {/* Step 1: Account Details */}
+            {step === 1 && (
+              <div className="auth-step">
+                <h2>Create Admin Account</h2>
+                <p className="step-description">
+                  This will be the administrator account for your Home Registry.
+                </p>
 
-              <div className="form-group">
-                <label htmlFor="confirmPassword">Confirm Password</label>
-                <input
-                  type="password"
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  placeholder="Confirm your password"
-                />
-              </div>
-            </div>
-          )}
+                <div className="form-group">
+                  <label htmlFor="full_name">Full Name</label>
+                  <input
+                    type="text"
+                    id="full_name"
+                    name="full_name"
+                    value={formData.full_name}
+                    onChange={handleInputChange}
+                    placeholder="Enter your full name"
+                    autoFocus
+                  />
+                </div>
 
-          {/* Step 3: First Inventory */}
-          {step === 3 && (
-            <div className="auth-step">
-              <h2>Create First Inventory</h2>
-              <p className="step-description">Optionally create your first inventory to get started.</p>
-              
-              <div className="form-group">
-                <label htmlFor="inventory_name">Inventory Name (Optional)</label>
-                <input
-                  type="text"
-                  id="inventory_name"
-                  name="inventory_name"
-                  value={formData.inventory_name}
-                  onChange={handleInputChange}
-                  placeholder="e.g., Home, Office, Garage"
-                  autoFocus
-                />
-                <p className="form-hint">You can skip this and create inventories later.</p>
-              </div>
-            </div>
-          )}
-
-          {/* Step 4: Recovery Codes */}
-          {step === 4 && recoveryCodes && (
-            <div className="auth-step">
-              <h2 style={{ marginBottom: '0.5rem' }}>Save Your Recovery Codes</h2>
-              <p className="step-description" style={{ marginBottom: '0.75rem', fontSize: '0.9rem' }}>
-                These codes can be used to recover your account if you forget your password. Each code can only be used once.
-              </p>
-              
-              <div className="recovery-codes-display" ref={codesRef}>
-                <div className="codes-grid">
-                  {recoveryCodes.map((code, index) => (
-                    <div key={index} className="code-item">
-                      {code}
-                    </div>
-                  ))}
+                <div className="form-group">
+                  <label htmlFor="username">Username</label>
+                  <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleInputChange}
+                    placeholder="Enter username"
+                  />
                 </div>
               </div>
+            )}
 
-              <div className="recovery-actions">
-                <button type="button" className="btn-secondary" onClick={downloadCodes}>
-                  📥 Download
-                </button>
-                <button type="button" className="btn-secondary" onClick={copyCodes}>
-                  📋 Copy All
-                </button>
-                <button type="button" className="btn-secondary" onClick={printCodes}>
-                  🖨️ Print
-                </button>
-              </div>
+            {/* Step 2: Password */}
+            {step === 2 && (
+              <div className="auth-step">
+                <h2>Set Password</h2>
+                <p className="step-description">Choose a strong password to secure your account.</p>
 
-              <div className="form-group" style={{ marginBottom: '0.75rem' }}>
-                <label className="checkbox-label">
+                <div className="form-group">
+                  <label htmlFor="password">Password</label>
                   <input
-                    type="checkbox"
-                    checked={codesConfirmed}
-                    onChange={(e) => setCodesConfirmed(e.target.checked)}
+                    type="password"
+                    id="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    placeholder="Enter password (min 8 characters)"
+                    autoFocus
                   />
-                  <span>I have saved these recovery codes in a secure location</span>
-                </label>
-              </div>
+                </div>
 
-              <div className="auth-warning">
-                <strong>⚠️ Important:</strong> You will not be able to see these codes again. 
-                Make sure to save them before continuing.
+                <div className="form-group">
+                  <label htmlFor="confirmPassword">Confirm Password</label>
+                  <input
+                    type="password"
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    placeholder="Confirm your password"
+                  />
+                </div>
               </div>
+            )}
+
+            {/* Step 3: First Inventory */}
+            {step === 3 && (
+              <div className="auth-step">
+                <h2>Create First Inventory</h2>
+                <p className="step-description">
+                  Optionally create your first inventory to get started.
+                </p>
+
+                <div className="form-group">
+                  <label htmlFor="inventory_name">Inventory Name (Optional)</label>
+                  <input
+                    type="text"
+                    id="inventory_name"
+                    name="inventory_name"
+                    value={formData.inventory_name}
+                    onChange={handleInputChange}
+                    placeholder="e.g., Home, Office, Garage"
+                    autoFocus
+                  />
+                  <p className="form-hint">You can skip this and create inventories later.</p>
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Recovery Codes */}
+            {step === 4 && recoveryCodes && (
+              <div className="auth-step">
+                <h2 style={{ marginBottom: '0.5rem' }}>Save Your Recovery Codes</h2>
+                <p
+                  className="step-description"
+                  style={{ marginBottom: '0.75rem', fontSize: '0.9rem' }}
+                >
+                  These codes can be used to recover your account if you forget your password. Each
+                  code can only be used once.
+                </p>
+
+                <div className="recovery-codes-display" ref={codesRef}>
+                  <div className="codes-grid">
+                    {recoveryCodes.map((code, index) => (
+                      <div key={index} className="code-item">
+                        {code}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="recovery-actions">
+                  <button type="button" className="btn-secondary" onClick={downloadCodes}>
+                    📥 Download
+                  </button>
+                  <button type="button" className="btn-secondary" onClick={copyCodes}>
+                    📋 Copy All
+                  </button>
+                  <button type="button" className="btn-secondary" onClick={printCodes}>
+                    🖨️ Print
+                  </button>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={codesConfirmed}
+                      onChange={(e) => setCodesConfirmed(e.target.checked)}
+                    />
+                    <span>I have saved these recovery codes in a secure location</span>
+                  </label>
+                </div>
+
+                <div className="auth-warning">
+                  <strong>⚠️ Important:</strong> You will not be able to see these codes again. Make
+                  sure to save them before continuing.
+                </div>
+              </div>
+            )}
+
+            <div className="auth-actions">
+              {step > 1 && step < 4 && (
+                <button type="button" className="btn-secondary" onClick={handleBack}>
+                  Back
+                </button>
+              )}
+
+              {step < 3 ? (
+                <button type="button" className="btn-primary" onClick={handleNext}>
+                  Next
+                </button>
+              ) : step === 3 ? (
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={handleStep3Submit}
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Creating Account...' : 'Complete Setup'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={handleCompleteSetup}
+                  disabled={isLoading || !codesConfirmed}
+                >
+                  {isLoading ? 'Finishing...' : 'Finish Setup'}
+                </button>
+              )}
             </div>
-          )}
-
-          <div className="auth-actions">
-            {step > 1 && step < 4 && (
-              <button type="button" className="btn-secondary" onClick={handleBack}>
-                Back
-              </button>
-            )}
-            
-            {step < 3 ? (
-              <button type="button" className="btn-primary" onClick={handleNext}>
-                Next
-              </button>
-            ) : step === 3 ? (
-              <button type="button" className="btn-primary" onClick={handleStep3Submit} disabled={isLoading}>
-                {isLoading ? 'Creating Account...' : 'Complete Setup'}
-              </button>
-            ) : (
-              <button 
-                type="button" 
-                className="btn-primary" 
-                onClick={handleCompleteSetup}
-                disabled={isLoading || !codesConfirmed}
-              >
-                {isLoading ? 'Finishing...' : 'Finish Setup'}
-              </button>
-            )}
-          </div>
-        </form>
-      </div>
+          </form>
+        </div>
       </div>
     </div>
   );

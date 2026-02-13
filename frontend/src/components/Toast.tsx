@@ -34,7 +34,7 @@ function ToastItem({ id, message, type, index, onRemove }: ToastItemProps) {
   useEffect(() => {
     // Trigger animation
     setTimeout(() => setVisible(true), 100);
-    
+
     // Auto remove
     const timeout = setTimeout(() => {
       setVisible(false);

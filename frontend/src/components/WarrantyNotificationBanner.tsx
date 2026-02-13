@@ -14,35 +14,44 @@ export function WarrantyNotificationBanner() {
   }
 
   // Group by status
-  const expired = warrantyNotifications.filter(n => n.status === 'expired');
-  const expiringSoon = warrantyNotifications.filter(n => n.status === 'expiring-soon');
-  const expiringThisMonth = warrantyNotifications.filter(n => n.status === 'expiring-this-month');
+  const expired = warrantyNotifications.filter((n) => n.status === 'expired');
+  const expiringSoon = warrantyNotifications.filter((n) => n.status === 'expiring-soon');
+  const expiringThisMonth = warrantyNotifications.filter((n) => n.status === 'expiring-this-month');
 
-  const handleNotificationClick = (notification: typeof warrantyNotifications[0]) => {
+  const handleNotificationClick = (notification: (typeof warrantyNotifications)[0]) => {
     navigate(`/inventory/${notification.inventoryId}`);
   };
 
   return (
-    <div style={{
-      background: 'var(--bg-secondary)',
-      borderRadius: 'var(--radius-lg)',
-      padding: '1.25rem',
-      marginBottom: '1.5rem',
-      border: '1px solid var(--border-color)',
-    }}>
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.75rem',
-        marginBottom: '1rem',
-      }}>
-        <i className="fas fa-bell" style={{ color: 'var(--warning-color)', fontSize: '1.25rem' }}></i>
-        <h3 style={{
-          margin: 0,
-          fontSize: '1.125rem',
-          fontWeight: 600,
-          color: 'var(--text-primary)',
-        }}>
+    <div
+      style={{
+        background: 'var(--bg-secondary)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '1.25rem',
+        marginBottom: '1.5rem',
+        border: '1px solid var(--border-color)',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          marginBottom: '1rem',
+        }}
+      >
+        <i
+          className="fas fa-bell"
+          style={{ color: 'var(--warning-color)', fontSize: '1.25rem' }}
+        ></i>
+        <h3
+          style={{
+            margin: 0,
+            fontSize: '1.125rem',
+            fontWeight: 600,
+            color: 'var(--text-primary)',
+          }}
+        >
           Warranty Notifications ({warrantyNotifications.length})
         </h3>
       </div>
@@ -50,12 +59,14 @@ export function WarrantyNotificationBanner() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
         {expired.length > 0 && (
           <div>
-            <div style={{
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              color: 'var(--danger-color)',
-              marginBottom: '0.5rem',
-            }}>
+            <div
+              style={{
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                color: 'var(--danger-color)',
+                marginBottom: '0.5rem',
+              }}
+            >
               <i className="fas fa-exclamation-circle"></i> Expired Warranties ({expired.length})
             </div>
             {expired.slice(0, 3).map((notification) => (
@@ -86,7 +97,13 @@ export function WarrantyNotificationBanner() {
               </div>
             ))}
             {expired.length > 3 && (
-              <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginLeft: '0.75rem' }}>
+              <div
+                style={{
+                  fontSize: '0.8125rem',
+                  color: 'var(--text-secondary)',
+                  marginLeft: '0.75rem',
+                }}
+              >
                 +{expired.length - 3} more expired
               </div>
             )}
@@ -95,12 +112,14 @@ export function WarrantyNotificationBanner() {
 
         {expiringSoon.length > 0 && (
           <div>
-            <div style={{
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              color: 'var(--warning-color)',
-              marginBottom: '0.5rem',
-            }}>
+            <div
+              style={{
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                color: 'var(--warning-color)',
+                marginBottom: '0.5rem',
+              }}
+            >
               <i className="fas fa-exclamation-triangle"></i> Expiring Soon ({expiringSoon.length})
             </div>
             {expiringSoon.slice(0, 3).map((notification) => (
@@ -131,7 +150,13 @@ export function WarrantyNotificationBanner() {
               </div>
             ))}
             {expiringSoon.length > 3 && (
-              <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginLeft: '0.75rem' }}>
+              <div
+                style={{
+                  fontSize: '0.8125rem',
+                  color: 'var(--text-secondary)',
+                  marginLeft: '0.75rem',
+                }}
+              >
                 +{expiringSoon.length - 3} more expiring soon
               </div>
             )}
@@ -140,13 +165,16 @@ export function WarrantyNotificationBanner() {
 
         {expiringThisMonth.length > 0 && expired.length === 0 && expiringSoon.length === 0 && (
           <div>
-            <div style={{
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              color: 'var(--info-color)',
-              marginBottom: '0.5rem',
-            }}>
-              <i className="fas fa-info-circle"></i> Expiring This Month ({expiringThisMonth.length})
+            <div
+              style={{
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                color: 'var(--info-color)',
+                marginBottom: '0.5rem',
+              }}
+            >
+              <i className="fas fa-info-circle"></i> Expiring This Month ({expiringThisMonth.length}
+              )
             </div>
             {expiringThisMonth.slice(0, 3).map((notification) => (
               <div
@@ -176,7 +204,13 @@ export function WarrantyNotificationBanner() {
               </div>
             ))}
             {expiringThisMonth.length > 3 && (
-              <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginLeft: '0.75rem' }}>
+              <div
+                style={{
+                  fontSize: '0.8125rem',
+                  color: 'var(--text-secondary)',
+                  marginLeft: '0.75rem',
+                }}
+              >
                 +{expiringThisMonth.length - 3} more expiring this month
               </div>
             )}

@@ -17,7 +17,7 @@ export function ConfirmModal({
   message,
   confirmText = 'Confirm',
   confirmButtonClass = 'btn-danger',
-  icon = 'fas fa-exclamation-triangle'
+  icon = 'fas fa-exclamation-triangle',
 }: ConfirmModalProps) {
   if (!isOpen) {
     return null;
@@ -30,8 +30,8 @@ export function ConfirmModal({
 
   return (
     <div className="modal-overlay active" onClick={onClose}>
-      <div 
-        className="modal-content" 
+      <div
+        className="modal-content"
         style={{ maxWidth: '400px' }}
         onClick={(e) => e.stopPropagation()}
       >

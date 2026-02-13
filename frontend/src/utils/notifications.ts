@@ -41,7 +41,7 @@ export function checkWarrantyNotifications(
 
     // Determine status based on days until expiry
     let status: WarrantyNotification['status'];
-    
+
     if (diffDays < 0) {
       status = 'expired';
     } else if (diffDays <= 7) {
@@ -64,8 +64,12 @@ export function checkWarrantyNotifications(
 
   // Sort by urgency: expired first, then by days until expiry
   return notifications.sort((a, b) => {
-    if (a.status === 'expired' && b.status !== 'expired') {return -1;}
-    if (a.status !== 'expired' && b.status === 'expired') {return 1;}
+    if (a.status === 'expired' && b.status !== 'expired') {
+      return -1;
+    }
+    if (a.status !== 'expired' && b.status === 'expired') {
+      return 1;
+    }
     return a.daysUntilExpiry - b.daysUntilExpiry;
   });
 }

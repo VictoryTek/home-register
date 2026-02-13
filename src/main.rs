@@ -16,7 +16,7 @@ use actix_web::{
     middleware::{DefaultHeaders, Logger},
     web, App, HttpResponse, HttpServer, Responder,
 };
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use std::{env, time::Duration};
 
 // Use the library crate
@@ -105,8 +105,7 @@ async fn main() -> std::io::Result<()> {
             // Extract the key before entering the async block to avoid lifetime issues
             let key = req
                 .peer_addr()
-                .map(|addr| addr.ip().to_string())
-                .unwrap_or_else(|| "unknown".to_string());
+                .map_or_else(|| "unknown".to_string(), |addr| addr.ip().to_string());
             async move {
                 Ok(SimpleInput {
                     interval: Duration::from_millis(1000 / rps),

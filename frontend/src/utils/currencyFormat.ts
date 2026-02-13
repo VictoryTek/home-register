@@ -26,14 +26,17 @@ const CURRENCY_CONFIGS: Record<CurrencyType, CurrencyConfig> = {
  * @param currency - Currency code (USD, EUR, etc.)
  * @returns Formatted currency string
  */
-export function formatCurrency(amount: number | undefined | null, currency: CurrencyType = 'USD'): string {
+export function formatCurrency(
+  amount: number | undefined | null,
+  currency: CurrencyType = 'USD'
+): string {
   if (amount === undefined || amount === null) {
     return '';
   }
-  
+
   const config = CURRENCY_CONFIGS[currency];
   const formattedAmount = amount.toFixed(config.decimals);
-  
+
   if (config.position === 'before') {
     return `${config.symbol}${formattedAmount}`;
   } else {

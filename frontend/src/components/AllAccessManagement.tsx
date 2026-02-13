@@ -106,13 +106,15 @@ export function AllAccessManagement() {
         <div className="settings-section">
           <h2 className="section-title">All Access Grants</h2>
           <p className="section-description">
-            Grant users full access to <strong>all your inventories</strong> - they can view, edit, delete, and manage
-            sharing as if they own them.
+            Grant users full access to <strong>all your inventories</strong> - they can view, edit,
+            delete, and manage sharing as if they own them.
           </p>
 
           {/* Grant Access Section */}
           <div style={{ marginBottom: '2rem' }}>
-            <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Users I've Granted Access To</h3>
+            <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>
+              Users I've Granted Access To
+            </h3>
             {!showAddForm ? (
               <button
                 className="btn btn-primary"
@@ -134,7 +136,10 @@ export function AllAccessManagement() {
                     >
                       <option value="">Select a user...</option>
                       {users
-                        .filter(user => !grantsGiven.some(grant => grant.grantee.username === user.username))
+                        .filter(
+                          (user) =>
+                            !grantsGiven.some((grant) => grant.grantee.username === user.username)
+                        )
                         .map((user) => (
                           <option key={user.id} value={user.username}>
                             {user.full_name} (@{user.username})
@@ -150,7 +155,13 @@ export function AllAccessManagement() {
                       placeholder="Enter username..."
                     />
                   )}
-                  <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+                  <p
+                    style={{
+                      fontSize: '0.875rem',
+                      color: 'var(--text-secondary)',
+                      marginTop: '0.5rem',
+                    }}
+                  >
                     This user will have full access to all your current and future inventories.
                   </p>
                 </div>
@@ -166,7 +177,9 @@ export function AllAccessManagement() {
             )}
 
             {loading ? (
-              <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>Loading...</p>
+              <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
+                Loading...
+              </p>
             ) : grantsGiven.length === 0 ? (
               <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
                 You haven't granted All Access to anyone yet.
@@ -191,7 +204,13 @@ export function AllAccessManagement() {
                       <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                         @{grant.grantee.username}
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+                      <div
+                        style={{
+                          fontSize: '0.75rem',
+                          color: 'var(--text-secondary)',
+                          marginTop: '0.5rem',
+                        }}
+                      >
                         Granted on {new Date(grant.created_at).toLocaleDateString()}
                       </div>
                     </div>
@@ -210,9 +229,13 @@ export function AllAccessManagement() {
 
           {/* Received Access Section */}
           <div>
-            <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Users Who've Granted Me Access</h3>
+            <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>
+              Users Who've Granted Me Access
+            </h3>
             {loading ? (
-              <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>Loading...</p>
+              <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
+                Loading...
+              </p>
             ) : grantsReceived.length === 0 ? (
               <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
                 No one has granted you All Access to their inventories.
@@ -237,7 +260,13 @@ export function AllAccessManagement() {
                       <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                         @{grant.grantor.username}
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+                      <div
+                        style={{
+                          fontSize: '0.75rem',
+                          color: 'var(--text-secondary)',
+                          marginTop: '0.5rem',
+                        }}
+                      >
                         Granted on {new Date(grant.created_at).toLocaleDateString()}
                       </div>
                     </div>
@@ -269,8 +298,9 @@ export function AllAccessManagement() {
             }}
           >
             <p style={{ fontSize: '0.875rem', color: 'var(--text-primary)', margin: 0 }}>
-              <strong>⚠️ Important:</strong> Users with All Access can do everything you can do with your inventories,
-              including deleting them and managing shares. Only grant this to people you fully trust.
+              <strong>⚠️ Important:</strong> Users with All Access can do everything you can do with
+              your inventories, including deleting them and managing shares. Only grant this to
+              people you fully trust.
             </p>
           </div>
         </div>

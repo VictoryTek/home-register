@@ -11,7 +11,15 @@ interface ModalProps {
   maxWidth?: string;
 }
 
-export function Modal({ isOpen, onClose, title, subtitle, children, footer, maxWidth = '500px' }: ModalProps) {
+export function Modal({
+  isOpen,
+  onClose,
+  title,
+  subtitle,
+  children,
+  footer,
+  maxWidth = '500px',
+}: ModalProps) {
   // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
@@ -23,27 +31,19 @@ export function Modal({ isOpen, onClose, title, subtitle, children, footer, maxW
     return undefined;
   }, [isOpen]);
 
-  if (!isOpen) {return null;}
+  if (!isOpen) {
+    return null;
+  }
 
   const modalContent = (
     <div className="modal-overlay active" onClick={onClose}>
-      <div 
-        className="modal-content" 
-        style={{ maxWidth }}
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="modal-content" style={{ maxWidth }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2 className="modal-title">{title}</h2>
           {subtitle && <p className="modal-subtitle">{subtitle}</p>}
         </div>
-        <div className="modal-body">
-          {children}
-        </div>
-        {footer && (
-          <div className="modal-footer">
-            {footer}
-          </div>
-        )}
+        <div className="modal-body">{children}</div>
+        {footer && <div className="modal-footer">{footer}</div>}
       </div>
     </div>
   );

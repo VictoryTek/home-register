@@ -8,7 +8,7 @@ import globals from 'globals';
 export default tseslint.config(
   {
     // Global ignores
-    ignores: ['dist/**', 'node_modules/**', '*.config.js', '*.config.ts', '*.config.mjs'],
+    ignores: ['dist/**', 'node_modules/**', '*.config.js', '*.config.ts', '*.config.mjs', 'sync-dist.js'],
   },
   eslint.configs.recommended,
   ...tseslint.configs.strictTypeChecked,

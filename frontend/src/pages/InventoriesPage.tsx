@@ -1,6 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Header, LoadingState, EmptyState, Modal, ConfirmModal, WarrantyNotificationBanner } from '@/components';
+import {
+  Header,
+  LoadingState,
+  EmptyState,
+  Modal,
+  ConfirmModal,
+  WarrantyNotificationBanner,
+} from '@/components';
 import { inventoryApi } from '@/services/api';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
@@ -18,11 +25,11 @@ export function InventoriesPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editingInventory, setEditingInventory] = useState<Inventory | null>(null);
   const [deletingInventory, setDeletingInventory] = useState<Inventory | null>(null);
-  const [formData, setFormData] = useState({ 
-    name: '', 
-    description: '', 
-    location: '', 
-    image_url: '' 
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    location: '',
+    image_url: '',
   });
   const [imageOption, setImageOption] = useState<'upload' | 'url'>('url');
   const [imagePreview, setImagePreview] = useState<string>('');
@@ -39,25 +46,29 @@ export function InventoriesPage() {
       const result = await inventoryApi.getAll();
       if (result.success && result.data) {
         setInventories(result.data);
-        
+
         // Load item counts and all items for notification checking
         const counts: Record<number, number> = {};
         const allItems: Item[] = [];
-        
+
         // Parallelize API calls instead of sequential loop to reduce rate limit pressure
-        const itemsPromises = result.data.map(inv => 
+        const itemsPromises = result.data.map((inv) =>
           inv.id ? inventoryApi.getItems(inv.id) : Promise.resolve({ success: false, data: null })
         );
-        
+
         const itemsResults = await Promise.all(itemsPromises);
-        
+
         // Explicit null check to satisfy TypeScript type narrowing in forEach callback
         itemsResults.forEach((itemsResult, index) => {
-          if (!result.data) return; // Type guard: ensure result.data exists
-          
+          if (!result.data) {
+            return; // Type guard: ensure result.data exists
+          }
+
           const inv = result.data[index];
-          if (!inv?.id) return; // Type guard: ensure inv and inv.id exist
-          
+          if (!inv?.id) {
+            return; // Type guard: ensure inv and inv.id exist
+          }
+
           if (itemsResult.success && itemsResult.data) {
             counts[inv.id] = itemsResult.data.length;
             allItems.push(...itemsResult.data);
@@ -65,7 +76,7 @@ export function InventoriesPage() {
             counts[inv.id] = 0;
           }
         });
-        
+
         setItemCounts(counts);
         setItems(allItems); // Update global items state for notifications
       } else {
@@ -76,6 +87,7 @@ export function InventoriesPage() {
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty deps - all functions used are stable
 
   useEffect(() => {
@@ -84,9 +96,14 @@ export function InventoriesPage() {
 
   // Auto-navigate to default inventory if set
   useEffect(() => {
-    if (!loading && !hasAutoNavigated.current && settings?.default_inventory_id && inventories.length > 0) {
+    if (
+      !loading &&
+      !hasAutoNavigated.current &&
+      settings?.default_inventory_id &&
+      inventories.length > 0
+    ) {
       // Check if the default inventory exists
-      const defaultInventory = inventories.find(inv => inv.id === settings.default_inventory_id);
+      const defaultInventory = inventories.find((inv) => inv.id === settings.default_inventory_id);
       if (defaultInventory) {
         hasAutoNavigated.current = true;
         navigate(`/inventory/${settings.default_inventory_id}`);
@@ -165,7 +182,7 @@ export function InventoriesPage() {
       name: inventory.name,
       description: inventory.description ?? '',
       location: inventory.location ?? '',
-      image_url: inventory.image_url ?? ''
+      image_url: inventory.image_url ?? '',
     });
     setImagePreview(inventory.image_url ?? '');
     setImageOption(inventory.image_url?.startsWith('data:') ? 'upload' : 'url');
@@ -211,20 +228,21 @@ export function InventoriesPage() {
         subtitle="Manage and organize your inventory collections"
         icon="fas fa-warehouse"
       />
-      
+
       <div className="content">
         <div className="inventories-container">
           <WarrantyNotificationBanner />
-          
+
           <div className="page-actions">
             <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
               <i className="fas fa-plus"></i>
               Create Inventory
             </button>
             {settings?.default_inventory_id && (
-              <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginLeft: '1rem' }}>
-                <i className="fas fa-info-circle"></i>
-                {' '}Default inventory is set to auto-open
+              <span
+                style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginLeft: '1rem' }}
+              >
+                <i className="fas fa-info-circle"></i> Default inventory is set to auto-open
               </span>
             )}
           </div>
@@ -248,26 +266,29 @@ export function InventoriesPage() {
                   <div className="inventory-card-header">
                     <div className="inventory-card-image">
                       {inventory.image_url ? (
-                        <img 
-                          src={inventory.image_url} 
+                        <img
+                          src={inventory.image_url}
                           alt={inventory.name}
                           style={{
                             width: '100%',
                             height: '100%',
-                            objectFit: 'cover'
+                            objectFit: 'cover',
                           }}
                         />
                       ) : (
-                        <div style={{
-                          width: '100%',
-                          height: '100%',
-                          background: 'linear-gradient(135deg, var(--accent-color), var(--accent-light))',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: 'white',
-                          fontSize: '2.5rem'
-                        }}>
+                        <div
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            background:
+                              'linear-gradient(135deg, var(--accent-color), var(--accent-light))',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
+                            fontSize: '2.5rem',
+                          }}
+                        >
                           <i className="fas fa-warehouse"></i>
                         </div>
                       )}
@@ -339,7 +360,9 @@ export function InventoriesPage() {
         }
       >
         <div className="form-group">
-          <label className="form-label" htmlFor="inventory-name">Inventory Name *</label>
+          <label className="form-label" htmlFor="inventory-name">
+            Inventory Name *
+          </label>
           <input
             type="text"
             className="form-input"
@@ -350,7 +373,9 @@ export function InventoriesPage() {
           />
         </div>
         <div className="form-group">
-          <label className="form-label" htmlFor="inventory-description">Description</label>
+          <label className="form-label" htmlFor="inventory-description">
+            Description
+          </label>
           <textarea
             className="form-input"
             id="inventory-description"
@@ -361,7 +386,9 @@ export function InventoriesPage() {
           />
         </div>
         <div className="form-group">
-          <label className="form-label" htmlFor="inventory-location">Location</label>
+          <label className="form-label" htmlFor="inventory-location">
+            Location
+          </label>
           <input
             type="text"
             className="form-input"
@@ -390,7 +417,7 @@ export function InventoriesPage() {
               Upload Image
             </button>
           </div>
-          
+
           {imageOption === 'url' ? (
             <input
               type="text"
@@ -400,7 +427,7 @@ export function InventoriesPage() {
               onChange={(e) => handleImageUrlChange(e.target.value)}
             />
           ) : (
-            <div 
+            <div
               className="image-upload-container"
               onClick={() => document.getElementById('inventory-image-input')?.click()}
               style={{ cursor: 'pointer' }}
@@ -414,14 +441,14 @@ export function InventoriesPage() {
               />
               <div className="image-preview">
                 {imagePreview ? (
-                  <img 
-                    src={imagePreview} 
+                  <img
+                    src={imagePreview}
                     alt="Preview"
-                    style={{ 
-                      maxWidth: '100%', 
-                      maxHeight: '120px', 
+                    style={{
+                      maxWidth: '100%',
+                      maxHeight: '120px',
                       borderRadius: 'var(--radius-md)',
-                      objectFit: 'cover'
+                      objectFit: 'cover',
                     }}
                   />
                 ) : (
@@ -433,7 +460,7 @@ export function InventoriesPage() {
               </div>
             </div>
           )}
-          
+
           {imagePreview && (
             <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
               <button
@@ -454,12 +481,21 @@ export function InventoriesPage() {
       {/* Edit Inventory Modal */}
       <Modal
         isOpen={showEditModal}
-        onClose={() => { setShowEditModal(false); resetForm(); }}
+        onClose={() => {
+          setShowEditModal(false);
+          resetForm();
+        }}
         title="Edit Inventory"
         subtitle="Update your inventory information"
         footer={
           <>
-            <button className="btn btn-secondary" onClick={() => { setShowEditModal(false); resetForm(); }}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => {
+                setShowEditModal(false);
+                resetForm();
+              }}
+            >
               Cancel
             </button>
             <button className="btn btn-primary" onClick={handleEditInventory}>
@@ -470,7 +506,9 @@ export function InventoriesPage() {
         }
       >
         <div className="form-group">
-          <label className="form-label" htmlFor="edit-inventory-name">Inventory Name *</label>
+          <label className="form-label" htmlFor="edit-inventory-name">
+            Inventory Name *
+          </label>
           <input
             type="text"
             className="form-input"
@@ -481,7 +519,9 @@ export function InventoriesPage() {
           />
         </div>
         <div className="form-group">
-          <label className="form-label" htmlFor="edit-inventory-description">Description</label>
+          <label className="form-label" htmlFor="edit-inventory-description">
+            Description
+          </label>
           <textarea
             className="form-input"
             id="edit-inventory-description"
@@ -492,7 +532,9 @@ export function InventoriesPage() {
           />
         </div>
         <div className="form-group">
-          <label className="form-label" htmlFor="edit-inventory-location">Location</label>
+          <label className="form-label" htmlFor="edit-inventory-location">
+            Location
+          </label>
           <input
             type="text"
             className="form-input"
@@ -521,7 +563,7 @@ export function InventoriesPage() {
               Upload Image
             </button>
           </div>
-          
+
           {imageOption === 'url' ? (
             <input
               type="text"
@@ -531,7 +573,7 @@ export function InventoriesPage() {
               onChange={(e) => handleImageUrlChange(e.target.value)}
             />
           ) : (
-            <div 
+            <div
               className="image-upload-container"
               onClick={() => document.getElementById('edit-inventory-image-input')?.click()}
               style={{ cursor: 'pointer' }}
@@ -545,14 +587,14 @@ export function InventoriesPage() {
               />
               <div className="image-preview">
                 {imagePreview ? (
-                  <img 
-                    src={imagePreview} 
+                  <img
+                    src={imagePreview}
                     alt="Preview"
-                    style={{ 
-                      maxWidth: '100%', 
-                      maxHeight: '120px', 
+                    style={{
+                      maxWidth: '100%',
+                      maxHeight: '120px',
                       borderRadius: 'var(--radius-md)',
-                      objectFit: 'cover'
+                      objectFit: 'cover',
                     }}
                   />
                 ) : (
@@ -564,7 +606,7 @@ export function InventoriesPage() {
               </div>
             </div>
           )}
-          
+
           {imagePreview && (
             <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
               <button
@@ -585,7 +627,10 @@ export function InventoriesPage() {
       {/* Delete Confirmation Modal */}
       <ConfirmModal
         isOpen={showDeleteModal}
-        onClose={() => { setShowDeleteModal(false); setDeletingInventory(null); }}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setDeletingInventory(null);
+        }}
         onConfirm={handleDeleteInventory}
         title="Delete Inventory"
         message={`Are you sure you want to delete "${deletingInventory?.name}"? This action cannot be undone.`}
