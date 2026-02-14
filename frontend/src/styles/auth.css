@@ -62,15 +62,13 @@
 
 /* Card */
 .auth-card {
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(20px);
-  border: 2px solid #f97316;
-  border-radius: 24px;
-  padding: 2.5rem;
-  box-shadow:
-    0 25px 50px -12px rgba(0, 0, 0, 0.5),
-    0 0 20px rgba(249, 115, 22, 0.3),
-    0 0 0 1px rgba(249, 115, 22, 0.2) inset;
+    background: rgba(255, 255, 255, 0.02);
+    -webkit-backdrop-filter: blur(12px) saturate(160%);
+    backdrop-filter: blur(75px) saturate(98%);
+    border-radius: 70px;
+    padding: 3.2em;
+    border: 2.5px solid rgba(255, 255, 255, 0.07);
+    box-shadow: 0 40px 25px rgba(0, 0, 0, 0.22);
 }
 
 .auth-card-register {

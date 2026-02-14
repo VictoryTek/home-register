@@ -192,7 +192,7 @@ async fn main() -> std::io::Result<()> {
             }))
             .route("/workbox-{filename:.*}.js", web::get().to(|path: web::Path<String>| async move {
                 let filename = path.into_inner();
-                fs::NamedFile::open_async(format!("static/workbox-{filename}")).await
+                fs::NamedFile::open_async(format!("static/workbox-{filename}.js")).await
             }))
             // Catch-all for SPA client-side routing - serve index.html for everything else
             // This comes last so API and static routes are handled first

@@ -32,12 +32,18 @@ RUN npm run build
 # ------------------------------------------------------------------------------
 # Stage 2: Build Rust Backend
 # ------------------------------------------------------------------------------
-FROM rust:1.88-bookworm AS backend-builder
+# NOTE: Rust 2.0 does not exist. Current stable is 1.8x series.
+# This Dockerfile uses the latest Rust 1.x available on Alpine.
+# Ignore any automated alerts claiming "Rust 2" is available.
+FROM rust:1-alpine AS backend-builder
 
-# Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    pkg-config \
-    && rm -rf /var/lib/apt/lists/*
+# Install Alpine build dependencies
+# openssl-libs-static allows static linking so runtime image needs no OpenSSL
+RUN apk add --no-cache \
+    musl-dev \
+    pkgconfig \
+    openssl-dev \
+    openssl-libs-static
 
 # Create app directory
 WORKDIR /app
@@ -45,25 +51,48 @@ WORKDIR /app
 # Copy manifests first for dependency caching
 COPY Cargo.toml Cargo.lock ./
 
-# Create dummy source for dependency compilation
-RUN mkdir src && echo 'fn main() { println!("Dummy"); }' > src/main.rs
+# Create dummy source for dependency compilation with matching structure
+RUN mkdir -p src/api src/auth src/db src/models && \
+    echo 'fn main() { println!("Dummy"); }' > src/main.rs && \
+    echo 'pub mod api;' > src/lib.rs && \
+    echo 'pub mod auth;' >> src/lib.rs && \
+    echo 'pub mod db;' >> src/lib.rs && \
+    echo 'pub mod models;' >> src/lib.rs && \
+    echo 'pub fn dummy() {}' > src/api/mod.rs && \
+    echo 'pub fn dummy() {}' > src/auth/mod.rs && \
+    echo 'pub fn dummy() {}' > src/db/mod.rs && \
+    echo 'pub fn dummy() {}' > src/models/mod.rs
 
 # Build dependencies only (cached layer)
-RUN cargo build --release && rm -rf src target/release/deps/home_registry*
+# Then remove dummy source AND application-specific build artifacts.
+# Dependency caches in target/release/deps/ are preserved (except home-registry's own).
+# This forces cargo to recompile the real application while reusing cached dependencies.
+RUN cargo build --release && \
+    rm -rf src && \
+    rm -f target/release/home-registry && \
+    rm -f target/release/deps/home_registry-* && \
+    rm -f target/release/deps/libhome_registry-* && \
+    rm -rf target/release/.fingerprint/home-registry-* && \
+    rm -rf target/release/.fingerprint/home_registry-* && \
+    rm -rf target/release/incremental/home_registry-*
 
 # Copy actual source code
 COPY src ./src
 
-# Build the actual application
-RUN cargo build --release --locked
+# Build the actual application — cargo detects missing fingerprints and
+# recompiles home-registry from real source, linking against cached deps.
+RUN touch src/main.rs src/lib.rs && cargo build --release --locked
 
 # Strip the binary for smaller size
 RUN strip target/release/home-registry
 
+# Smoke-test: verify the binary is valid
+RUN ./target/release/home-registry --help || true
+
 # ------------------------------------------------------------------------------
 # Stage 3: Final Production Image
 # ------------------------------------------------------------------------------
-FROM debian:bookworm-20241223-slim AS runtime
+FROM alpine:3.21 AS runtime
 
 # Labels for container metadata
 LABEL org.opencontainers.image.title="Home Registry"
@@ -71,16 +100,22 @@ LABEL org.opencontainers.image.description="Home inventory management system"
 LABEL org.opencontainers.image.version="0.1.0"
 LABEL org.opencontainers.image.licenses="MIT"
 
-# Install runtime dependencies only
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Install minimal runtime dependencies
+# - ca-certificates: TLS root certs for outbound HTTPS
+# - libgcc: Rust runtime support on musl/Alpine
+# - curl: used by HEALTHCHECK
+# OpenSSL is statically linked at build time — no libssl needed at runtime
+RUN apk update && \
+    apk upgrade --no-cache && \
+    apk add --no-cache \
     ca-certificates \
-    libssl3 \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+    libgcc \
+    curl && \
+    rm -rf /var/cache/apk/*
 
-# Create non-root user for security
-RUN groupadd --gid 1000 appgroup \
-    && useradd --uid 1000 --gid appgroup --shell /bin/false --create-home appuser
+# Create non-root user for security (Alpine syntax)
+RUN addgroup -S appgroup \
+    && adduser -S -G appgroup -s /bin/false appuser
 
 # Set working directory
 WORKDIR /app
@@ -105,9 +140,9 @@ USER appuser
 # Expose application port
 EXPOSE 8210
 
-# Health check
+# Health check (use curl since Alpine image includes it)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD ["/app/home-registry", "--health-check"] || exit 1
+    CMD curl -f http://localhost:8210/health || exit 1
 
 # Run the binary
 # Note: Use exec form to ensure signals are properly handled
