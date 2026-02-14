@@ -1204,39 +1204,6 @@ impl DatabaseService {
         }
     }
 
-    /// Get a user by username or email - now only checks username (for login)
-    pub async fn get_user_by_username_or_email(
-        &self,
-        identifier: &str,
-    ) -> Result<Option<User>, Box<dyn std::error::Error>> {
-        let client = self.pool.get().await?;
-        let rows = client
-            .query(
-                "SELECT id, username, full_name, password_hash, is_admin, is_active, created_at, updated_at,
-                        recovery_codes_generated_at, COALESCE(recovery_codes_confirmed, false)
-                 FROM users WHERE LOWER(username) = LOWER($1)",
-                &[&identifier],
-            )
-            .await?;
-
-        if let Some(row) = rows.first() {
-            Ok(Some(User {
-                id: row.get(0),
-                username: row.get(1),
-                full_name: row.get(2),
-                password_hash: row.get(3),
-                is_admin: row.get(4),
-                is_active: row.get(5),
-                created_at: row.get(6),
-                updated_at: row.get(7),
-                recovery_codes_generated_at: row.get(8),
-                recovery_codes_confirmed: row.get(9),
-            }))
-        } else {
-            Ok(None)
-        }
-    }
-
     /// Get all users (admin only)
     pub async fn get_all_users(&self) -> Result<Vec<UserResponse>, Box<dyn std::error::Error>> {
         let client = self.pool.get().await?;

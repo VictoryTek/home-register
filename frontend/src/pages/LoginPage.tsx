@@ -25,7 +25,7 @@ export function LoginPage() {
     e.preventDefault();
 
     if (!formData.username.trim()) {
-      setError('Please enter your username or email');
+      setError('Please enter your username');
       return;
     }
 
@@ -77,7 +77,7 @@ export function LoginPage() {
             <div className="form-group">
               <label htmlFor="username">
                 <i className="fas fa-user"></i>
-                Username or Email
+                Username
               </label>
               <input
                 type="text"
@@ -85,7 +85,7 @@ export function LoginPage() {
                 name="username"
                 value={formData.username}
                 onChange={handleInputChange}
-                placeholder="Enter your username or email"
+                placeholder="Enter your username"
                 autoFocus
                 autoComplete="username"
               />

@@ -282,7 +282,7 @@ pub async fn login(pool: web::Data<Pool>, req: web::Json<LoginRequest>) -> Resul
 
     // Find user by username
     let user = match db_service
-        .get_user_by_username_or_email(&req.username)
+        .get_user_by_username(&req.username)
         .await
     {
         Ok(Some(u)) => u,
@@ -1203,7 +1203,7 @@ pub async fn create_inventory_share(
 
     // Find the user to share with
     let target_user = match db_service
-        .get_user_by_username_or_email(&body.shared_with_username)
+        .get_user_by_username(&body.shared_with_username)
         .await
     {
         Ok(Some(u)) => u,
@@ -1507,7 +1507,7 @@ pub async fn create_access_grant(
 
     // Find the user to grant access to
     let target_user = match db_service
-        .get_user_by_username_or_email(&body.grantee_username)
+        .get_user_by_username(&body.grantee_username)
         .await
     {
         Ok(Some(u)) => u,
