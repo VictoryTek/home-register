@@ -281,10 +281,7 @@ pub async fn login(pool: web::Data<Pool>, req: web::Json<LoginRequest>) -> Resul
     let db_service = DatabaseService::new(pool.get_ref().clone());
 
     // Find user by username
-    let user = match db_service
-        .get_user_by_username(&req.username)
-        .await
-    {
+    let user = match db_service.get_user_by_username(&req.username).await {
         Ok(Some(u)) => u,
         Ok(None) => {
             // Don't reveal whether username exists
