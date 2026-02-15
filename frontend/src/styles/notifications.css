@@ -3,17 +3,18 @@
 /* Header section with count and actions */
 .notifications-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--border-color);
 }
 
-.notifications-count {
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  font-weight: 500;
+/* Ensure action buttons in header don't expand */
+.notifications-header .btn {
+  width: auto;
+  min-width: fit-content;
+  white-space: nowrap;
 }
 
 /* Summary statistics bar */

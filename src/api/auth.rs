@@ -93,7 +93,7 @@ pub async fn get_auth_context_from_request(
 }
 
 /// Require admin privileges
-async fn require_admin(req: &HttpRequest, pool: &Pool) -> Result<AuthContext, HttpResponse> {
+pub async fn require_admin(req: &HttpRequest, pool: &Pool) -> Result<AuthContext, HttpResponse> {
     let auth_ctx = get_auth_context_from_request(req, pool).await?;
 
     if !auth_ctx.is_admin {
@@ -217,49 +217,6 @@ pub async fn initial_setup(
     // Create default settings for user
     if let Err(e) = db_service.create_user_settings(user.id).await {
         warn!("Failed to create user settings: {}", e);
-    }
-
-    // Auto-assign sample inventories (with NULL user_id) to this first admin
-    match db_service.assign_sample_inventories_to_user(user.id).await {
-        Ok(assigned_count) => {
-            if assigned_count > 0 {
-                info!(
-                    "Assigned {} sample inventories to first admin user: {}",
-                    assigned_count, user.username
-                );
-            }
-        },
-        Err(e) => {
-            // Non-fatal: log warning but don't fail setup
-            warn!("Failed to assign sample inventories: {}", e);
-        },
-    }
-
-    // Optionally create first inventory
-    if let Some(inventory_name) = &req.inventory_name {
-        if !inventory_name.is_empty() {
-            let inventory_request = crate::models::CreateInventoryRequest {
-                name: inventory_name.clone(),
-                description: Some("Initial inventory created during setup".to_string()),
-                location: None,
-                image_url: None,
-            };
-
-            match db_service
-                .create_inventory(inventory_request, user.id)
-                .await
-            {
-                Ok(inventory) => {
-                    info!(
-                        "Created initial inventory: {} (ID: {:?}) for user {}",
-                        inventory.name, inventory.id, user.username
-                    );
-                },
-                Err(e) => {
-                    warn!("Failed to create initial inventory: {}", e);
-                },
-            }
-        }
     }
 
     // Generate token

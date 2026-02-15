@@ -429,9 +429,9 @@
   margin-top: 1.5rem;
 }
 
-.btn-primary,
-.btn-secondary {
-  flex: 1;
+/* Visual styling for all auth-page buttons (covers .auth-actions AND .recovery-actions) */
+.auth-container .btn-primary,
+.auth-container .btn-secondary {
   padding: 0.875rem 1.5rem;
   font-size: 0.95rem;
   font-weight: 600;
@@ -446,30 +446,36 @@
   gap: 0.5rem;
 }
 
-.btn-primary {
+/* Only navigation buttons in auth-actions stretch to fill */
+.auth-actions .btn-primary,
+.auth-actions .btn-secondary {
+  flex: 1;
+}
+
+.auth-container .btn-primary {
   color: #ffffff;
   background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
   box-shadow: 0 4px 15px rgba(249, 115, 22, 0.35);
 }
 
-.btn-primary:hover:not(:disabled) {
+.auth-container .btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(249, 115, 22, 0.45);
 }
 
-.btn-primary:disabled {
+.auth-container .btn-primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
 }
 
-.btn-secondary {
+.auth-container .btn-secondary {
   color: #f1f5f9;
   background: rgba(30, 41, 59, 0.9);
   border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
-.btn-secondary:hover {
+.auth-container .btn-secondary:hover {
   background: rgba(30, 41, 59, 1);
   border-color: rgba(59, 130, 246, 0.4);
 }
@@ -551,7 +557,13 @@
   gap: 0.5rem;
   justify-content: center;
   margin: 0.75rem 0 1rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+}
+
+.recovery-actions .btn-secondary {
+  font-size: 0.95rem;
+  padding: 0.75rem 1.25rem;
+  white-space: nowrap;
 }
 
 .auth-warning {

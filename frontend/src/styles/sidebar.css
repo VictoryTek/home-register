@@ -65,8 +65,15 @@
   margin-bottom: 2.5rem;
 }
 
-.nav-section.system-section {
+.sidebar-bottom {
   margin-top: auto;
+}
+
+.nav-item-notifications {
+  margin-bottom: 0.25rem;
+}
+
+.nav-section.system-section {
   margin-bottom: 1rem;
 }
 

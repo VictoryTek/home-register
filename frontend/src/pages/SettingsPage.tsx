@@ -1,5 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Header, UserManagement, AllAccessManagement, RecoveryCodesSection } from '@/components';
+import {
+  Header,
+  UserManagement,
+  AllAccessManagement,
+  RecoveryCodesSection,
+  BackupRestoreSection,
+} from '@/components';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import type { Inventory } from '@/types';
@@ -265,6 +271,25 @@ export function SettingsPage() {
 
             <RecoveryCodesSection />
           </section>
+
+          {/* Backup & Restore (Admin Only) */}
+          {user?.is_admin && (
+            <section className="settings-section">
+              <div className="settings-section-header">
+                <div className="settings-section-icon">
+                  <i className="fas fa-database"></i>
+                </div>
+                <div>
+                  <h2 className="settings-section-title">Backup & Restore</h2>
+                  <p className="settings-section-description">
+                    Create backups of all data including inventories, items, and settings.
+                    <strong> Warning:</strong> Restoring a backup will replace all current data.
+                  </p>
+                </div>
+              </div>
+              <BackupRestoreSection />
+            </section>
+          )}
 
           {/* User Management (Admin Only) */}
           {user?.is_admin && (

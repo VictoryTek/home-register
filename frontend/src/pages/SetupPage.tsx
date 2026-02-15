@@ -18,7 +18,6 @@ export function SetupPage() {
     full_name: '',
     password: '',
     confirmPassword: '',
-    inventory_name: '',
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,20 +62,14 @@ export function SetupPage() {
     if (step === 1 && validateStep1()) {
       setStep(2);
     } else if (step === 2 && validateStep2()) {
-      setStep(3);
+      // Step 2 validation passes, now call setup and move to recovery codes
+      void completeSetup();
     }
   };
 
   const handleBack = () => {
     setError(null);
     setStep((prev) => Math.max(1, prev - 1));
-  };
-
-  const handleStep3Submit = async () => {
-    setIsLoading(true);
-    setError(null);
-
-    await completeSetup();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -93,7 +86,6 @@ export function SetupPage() {
         username: formData.username,
         full_name: formData.full_name,
         password: formData.password,
-        inventory_name: formData.inventory_name || undefined,
       });
 
       if (result.success && result.data) {
@@ -106,7 +98,7 @@ export function SetupPage() {
         if (codesResponse.success && codesResponse.data) {
           setRecoveryCodes(codesResponse.data.codes);
           // Move to recovery codes step
-          setStep(4);
+          setStep(3);
         } else {
           setError(codesResponse.error ?? 'Failed to generate recovery codes');
         }
@@ -232,7 +224,7 @@ export function SetupPage() {
       </div>
 
       <div className="auth-container">
-        <div className={`auth-card setup-card ${step === 4 ? 'wide' : ''}`}>
+        <div className={`auth-card setup-card ${step === 3 ? 'wide' : ''}`}>
           <div className="auth-header">
             <div className="auth-logo">
               <img src="/logo_full.png" alt="Home Registry" className="auth-logo-img" />
@@ -256,15 +248,8 @@ export function SetupPage() {
               <span>Security</span>
             </div>
             <div className="progress-line"></div>
-            <div
-              className={`progress-step ${step >= 3 ? 'active' : ''} ${step > 3 ? 'completed' : ''}`}
-            >
+            <div className={`progress-step ${step >= 3 ? 'active' : ''}`}>
               <div className="step-number">3</div>
-              <span>Inventory</span>
-            </div>
-            <div className="progress-line"></div>
-            <div className={`progress-step ${step >= 4 ? 'active' : ''}`}>
-              <div className="step-number">4</div>
               <span>Recovery</span>
             </div>
           </div>
@@ -345,32 +330,8 @@ export function SetupPage() {
               </div>
             )}
 
-            {/* Step 3: First Inventory */}
-            {step === 3 && (
-              <div className="auth-step">
-                <h2>Create First Inventory</h2>
-                <p className="step-description">
-                  Optionally create your first inventory to get started.
-                </p>
-
-                <div className="form-group">
-                  <label htmlFor="inventory_name">Inventory Name (Optional)</label>
-                  <input
-                    type="text"
-                    id="inventory_name"
-                    name="inventory_name"
-                    value={formData.inventory_name}
-                    onChange={handleInputChange}
-                    placeholder="e.g., Home, Office, Garage"
-                    autoFocus
-                  />
-                  <p className="form-hint">You can skip this and create inventories later.</p>
-                </div>
-              </div>
-            )}
-
-            {/* Step 4: Recovery Codes */}
-            {step === 4 && recoveryCodes && (
+            {/* Step 3: Recovery Codes */}
+            {step === 3 && recoveryCodes && (
               <div className="auth-step">
                 <h2 style={{ marginBottom: '0.5rem' }}>Save Your Recovery Codes</h2>
                 <p
@@ -422,21 +383,21 @@ export function SetupPage() {
             )}
 
             <div className="auth-actions">
-              {step > 1 && step < 4 && (
+              {step === 2 && (
                 <button type="button" className="btn-secondary" onClick={handleBack}>
                   Back
                 </button>
               )}
 
-              {step < 3 ? (
+              {step === 1 ? (
                 <button type="button" className="btn-primary" onClick={handleNext}>
                   Next
                 </button>
-              ) : step === 3 ? (
+              ) : step === 2 ? (
                 <button
                   type="button"
                   className="btn-primary"
-                  onClick={handleStep3Submit}
+                  onClick={handleNext}
                   disabled={isLoading}
                 >
                   {isLoading ? 'Creating Account...' : 'Complete Setup'}

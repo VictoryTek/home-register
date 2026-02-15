@@ -33,8 +33,10 @@ services:
       - "8210:8210"
     volumes:
       - appdata:/app/data  # Persist JWT secret and other app data
+      - backups:/app/backups  # Persist backup files across container restarts
     command: ["./home-registry"]
     restart: unless-stopped
 volumes:
   pgdata:
   appdata:
+  backups:

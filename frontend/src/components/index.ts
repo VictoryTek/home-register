@@ -13,3 +13,4 @@ export { UserManagement } from './UserManagement';
 export { ShareInventoryModal } from './ShareInventoryModal';
 export { AllAccessManagement } from './AllAccessManagement';
 export { RecoveryCodesSection } from './RecoveryCodesSection';
+export { BackupRestoreSection } from './BackupRestoreSection';

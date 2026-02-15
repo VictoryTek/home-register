@@ -48,6 +48,8 @@ import type {
   InventoryReportData,
   InventoryStatistics,
   CategorySummary,
+  // Backup types
+  BackupInfo,
 } from '@/types';
 
 const API_BASE = '/api';
@@ -860,3 +862,84 @@ export type {
   CategorySummary,
   InventoryReportData,
 } from '@/types';
+
+// ==================== Backup & Restore API ====================
+
+export const backupApi = {
+  // Create a new backup
+  async create(): Promise<ApiResponse<BackupInfo>> {
+    const response = await fetchWithRetry(`${API_BASE}/backup/create`, {
+      method: 'POST',
+      headers: getHeaders(),
+    });
+    return handleResponse<BackupInfo>(response);
+  },
+
+  // List all available backups
+  async list(): Promise<ApiResponse<BackupInfo[]>> {
+    const response = await fetchWithRetry(`${API_BASE}/backup/list`, {
+      headers: getHeaders(),
+    });
+    return handleResponse<BackupInfo[]>(response);
+  },
+
+  // Download a backup file
+  async download(filename: string): Promise<void> {
+    const token = getToken();
+    const response = await fetch(`${API_BASE}/backup/download/${encodeURIComponent(filename)}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Download failed');
+    }
+
+    const blob = await response.blob();
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+  },
+
+  // Upload a backup file
+  async upload(file: File): Promise<ApiResponse<BackupInfo>> {
+    const token = getToken();
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_BASE}/backup/upload`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+    return handleResponse<BackupInfo>(response);
+  },
+
+  // Restore from a server-side backup
+  async restore(filename: string): Promise<ApiResponse<null>> {
+    const response = await fetchWithRetry(
+      `${API_BASE}/backup/restore/${encodeURIComponent(filename)}`,
+      {
+        method: 'POST',
+        headers: getHeaders(),
+      }
+    );
+    return handleResponse<null>(response);
+  },
+
+  // Delete a backup
+  async delete(filename: string): Promise<ApiResponse<null>> {
+    const response = await fetchWithRetry(`${API_BASE}/backup/${encodeURIComponent(filename)}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return handleResponse<null>(response);
+  },
+};

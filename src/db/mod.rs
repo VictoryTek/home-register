@@ -1,5 +1,7 @@
 use crate::models::{
     AdminUpdateUserRequest,
+    // Backup & Restore models
+    BackupDatabaseContent,
     CreateInventoryRequest,
     CreateItemRequest,
     CreateOrganizerOptionRequest,
@@ -96,25 +98,6 @@ impl DatabaseService {
     #[must_use]
     pub fn new(pool: Pool) -> Self {
         Self { pool }
-    }
-
-    /// Assign all inventories with NULL `user_id` to the specified user
-    /// Used during initial setup to assign sample data to first admin
-    /// Returns the number of inventories assigned
-    pub async fn assign_sample_inventories_to_user(
-        &self,
-        user_id: Uuid,
-    ) -> Result<u64, Box<dyn std::error::Error>> {
-        let client = self.pool.get().await?;
-
-        let result = client
-            .execute(
-                "UPDATE inventories SET user_id = $1, updated_at = NOW() WHERE user_id IS NULL",
-                &[&user_id],
-            )
-            .await?;
-
-        Ok(result)
     }
 
     pub async fn get_all_items(&self) -> Result<Vec<Item>, Box<dyn std::error::Error>> {
@@ -2630,6 +2613,208 @@ impl DatabaseService {
 
         info!("Generated category breakdown for user {}", user_id);
         Ok(breakdown)
+    }
+
+    // ==================== Backup & Restore Methods ====================
+
+    /// Export all database tables as JSON values for backup
+    pub async fn export_all_data(
+        &self,
+    ) -> Result<BackupDatabaseContent, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        // Helper closure to build the JSON export query for a table
+        let build_export_query = |table: &str| {
+            format!("SELECT COALESCE(jsonb_agg(to_jsonb(t)), '[]'::jsonb) FROM {table} t")
+        };
+
+        let users: serde_json::Value = client
+            .query_one(&build_export_query("users"), &[])
+            .await?
+            .get(0);
+        let inventories: serde_json::Value = client
+            .query_one(&build_export_query("inventories"), &[])
+            .await?
+            .get(0);
+        let items: serde_json::Value = client
+            .query_one(&build_export_query("items"), &[])
+            .await?
+            .get(0);
+        let categories: serde_json::Value = client
+            .query_one(&build_export_query("categories"), &[])
+            .await?
+            .get(0);
+        let tags: serde_json::Value = client
+            .query_one(&build_export_query("tags"), &[])
+            .await?
+            .get(0);
+        let item_tags: serde_json::Value = client
+            .query_one(&build_export_query("item_tags"), &[])
+            .await?
+            .get(0);
+        let custom_fields: serde_json::Value = client
+            .query_one(&build_export_query("custom_fields"), &[])
+            .await?
+            .get(0);
+        let item_custom_values: serde_json::Value = client
+            .query_one(&build_export_query("item_custom_values"), &[])
+            .await?
+            .get(0);
+        let organizer_types: serde_json::Value = client
+            .query_one(&build_export_query("organizer_types"), &[])
+            .await?
+            .get(0);
+        let organizer_options: serde_json::Value = client
+            .query_one(&build_export_query("organizer_options"), &[])
+            .await?
+            .get(0);
+        let item_organizer_values: serde_json::Value = client
+            .query_one(&build_export_query("item_organizer_values"), &[])
+            .await?
+            .get(0);
+        let user_settings: serde_json::Value = client
+            .query_one(&build_export_query("user_settings"), &[])
+            .await?
+            .get(0);
+        let inventory_shares: serde_json::Value = client
+            .query_one(&build_export_query("inventory_shares"), &[])
+            .await?
+            .get(0);
+        let user_access_grants: serde_json::Value = client
+            .query_one(&build_export_query("user_access_grants"), &[])
+            .await?
+            .get(0);
+        let recovery_codes: serde_json::Value = client
+            .query_one(&build_export_query("recovery_codes"), &[])
+            .await?
+            .get(0);
+        let password_reset_tokens: serde_json::Value = client
+            .query_one(&build_export_query("password_reset_tokens"), &[])
+            .await?
+            .get(0);
+
+        info!("Successfully exported all database tables for backup");
+
+        Ok(BackupDatabaseContent {
+            users,
+            inventories,
+            items,
+            categories,
+            tags,
+            item_tags,
+            custom_fields,
+            item_custom_values,
+            organizer_types,
+            organizer_options,
+            item_organizer_values,
+            user_settings,
+            inventory_shares,
+            user_access_grants,
+            recovery_codes,
+            password_reset_tokens,
+        })
+    }
+
+    /// Import all database tables from backup data (within a transaction)
+    pub async fn import_all_data(
+        &self,
+        data: &BackupDatabaseContent,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let mut client = self.pool.get().await?;
+        let transaction = client.transaction().await?;
+
+        // Defer foreign key constraint checks until commit
+        transaction
+            .execute("SET CONSTRAINTS ALL DEFERRED", &[])
+            .await?;
+
+        // Truncate all tables in reverse dependency order
+        let truncate_order = [
+            "password_reset_tokens",
+            "recovery_codes",
+            "user_access_grants",
+            "inventory_shares",
+            "user_settings",
+            "item_organizer_values",
+            "organizer_options",
+            "organizer_types",
+            "item_custom_values",
+            "custom_fields",
+            "item_tags",
+            "tags",
+            "categories",
+            "items",
+            "inventories",
+            "users",
+        ];
+
+        for table in &truncate_order {
+            let query = format!("TRUNCATE TABLE {table} RESTART IDENTITY CASCADE");
+            transaction.execute(query.as_str(), &[]).await?;
+        }
+
+        // Import tables in dependency order
+        let import_order: Vec<(&str, &serde_json::Value)> = vec![
+            ("users", &data.users),
+            ("inventories", &data.inventories),
+            ("items", &data.items),
+            ("categories", &data.categories),
+            ("tags", &data.tags),
+            ("item_tags", &data.item_tags),
+            ("custom_fields", &data.custom_fields),
+            ("item_custom_values", &data.item_custom_values),
+            ("organizer_types", &data.organizer_types),
+            ("organizer_options", &data.organizer_options),
+            ("item_organizer_values", &data.item_organizer_values),
+            ("user_settings", &data.user_settings),
+            ("inventory_shares", &data.inventory_shares),
+            ("user_access_grants", &data.user_access_grants),
+            ("recovery_codes", &data.recovery_codes),
+            ("password_reset_tokens", &data.password_reset_tokens),
+        ];
+
+        for (table, rows_json) in &import_order {
+            if let Some(rows) = rows_json.as_array() {
+                for row in rows {
+                    let query = format!(
+                        "INSERT INTO {table} SELECT * FROM jsonb_populate_record(NULL::{table}, $1)"
+                    );
+                    transaction.execute(query.as_str(), &[row]).await?;
+                }
+            }
+        }
+
+        // Reset sequences for tables with serial/identity columns
+        let sequence_tables = [
+            "items",
+            "inventories",
+            "categories",
+            "tags",
+            "custom_fields",
+            "item_custom_values",
+            "item_tags",
+            "organizer_types",
+            "organizer_options",
+            "item_organizer_values",
+        ];
+
+        for table in &sequence_tables {
+            let query = format!(
+                "SELECT setval(pg_get_serial_sequence('{table}', 'id'), \
+                 COALESCE(MAX(id), 0) + 1, false) FROM {table}"
+            );
+            // Ignore errors for tables that may not have sequences
+            if let Err(e) = transaction.execute(query.as_str(), &[]).await {
+                info!(
+                    "Note: Could not reset sequence for table {}: {} (this may be expected)",
+                    table, e
+                );
+            }
+        }
+
+        transaction.commit().await?;
+        info!("Successfully imported all database tables from backup");
+        Ok(())
     }
 }
 

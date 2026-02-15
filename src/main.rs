@@ -153,7 +153,7 @@ async fn main() -> std::io::Result<()> {
                        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://use.fontawesome.com https://cdnjs.cloudflare.com; \
                        img-src 'self' data: https:; \
                        font-src 'self' https://fonts.gstatic.com https://use.fontawesome.com https://cdnjs.cloudflare.com data:; \
-                       connect-src 'self'; \
+                       connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://cdnjs.cloudflare.com; \
                        frame-ancestors 'none'")))
             .wrap(cors)
             .wrap(Logger::default())

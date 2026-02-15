@@ -12,6 +12,8 @@ targets = [
     "x86_64-pc-windows-msvc",
 ]
 all-features = true
+# Exclude non-Rust directories
+exclude = ["frontend", "analysis", "scripts", "migrations", "screenshots", "static"]
 
 # ------------------------------------------------------------------------------
 # ADVISORIES - Check for known security vulnerabilities

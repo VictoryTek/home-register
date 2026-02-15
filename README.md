@@ -44,9 +44,12 @@ docker compose up -d
 Access at: `http://localhost:8210` (or your server's IP)
 
 **First Run:**
-- Complete the setup wizard
-- Create your admin account
-- Start adding your inventory
+- Complete the 3-step setup wizard:
+  1. Create your admin account (username and full name)
+  2. Set a secure password (minimum 8 characters)
+  3. Save your recovery codes for account recovery
+- After setup, create your first inventory from the main page
+- Start adding items to track
 
 ### Docker Compose (Detailed)
 

@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod backup;
 
 use crate::db::DatabaseService;
 use crate::models::{
@@ -1415,6 +1416,13 @@ pub fn api_scope() -> Scope {
         .service(get_inventory_report)
         .service(get_inventory_statistics_endpoint)
         .service(get_category_breakdown_endpoint)
+        // Backup & Restore routes
+        .service(backup::create_backup)
+        .service(backup::list_backups)
+        .service(backup::download_backup)
+        .service(backup::upload_backup)
+        .service(backup::restore_backup)
+        .service(backup::delete_backup)
         // Catch-all for non-existent API endpoints
         .default_service(web::to(api_not_found))
 }

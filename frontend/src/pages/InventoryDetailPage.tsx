@@ -373,7 +373,14 @@ export function InventoryDetailPage() {
               <i className="fas fa-arrow-left"></i>
               Back to Inventories
             </button>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div
+              style={{
+                display: 'flex',
+                gap: '0.5rem',
+                flexWrap: 'wrap',
+                justifyContent: 'flex-end',
+              }}
+            >
               <button
                 className="btn btn-secondary"
                 onClick={() => navigate(`/inventory/${id}/report`)}

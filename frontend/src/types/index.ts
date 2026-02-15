@@ -261,7 +261,6 @@ export interface InitialSetupRequest {
   username: string;
   full_name: string;
   password: string;
-  inventory_name?: string;
 }
 
 export interface RegisterRequest {
@@ -456,3 +455,19 @@ export type DismissedWarranties = Record<
     warrantyExpiry: string; // Date at dismissal (to detect changes)
   }
 >;
+
+// ==================== Backup & Restore Types ====================
+
+export interface BackupInfo {
+  name: string;
+  date: string;
+  size: string;
+}
+
+export interface BackupMetadata {
+  version: string;
+  app_version: string;
+  created_at: string;
+  database_type: string;
+  description?: string;
+}

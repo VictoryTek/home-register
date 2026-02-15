@@ -219,11 +219,8 @@ export function NotificationsPage() {
       <div className="content">
         {/* Enhancement 3: Header actions bar */}
         <div className="notifications-header">
-          <div className="notifications-count">
-            {activeNotifications.length} active alert{activeNotifications.length !== 1 ? 's' : ''}
-          </div>
           {activeNotifications.length > 0 && (
-            <button className="btn btn-secondary btn-sm btn-inline" onClick={handleClearAll}>
+            <button className="btn btn-primary btn-sm" onClick={handleClearAll}>
               <i className="fas fa-check-double"></i>
               Clear All
             </button>

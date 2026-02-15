@@ -775,7 +775,6 @@ pub struct InitialSetupRequest {
     pub username: String,
     pub full_name: String,
     pub password: String,
-    pub inventory_name: Option<String>, // Optional first inventory name
 }
 
 /// Response for setup status check
@@ -836,4 +835,58 @@ pub struct RecoveryCodesStatus {
     pub codes_confirmed: bool,
     pub unused_count: i32,
     pub generated_at: Option<DateTime<Utc>>,
+}
+
+// ==================== Backup & Restore Models ====================
+
+/// Metadata about a backup file (for listing/responses)
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct BackupInfo {
+    pub name: String,
+    pub date: String,
+    pub size: String,
+}
+
+/// Metadata embedded in the backup file itself
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct BackupMetadata {
+    pub version: String,
+    pub app_version: String,
+    pub created_at: String,
+    pub database_type: String,
+    pub description: Option<String>,
+}
+
+/// The complete backup data envelope
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct BackupData {
+    pub metadata: BackupMetadata,
+    pub data: BackupDatabaseContent,
+}
+
+/// All database tables exported as JSON arrays
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct BackupDatabaseContent {
+    pub users: serde_json::Value,
+    pub inventories: serde_json::Value,
+    pub items: serde_json::Value,
+    pub categories: serde_json::Value,
+    pub tags: serde_json::Value,
+    pub item_tags: serde_json::Value,
+    pub custom_fields: serde_json::Value,
+    pub item_custom_values: serde_json::Value,
+    pub organizer_types: serde_json::Value,
+    pub organizer_options: serde_json::Value,
+    pub item_organizer_values: serde_json::Value,
+    pub user_settings: serde_json::Value,
+    pub inventory_shares: serde_json::Value,
+    pub user_access_grants: serde_json::Value,
+    pub recovery_codes: serde_json::Value,
+    #[serde(default = "default_empty_json_array")]
+    pub password_reset_tokens: serde_json::Value,
+}
+
+/// Default empty JSON array for optional backup fields (backward compatibility)
+fn default_empty_json_array() -> serde_json::Value {
+    serde_json::Value::Array(vec![])
 }

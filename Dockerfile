@@ -129,6 +129,9 @@ COPY --from=frontend-builder --chown=appuser:appgroup /app/frontend/dist ./stati
 # Copy migrations (read-only)
 COPY --chown=appuser:appgroup migrations ./migrations
 
+# Create backups directory with proper ownership
+RUN mkdir -p /app/backups && chown appuser:appgroup /app/backups
+
 # Set proper permissions
 RUN chmod 755 /app/home-registry \
     && chmod -R 644 /app/migrations/* \
