@@ -98,7 +98,7 @@ None.
    - The `unused-allowed-license = "warn"` setting (line 38) intentionally flags this.
    - **Recommendation:** Remove it from the allow list to eliminate the warning, or add it to a future-proofing comment. Can always be re-added when a dependency needs it.
 
-2. **`LICENSE-POLICY.md` still lists `Unicode-DFS-2016`** — [LICENSE-POLICY.md](LICENSE-POLICY.md#L27)
+2. **`LICENSE-POLICY.md` still lists `Unicode-DFS-2016`** — [LICENSE-POLICY.md](../.github/docs/LICENSE-POLICY.md#L27)
    - The policy document lists both `Unicode-3.0` and `Unicode-DFS-2016` under "Special Cases", but `deny.toml` now only allows `Unicode-3.0`.
    - **Recommendation:** Either remove `Unicode-DFS-2016` from `LICENSE-POLICY.md` for consistency, or keep it if the intent is to document all historically-approved licenses.
 
@@ -108,7 +108,7 @@ None.
    - The 11 duplicate version warnings are noisy but harmless. Adding `skip` entries for known duplicates (e.g., `base64`, `rand`, `windows-sys`) would reduce output noise.
    - Low priority since `multiple-versions = "warn"` (not `"deny"`) means they don't block CI.
 
-2. **`CC0-1.0` and `Unlicense` in LICENSE-POLICY.md but not in deny.toml** — [LICENSE-POLICY.md](LICENSE-POLICY.md#L18)
+2. **`CC0-1.0` and `Unlicense` in LICENSE-POLICY.md but not in deny.toml** — [LICENSE-POLICY.md](../.github/docs/LICENSE-POLICY.md#L18)
    - The policy document lists `CC0-1.0` and `Unlicense` as approved, but `deny.toml` doesn't include them. This is fine if no current deps use them, but could cause confusion if a future dependency requires them.
 
 ---

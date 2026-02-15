@@ -1,13 +1,12 @@
 /target
 analysis/
-audit/
-/screenshots/
 backups/
 .history/
 
 # Test artifacts
 test_results.txt
 *.test.log
+preflight-output.txt
 
 # Environment and secrets
 .env
