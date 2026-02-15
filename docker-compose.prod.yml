@@ -1,0 +1,54 @@
+# docker-compose.prod.yml
+# Production deployment using pre-built image from GHCR
+
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}  # Override via env var
+      POSTGRES_DB: home_inventory
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  app:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-victorytek}/home-registry:${VERSION:-beta}
+    pull_policy: always  # Always check for updates
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-password}@db:5432/home_inventory
+      PORT: 8210
+      RUST_LOG: ${RUST_LOG:-info}
+      # JWT_SECRET: "${JWT_SECRET}"  # Optional - auto-generated if not set
+      # JWT_TOKEN_LIFETIME_HOURS: 24
+      RATE_LIMIT_RPS: 100
+      RATE_LIMIT_BURST: 200
+    ports:
+      - "8210:8210"
+    volumes:
+      - appdata:/app/data
+      - backups:/app/backups
+    command: ["./home-registry"]
+    restart: unless-stopped
+    healthcheck:
+      # Use curl (available in Alpine runtime image) instead of wget
+      test: ["CMD-SHELL", "curl -f http://localhost:8210/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
+
+volumes:
+  pgdata:
+  appdata:
+  backups:

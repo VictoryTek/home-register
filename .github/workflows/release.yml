@@ -1,0 +1,438 @@
+name: Release to GHCR
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 0.1.0-beta.1)'
+        required: true
+        type: string
+      create_release:
+        description: 'Create GitHub Release'
+        required: true
+        type: boolean
+        default: true
+  # Future: Automatic trigger on tag push
+  # push:
+  #   tags:
+  #     - 'v*.*.*-beta.*'
+  #     - 'v*.*.*-rc.*'
+  #     - 'v*.*.*'
+
+permissions:
+  contents: write  # For creating releases
+  packages: write  # For pushing to GHCR
+  security-events: write  # For uploading Trivy results
+  id-token: write  # For SLSA attestation
+  attestations: write  # For GitHub attestations
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: home-registry  # Can customize if needed
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false  # Never cancel in-flight releases
+
+jobs:
+  validate:
+    name: Pre-Release Validation
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      image_tag: ${{ steps.version.outputs.image_tag }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0  # Full history for release notes
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            # Extract from git tag (format: v0.1.0-beta.1)
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "image_tag=v$VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Release version: $VERSION"
+
+      - name: Validate version format
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z]+\.[0-9]+)?$'; then
+            echo "❌ Invalid version format: $VERSION"
+            echo "Expected: X.Y.Z or X.Y.Z-beta.N"
+            exit 1
+          fi
+          echo "✅ Version format valid"
+
+      - name: Check version consistency
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          CARGO_VERSION=$(grep '^version = ' Cargo.toml | head -1 | cut -d'"' -f2)
+          
+          # Extract base version (strip pre-release suffix)
+          BASE_VERSION=$(echo "$VERSION" | cut -d'-' -f1)
+          
+          if [ "$CARGO_VERSION" != "$BASE_VERSION" ]; then
+            echo "⚠️  Warning: Cargo.toml version ($CARGO_VERSION) differs from release ($BASE_VERSION)"
+            echo "This is expected for pre-releases. Continuing..."
+          fi
+          
+          echo "✅ Version check complete"
+
+      - name: Validate database migrations
+        run: |
+          echo "📋 Validating database migrations..."
+          
+          if [ ! -d "migrations" ]; then
+            echo "❌ migrations/ directory not found"
+            exit 1
+          fi
+          
+          # Get all migration files and extract numbers
+          MIGRATIONS=($(ls migrations/*.sql 2>/dev/null | sort))
+          
+          if [ ${#MIGRATIONS[@]} -eq 0 ]; then
+            echo "⚠️  Warning: No migration files found"
+            exit 0
+          fi
+          
+          echo "Found ${#MIGRATIONS[@]} migration files"
+          
+          # Check sequential numbering
+          EXPECTED=1
+          for file in "${MIGRATIONS[@]}"; do
+            # Extract number from filename (e.g., 001_create_table.sql -> 001)
+            NUM=$(basename "$file" | grep -oE '^[0-9]+' | sed 's/^0*//')
+            
+            if [ -z "$NUM" ]; then
+              echo "❌ Invalid migration filename (no leading number): $file"
+              exit 1
+            fi
+            
+            if [ "$NUM" -ne "$EXPECTED" ]; then
+              echo "❌ Migration sequence error: Expected $EXPECTED, found $NUM in $file"
+              echo "   Previous migrations: ${MIGRATIONS[@]}"
+              exit 1
+            fi
+            
+            EXPECTED=$((EXPECTED + 1))
+          done
+          
+          echo "✅ All $((EXPECTED - 1)) migrations are sequentially numbered"
+
+      - name: Run preflight checks
+        run: |
+          # Install dependencies for preflight
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+          
+          # Run subset of checks (no database required)
+          echo "Running static checks..."
+          cargo fmt --check
+          cargo clippy --all-targets --all-features -- -D warnings
+          
+          cd frontend
+          npm ci
+          npm run lint
+          npm run format:check
+          cd ..
+          
+          echo "✅ Preflight checks passed"
+
+  build-and-push:
+    name: Build & Push (${{ matrix.platform }})
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@2f7da1b92e1a7fd96bc9b7f1b1bcbdf0f7fe2a23 # v3.3.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@7ca345011ac4304463197321049ff8fd128ff2df # v3.4.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@70b2cdc6480c1a8b86edf1777157f8f437de2166 # v5.7.0
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ needs.validate.outputs.image_tag }}
+            type=raw,value=latest,enable=${{ !contains(needs.validate.outputs.version, '-') }}
+            type=raw,value=beta,enable=${{ contains(needs.validate.outputs.version, '-beta') }}
+          flavor: |
+            latest=false
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=build-${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=build-${{ matrix.platform }}
+          provenance: true
+          sbom: true
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          # Use sanitized platform name for deterministic artifact naming
+          # Replace / with - to make valid artifact names
+          # linux/amd64 -> digests-linux-amd64, linux/arm64 -> digests-linux-arm64
+          name: digests-${{ replace(matrix.platform, '/', '-') }}
+          path: /tmp/digests/*
+          retention-days: 1
+          if-no-files-found: error
+
+  merge-manifests:
+    name: Merge Multi-Arch Manifests
+    needs: [validate, build-and-push]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@7ca345011ac4304463197321049ff8fd128ff2df # v3.4.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create manifest list and push
+        working-directory: /tmp/digests
+        run: |
+          IMAGE_BASE="${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}"
+          VERSION="${{ needs.validate.outputs.image_tag }}"
+          
+          docker buildx imagetools create \
+            --tag "${IMAGE_BASE}:${VERSION}" \
+            $(printf "${IMAGE_BASE}@sha256:%s " *)
+          
+          # Tag as beta if pre-release
+          if [[ "${{ needs.validate.outputs.version }}" == *"-beta"* ]]; then
+            docker buildx imagetools create \
+              --tag "${IMAGE_BASE}:beta" \
+              $(printf "${IMAGE_BASE}@sha256:%s " *)
+          fi
+          
+          # Tag as latest only for stable releases
+          if [[ "${{ needs.validate.outputs.version }}" != *"-"* ]]; then
+            docker buildx imagetools create \
+              --tag "${IMAGE_BASE}:latest" \
+              $(printf "${IMAGE_BASE}@sha256:%s " *)
+          fi
+
+      - name: Inspect image
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ needs.validate.outputs.image_tag }}"
+          docker buildx imagetools inspect "$IMAGE"
+
+  security-scan:
+    name: Security Scan
+    needs: [validate, merge-manifests]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@7ca345011ac4304463197321049ff8fd128ff2df # v3.4.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull image for scanning
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ needs.validate.outputs.image_tag }}"
+          docker pull --platform linux/${{ matrix.platform }} "$IMAGE"
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@76071ef0d7ec797419534a183b498b4d6366cf37 # 0.31.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ needs.validate.outputs.image_tag }}
+          format: sarif
+          output: trivy-results-${{ matrix.platform }}.sarif
+          severity: CRITICAL,HIGH
+          exit-code: '1'  # Fail on vulnerabilities
+
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@ff0a06e83cb2de871e5a09832bc6a81e7276941f # v3.28.18
+        if: always()
+        with:
+          sarif_file: trivy-results-${{ matrix.platform }}.sarif
+          category: trivy-${{ matrix.platform }}
+
+  create-release:
+    name: Create GitHub Release
+    needs: [validate, security-scan]
+    runs-on: ubuntu-latest
+    if: ${{ inputs.create_release == true || github.event_name == 'push' }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0  # Full history for release notes
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          
+          if [ -z "$PREV_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"- %s (%h)" HEAD)
+          else
+            COMMITS=$(git log --pretty=format:"- %s (%h)" ${PREV_TAG}..HEAD)
+          fi
+          
+          cat > release-notes.md <<EOF
+          ## Home Registry v${VERSION}
+          
+          **⚠️ Beta Pre-Release**: This is a pre-release version for testing purposes.
+          
+          ### 📦 Installation
+          
+          \`\`\`bash
+          # Pull and run with Docker Compose
+          curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.prod.yml -o docker-compose.yml
+          docker compose up -d
+          \`\`\`
+          
+          Or use the image directly:
+          \`\`\`bash
+          docker pull ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ needs.validate.outputs.image_tag }}
+          \`\`\`
+          
+          ### 🏗️ Multi-Architecture Support
+          - ✅ linux/amd64 (x86_64)
+          - ✅ linux/arm64 (Raspberry Pi 4/5, Apple Silicon)
+          
+          ### 📝 Changes
+          ${COMMITS}
+          
+          ### 🔒 Security
+          - All images scanned with Trivy (no HIGH/CRITICAL vulnerabilities)
+          - SBOM and provenance attestation included
+          - Supply chain security verified
+          
+          ### 🐛 Known Issues
+          - First-time setup requires manual admin account creation
+          - Recovery codes must be saved immediately (not retrievable later)
+          
+          ### 📚 Documentation
+          - [Installation Guide](https://github.com/${{ github.repository }}#quick-start)
+          - [Configuration Reference](https://github.com/${{ github.repository }}#environment-variables)
+          - [Security Best Practices](https://github.com/${{ github.repository }}#security-considerations)
+          EOF
+          
+          cat release-notes.md
+
+      - name: Create docker-compose.prod.yml
+        run: |
+          cat > docker-compose.prod.yml <<'EOF'
+          services:
+            db:
+              image: postgres:17
+              environment:
+                POSTGRES_USER: postgres
+                POSTGRES_PASSWORD: password  # ⚠️ Change in production!
+                POSTGRES_DB: home_inventory
+              ports:
+                - "5432:5432"
+              volumes:
+                - pgdata:/var/lib/postgresql/data
+              healthcheck:
+                test: ["CMD-SHELL", "pg_isready -U postgres"]
+                interval: 5s
+                timeout: 5s
+                retries: 5
+              restart: unless-stopped
+
+            app:
+              image: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ needs.validate.outputs.image_tag }}
+              depends_on:
+                db:
+                  condition: service_healthy
+              environment:
+                DATABASE_URL: postgres://postgres:password@db:5432/home_inventory
+                PORT: 8210
+                RUST_LOG: info
+                # JWT_SECRET: "your-secure-secret-here"  # Auto-generated if not set
+                # JWT_TOKEN_LIFETIME_HOURS: 24
+                RATE_LIMIT_RPS: 100
+                RATE_LIMIT_BURST: 200
+              ports:
+                - "8210:8210"
+              volumes:
+                - appdata:/app/data
+                - backups:/app/backups
+              command: ["./home-registry"]
+              restart: unless-stopped
+
+          volumes:
+            pgdata:
+            appdata:
+            backups:
+          EOF
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@da05a1223c0ebad7fb81e472f6650cc0f27efed0 # v2.2.2
+        with:
+          tag_name: v${{ needs.validate.outputs.version }}
+          name: Home Registry v${{ needs.validate.outputs.version }}
+          body_path: release-notes.md
+          draft: false
+          prerelease: ${{ contains(needs.validate.outputs.version, '-') }}
+          files: |
+            docker-compose.prod.yml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          generate_release_notes: false
+
+      - name: Announce release
+        run: |
+          echo "🎉 Release v${{ needs.validate.outputs.version }} published!"
+          echo "📦 Image: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ needs.validate.outputs.image_tag }}"
+          echo "🔗 Release URL: https://github.com/${{ github.repository }}/releases/tag/v${{ needs.validate.outputs.version }}"

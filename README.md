@@ -3,6 +3,18 @@
   <h1>Home Registry</h1>
   <p><em>Home Inventory Management System</em></p>
   <p><strong>Work in Progress</strong></p>
+  
+  <p>
+    <a href="https://github.com/yourusername/home-registry/releases">
+      <img src="https://img.shields.io/github/v/release/yourusername/home-registry?include_prereleases&label=version&color=blue" alt="Version">
+    </a>
+    <a href="https://github.com/yourusername/home-registry/pkgs/container/home-registry">
+      <img src="https://img.shields.io/badge/ghcr.io-home--registry-blue?logo=docker" alt="GHCR">
+    </a>
+    <a href="https://github.com/VictoryTek/home-registry/blob/main/LICENSE">
+      <img src="https://img.shields.io/github/license/VictoryTek/home-registry" alt="License">
+    </a>
+  </p>
 </div>
 
 A modern, web-based home inventory management system built with Rust, PostgreSQL, and Docker. Keep track of your belongings with an intuitive interface featuring flexible organization and full sharing capabilities.
@@ -27,11 +39,82 @@ Inspired by the HomeBox project, which was maintained for years. This project ai
 - **Frontend**: TypeScript, React, Vite
 - **Deployment**: Docker & Docker Compose
 
+## Installation
+
+### Option 1: Pre-Built Image from GHCR (Recommended)
+
+The easiest way to get started is using pre-built images from GitHub Container Registry:
+
+```bash
+# Download production compose file
+curl -sSL https://raw.githubusercontent.com/yourusername/home-registry/main/docker-compose.prod.yml -o docker-compose.yml
+
+# Start services
+docker compose up -d
+
+# Access at http://localhost:8210
+```
+
+**Multi-Architecture Support:**
+- ✅ **linux/amd64** (Intel/AMD x86_64)
+- ✅ **linux/arm64** (Raspberry Pi 4/5, Apple Silicon, AWS Graviton)
+
+Docker automatically pulls the correct architecture for your system.
+
+**Available Tags:**
+
+| Tag | Description | Stability |
+|-----|-------------|-----------|
+| `beta` | Latest beta pre-release | Testing |
+| `v0.1.0-beta.1` | Specific beta version | Fixed |
+| `latest` | Latest stable release | Production (when available) |
+| `v1.0.0` | Specific stable version | Fixed (when available) |
+
+### Option 2: Local Build (Development)
+
+For development or customization:
+
+```bash
+# Clone repository
+git clone https://github.com/yourusername/home-registry.git
+cd home-registry
+
+# Start with local build
+docker compose up -d
+```
+
+### Verification
+
+Verify image authenticity and inspect SBOM:
+
+```bash
+# Check SBOM (Software Bill of Materials)
+docker sbom ghcr.io/yourusername/home-registry:v0.1.0-beta.1
+
+# Inspect image metadata
+docker inspect ghcr.io/yourusername/home-registry:v0.1.0-beta.1
+```
+
 ## Quick Start
 
 ### Zero-Config Docker Deployment ⚡
 
+**For Production (Pre-built Image):**
+
 ```bash
+# Download production compose file
+curl -sSL https://raw.githubusercontent.com/yourusername/home-registry/main/docker-compose.prod.yml -o docker-compose.yml
+docker compose up -d
+```
+
+**For Development (Local Build):**
+
+```bash
+# Clone repository first
+git clone https://github.com/yourusername/home-registry.git
+cd home-registry
+
+# Build and run
 docker compose up -d
 ```
 
@@ -51,7 +134,7 @@ Access at: `http://localhost:8210` (or your server's IP)
 - After setup, create your first inventory from the main page
 - Start adding items to track
 
-### Docker Compose (Detailed)
+### Docker Compose Commands
 
 ```bash
 # Start services
@@ -67,6 +150,16 @@ docker compose down
 docker compose down -v
 ```
 
+**Using Specific Versions:**
+
+```bash
+# Use specific beta version
+VERSION=v0.1.0-beta.1 GITHUB_REPOSITORY_OWNER=victorytek docker compose -f docker-compose.prod.yml up -d
+
+# Use latest beta
+VERSION=beta GITHUB_REPOSITORY_OWNER=victorytek docker compose -f docker-compose.prod.yml up -d
+```
+
 ### Docker Run (Manual)
 
 ```bash
@@ -79,9 +172,13 @@ docker run -d --name home-registry -p 8210:8210 \
 
 **Note**: This requires a separate PostgreSQL database. Use Docker Compose for a complete setup.
 
-## Docker Compose File
+## Docker Compose Files
 
-The app uses smart defaults and requires **zero configuration** for self-hosted deployments:
+Home Registry provides two Docker Compose configurations:
+
+### docker-compose.yml (Development/Local Build)
+
+For development or when you want to build from source:
 
 ```yaml
 services:
@@ -101,7 +198,7 @@ services:
       retries: 5
 
   app:
-    build: .
+    build: .  # Builds from local Dockerfile
     depends_on:
       db:
         condition: service_healthy
@@ -120,33 +217,61 @@ volumes:
   appdata:
 ```
 
-**What's Automated:**
+### docker-compose.prod.yml (Production/Pre-built Image)
+
+For production deployments using pre-built images from GHCR:
+
+```yaml
+services:
+  db:
+    image: postgres:17
+    # ... same as above
+
+  app:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-yourusername}/home-registry:${VERSION:-beta}
+    pull_policy: always  # Always check for updates
+    # ... rest of configuration
+```
+
+**Key Differences:**
+- **Production**: Uses `image:` to pull from GHCR, includes health checks
+- **Development**: Uses `build:` to compile from source locally
+
+**Key Differences:**
+- **Production**: Uses `image:` to pull from GHCR, includes health checks
+- **Development**: Uses `build:` to compile from source locally
+
+## Configuration
+
+### What's Automated
+
+Both configurations provide:
 - 🔐 JWT secret generation and persistence
 - 🗄️ Database migrations
 - ⚙️ Sensible defaults for all settings
 
-**Optional Production Configuration:**
+### Optional Production Configuration
 
-For production, create a `.env` file:
+For production, create a `.env` file or export environment variables:
 
 ```env
-# Database (optional, defaults provided)
-POSTGRES_DB=home_inventory
-POSTGRES_USER=your_db_user
+# Override repository owner (for forks)
+GITHUB_REPOSITORY_OWNER=yourusername
+
+# Specify version
+VERSION=v0.1.0-beta.1  # or 'beta' for latest beta, 'latest' for stable
+
+# Database credentials (recommended for production)
 POSTGRES_PASSWORD=your_secure_password
 
-# Application (optional, defaults provided)
-PORT=8210
+# Application settings
 RUST_LOG=info
-
-# Custom JWT secret (optional - auto-generated by default)
-JWT_SECRET=your-secure-secret-min-32-chars
 JWT_TOKEN_LIFETIME_HOURS=24
 ```
 
 Then run:
 ```bash
-docker compose up -d
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 ## Environment Variables

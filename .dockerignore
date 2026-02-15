@@ -1,7 +1,79 @@
+# .dockerignore - Exclude unnecessary files from Docker build context
+# This improves build performance and reduces image size
+
+# Rust build artifacts
 target/
+**/*.rs.bk
+*.pdb
+
+# Node modules and caches
+node_modules/
 frontend/node_modules/
+.npm/
+.pnpm-store/
 frontend/dist/
+frontend/.vite/
+
+# Git and version control
 .git/
+.gitignore
+.gitattributes
+
+# GitHub workflows and docs
+.github/
+analysis/
+
+# Humidor legacy project
+humidor/
+
+# Documentation (not needed in container)
+*.md
+!README.md
+docs/
+screenshots/
+release_notes/
+
+# Development and test files
+tests/
+.vscode/
+.idea/
 *.log
+*.tmp
+
+# Environment and secrets
+.env
 .env.local
+.env.*.local
+secrets/
+backups/
+
+# CI/CD files
+.travis.yml
+.gitlab-ci.yml
+azure-pipelines.yml
+
+# Docker files (don't need these inside the image)
+docker-compose.yml
+docker-compose.dev.yml
+docker-compose.prod.yml
+Dockerfile
+.dockerignore
+
+# OS-specific files
 .DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Audit and analysis files
+audit.toml
+tarpaulin.toml
+deny.toml
+clippy.toml
+rustfmt.toml
