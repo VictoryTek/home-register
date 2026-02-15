@@ -109,7 +109,6 @@
 /* Toast Notification */
 .toast {
   position: fixed;
-  bottom: 2rem;
   right: 2rem;
   background: var(--bg-primary);
   border: 1px solid var(--border-color);

@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Header,
   LoadingState,
   EmptyState,
   Modal,
-  WarrantyNotificationBanner,
+  ConfirmModal,
   ShareInventoryModal,
 } from '@/components';
 import { inventoryApi, itemApi, organizerApi } from '@/services/api';
@@ -13,18 +13,22 @@ import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { formatDate, type DateFormatType } from '@/utils/dateFormat';
 import { formatCurrency, type CurrencyType } from '@/utils/currencyFormat';
+import { getNotificationMessage } from '@/utils/notifications';
 import type {
   Inventory,
   Item,
   CreateItemRequest,
+  UpdateItemRequest,
   OrganizerTypeWithOptions,
   SetItemOrganizerValueRequest,
+  ItemOrganizerValueWithDetails,
 } from '@/types';
 
 export function InventoryDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { showToast, setItems: setGlobalItems } = useApp();
+  const location = useLocation();
+  const { showToast, setItems: setGlobalItems, warrantyNotifications } = useApp();
   const { settings } = useAuth();
   const [loading, setLoading] = useState(true);
   const [inventory, setInventory] = useState<Inventory | null>(null);
@@ -32,6 +36,24 @@ export function InventoryDetailPage() {
   const [organizers, setOrganizers] = useState<OrganizerTypeWithOptions[]>([]);
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+
+  // Issue 1: View Details modal state
+  const [viewingItem, setViewingItem] = useState<Item | null>(null);
+  const [viewingItemOrganizerValues, setViewingItemOrganizerValues] = useState<
+    ItemOrganizerValueWithDetails[]
+  >([]);
+
+  // Issue 2: Edit Item modal state
+  const [showEditItemModal, setShowEditItemModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const [editItemData, setEditItemData] = useState<UpdateItemRequest>({});
+  const [editOrganizerValues, setEditOrganizerValues] = useState<
+    Record<string, { optionId?: number; textValue?: string }>
+  >({});
+
+  // Issue 3: Delete Confirmation modal state
+  const [showDeleteItemModal, setShowDeleteItemModal] = useState(false);
+  const [deletingItem, setDeletingItem] = useState<Item | null>(null);
   const [newItem, setNewItem] = useState<CreateItemRequest>({
     inventory_id: parseInt(id ?? '0', 10),
     name: '',
@@ -46,6 +68,14 @@ export function InventoryDetailPage() {
   const [organizerValues, setOrganizerValues] = useState<
     Record<string, { optionId?: number; textValue?: string }>
   >({});
+
+  // Enhancement 2: Helper to get notification for an item
+  const getItemNotification = (itemId: number | undefined) => {
+    if (!itemId) {
+      return null;
+    }
+    return warrantyNotifications.find((n) => n.id === itemId);
+  };
 
   // Empty dependency array - all functions used are stable:
   // - navigate is stable (from react-router)
@@ -90,6 +120,21 @@ export function InventoryDetailPage() {
       void loadInventoryDetail(parseInt(id, 10));
     }
   }, [id, loadInventoryDetail]);
+
+  // Enhancement 1: Auto-open item details modal if navigated from notification
+  // RECOMMENDED FIX: Extract primitive value to prevent unnecessary re-runs
+  const openItemId = (location.state as { openItemId?: number } | null)?.openItemId;
+
+  useEffect(() => {
+    if (openItemId && items.length > 0) {
+      const item = items.find((i) => i.id === openItemId);
+      if (item) {
+        void handleViewItem(item);
+        // Clear navigation state to prevent re-opening on next visit
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [items, openItemId]);
 
   const handleAddItem = async () => {
     if (!newItem.name.trim()) {
@@ -159,14 +204,122 @@ export function InventoryDetailPage() {
     }
   };
 
-  const handleDeleteItem = async (itemId: number) => {
-    // eslint-disable-next-line no-alert
-    if (!confirm('Are you sure you want to delete this item?')) {
+  // Issue 1: View Details handler
+  const handleViewItem = async (item: Item) => {
+    setViewingItem(item);
+    setViewingItemOrganizerValues([]);
+    if (item.id) {
+      try {
+        const result = await itemApi.getOrganizerValues(item.id);
+        if (result.success && result.data) {
+          setViewingItemOrganizerValues(result.data);
+        }
+      } catch {
+        // Organizer values are optional, proceed without them
+      }
+    }
+  };
+
+  // Issue 2: Edit Item handlers
+  const handleOpenEditItem = async (item: Item) => {
+    setEditingItem(item);
+    setEditItemData({
+      name: item.name,
+      description: item.description ?? '',
+      category: item.category ?? '',
+      location: item.location ?? '',
+      purchase_date: item.purchase_date ?? '',
+      purchase_price: item.purchase_price,
+      warranty_expiry: item.warranty_expiry ?? '',
+      notes: item.notes ?? '',
+      quantity: item.quantity ?? 1,
+    });
+    setEditOrganizerValues({});
+    if (item.id) {
+      try {
+        const result = await itemApi.getOrganizerValues(item.id);
+        if (result.success && result.data) {
+          const values: Record<string, { optionId?: number; textValue?: string }> = {};
+          for (const val of result.data) {
+            values[String(val.organizer_type_id)] = {
+              optionId: val.organizer_option_id,
+              textValue: val.text_value,
+            };
+          }
+          setEditOrganizerValues(values);
+        }
+      } catch {
+        // Continue without pre-filled organizer values
+      }
+    }
+    setShowEditItemModal(true);
+  };
+
+  const handleEditItem = async () => {
+    if (!editingItem?.id || !editItemData.name?.trim()) {
+      showToast('Please enter an item name', 'error');
+      return;
+    }
+
+    // Check required organizers
+    for (const org of organizers) {
+      if (org.is_required && org.id) {
+        const value = editOrganizerValues[String(org.id)];
+        if (
+          !value ||
+          (org.input_type === 'select' && !value.optionId) ||
+          (org.input_type === 'text' && !value.textValue?.trim())
+        ) {
+          showToast(`Please fill in the required field: ${org.name}`, 'error');
+          return;
+        }
+      }
+    }
+
+    try {
+      const result = await itemApi.update(editingItem.id, editItemData);
+      if (result.success) {
+        // Save organizer values
+        const valuesToSave: SetItemOrganizerValueRequest[] = [];
+        for (const [typeIdStr, value] of Object.entries(editOrganizerValues)) {
+          const typeId = parseInt(typeIdStr);
+          if (value.optionId || value.textValue?.trim()) {
+            valuesToSave.push({
+              organizer_type_id: typeId,
+              organizer_option_id: value.optionId,
+              text_value: value.textValue?.trim(),
+            });
+          }
+        }
+        if (valuesToSave.length > 0) {
+          await itemApi.setOrganizerValues(editingItem.id, { values: valuesToSave });
+        }
+
+        showToast('Item updated successfully!', 'success');
+        setShowEditItemModal(false);
+        setEditingItem(null);
+        void loadInventoryDetail(parseInt(id ?? '0', 10));
+      } else {
+        showToast(result.error ?? 'Failed to update item', 'error');
+      }
+    } catch {
+      showToast('Failed to update item', 'error');
+    }
+  };
+
+  // Issue 3: Delete handlers (replacing native confirm())
+  const openDeleteItemModal = (item: Item) => {
+    setDeletingItem(item);
+    setShowDeleteItemModal(true);
+  };
+
+  const handleDeleteItem = async () => {
+    if (!deletingItem?.id) {
       return;
     }
 
     try {
-      const result = await itemApi.delete(itemId);
+      const result = await itemApi.delete(deletingItem.id);
       if (result.success) {
         showToast('Item deleted successfully!', 'success');
         void loadInventoryDetail(parseInt(id ?? '0', 10));
@@ -208,8 +361,6 @@ export function InventoryDetailPage() {
 
       <div className="content">
         <div className="inventory-detail">
-          <WarrantyNotificationBanner />
-
           <div
             style={{
               display: 'flex',
@@ -223,6 +374,13 @@ export function InventoryDetailPage() {
               Back to Inventories
             </button>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => navigate(`/inventory/${id}/report`)}
+              >
+                <i className="fas fa-chart-bar"></i>
+                Report
+              </button>
               <button className="btn btn-secondary" onClick={() => setShowShareModal(true)}>
                 <i className="fas fa-share-nodes"></i>
                 Share
@@ -283,6 +441,7 @@ export function InventoryDetailPage() {
               <div className="items-grid">
                 {items.map((item) => {
                   const itemValue = (item.purchase_price ?? 0) * (item.quantity ?? 1);
+                  const notification = getItemNotification(item.id);
                   return (
                     <div key={item.id} className="item-card">
                       <div className="item-card-header">
@@ -359,19 +518,52 @@ export function InventoryDetailPage() {
                         </div>
                       </div>
                       <div className="item-card-footer">
-                        <button className="btn btn-sm btn-ghost" title="View Details">
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          onClick={() => void handleViewItem(item)}
+                          title="View Details"
+                        >
                           <i className="fas fa-eye"></i>
                         </button>
-                        <button className="btn btn-sm btn-ghost" title="Edit Item">
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          onClick={() => void handleOpenEditItem(item)}
+                          title="Edit Item"
+                        >
                           <i className="fas fa-edit"></i>
                         </button>
                         <button
                           className="btn btn-sm btn-ghost text-danger"
-                          onClick={() => item.id && handleDeleteItem(item.id)}
+                          onClick={() => openDeleteItemModal(item)}
                           title="Delete Item"
                         >
                           <i className="fas fa-trash"></i>
                         </button>
+                        {/* Enhancement 2: Notification Badge - moved to footer */}
+                        {notification &&
+                          (() => {
+                            const { status, daysUntilExpiry } = notification;
+                            const statusClass = `status-${status}`;
+                            const icon =
+                              status === 'expired'
+                                ? 'fa-exclamation-circle'
+                                : status === 'expiring-soon'
+                                  ? 'fa-exclamation-triangle'
+                                  : 'fa-info-circle';
+
+                            const text = status === 'expired' ? 'Expired' : `${daysUntilExpiry}d`;
+
+                            return (
+                              <span
+                                className={`item-notification-badge ${statusClass}`}
+                                title={getNotificationMessage(notification)}
+                                aria-label={`Warranty notification: ${getNotificationMessage(notification)}`}
+                              >
+                                <i className={`fas ${icon}`}></i>
+                                {text}
+                              </span>
+                            );
+                          })()}
                       </div>
                     </div>
                   );
@@ -580,6 +772,429 @@ export function InventoryDetailPage() {
           />
         </div>
       </Modal>
+
+      {/* View Details Modal (Issue 1) */}
+      <Modal
+        isOpen={viewingItem !== null}
+        onClose={() => {
+          setViewingItem(null);
+          setViewingItemOrganizerValues([]);
+        }}
+        title={viewingItem?.name ?? 'Item Details'}
+        subtitle={viewingItem?.category ? `Category: ${viewingItem.category}` : undefined}
+        maxWidth="600px"
+        footer={
+          <button
+            className="btn btn-secondary"
+            onClick={() => {
+              setViewingItem(null);
+              setViewingItemOrganizerValues([]);
+            }}
+          >
+            Close
+          </button>
+        }
+      >
+        {viewingItem && (
+          <div className="item-details-view">
+            {viewingItem.description && (
+              <div className="form-group">
+                <label className="form-label">Description</label>
+                <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
+                  {viewingItem.description}
+                </p>
+              </div>
+            )}
+            {viewingItem.location && (
+              <div className="form-group">
+                <label className="form-label">
+                  <i className="fas fa-map-marker-alt" style={{ marginRight: '0.5rem' }}></i>
+                  Location
+                </label>
+                <p style={{ margin: 0, color: 'var(--text-secondary)' }}>{viewingItem.location}</p>
+              </div>
+            )}
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">
+                  <i className="fas fa-boxes" style={{ marginRight: '0.5rem' }}></i>
+                  Quantity
+                </label>
+                <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
+                  {viewingItem.quantity ?? 1}
+                </p>
+              </div>
+              {viewingItem.purchase_price !== undefined && (
+                <div className="form-group">
+                  <label className="form-label">
+                    <i className="fas fa-tag" style={{ marginRight: '0.5rem' }}></i>
+                    Purchase Price
+                  </label>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
+                    {formatCurrency(
+                      viewingItem.purchase_price,
+                      (settings?.currency ?? 'USD') as CurrencyType
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+            {viewingItem.purchase_price !== undefined && (viewingItem.quantity ?? 1) > 1 && (
+              <div className="form-group">
+                <label className="form-label">
+                  <i className="fas fa-coins" style={{ marginRight: '0.5rem' }}></i>
+                  Total Value
+                </label>
+                <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
+                  {formatCurrency(
+                    viewingItem.purchase_price * (viewingItem.quantity ?? 1),
+                    (settings?.currency ?? 'USD') as CurrencyType
+                  )}
+                </p>
+              </div>
+            )}
+            <div className="form-row">
+              {viewingItem.purchase_date && (
+                <div className="form-group">
+                  <label className="form-label">
+                    <i className="fas fa-calendar-alt" style={{ marginRight: '0.5rem' }}></i>
+                    Purchase Date
+                  </label>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
+                    {formatDate(
+                      viewingItem.purchase_date,
+                      (settings?.date_format ?? 'MM/DD/YYYY') as DateFormatType
+                    )}
+                  </p>
+                </div>
+              )}
+              {viewingItem.warranty_expiry && (
+                <div className="form-group">
+                  <label className="form-label">
+                    <i className="fas fa-shield-alt" style={{ marginRight: '0.5rem' }}></i>
+                    Warranty Expiry
+                  </label>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
+                    {formatDate(
+                      viewingItem.warranty_expiry,
+                      (settings?.date_format ?? 'MM/DD/YYYY') as DateFormatType
+                    )}
+                    {new Date(viewingItem.warranty_expiry) < new Date()
+                      ? ' (Expired)'
+                      : ' (Active)'}
+                  </p>
+                </div>
+              )}
+            </div>
+            {viewingItem.notes && (
+              <div className="form-group">
+                <label className="form-label">
+                  <i className="fas fa-sticky-note" style={{ marginRight: '0.5rem' }}></i>
+                  Notes
+                </label>
+                <p style={{ margin: 0, color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>
+                  {viewingItem.notes}
+                </p>
+              </div>
+            )}
+            {viewingItemOrganizerValues.length > 0 && (
+              <div className="form-group">
+                <label className="form-label" style={{ marginBottom: '0.5rem' }}>
+                  <i className="fas fa-folder-tree" style={{ marginRight: '0.5rem' }}></i>
+                  Organizer Assignments
+                </label>
+                {viewingItemOrganizerValues.map((val) => (
+                  <div
+                    key={val.organizer_type_id}
+                    style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.25rem' }}
+                  >
+                    <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>
+                      {val.organizer_type_name}:
+                    </span>
+                    <span style={{ color: 'var(--text-secondary)' }}>
+                      {val.value ?? val.text_value ?? '—'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="form-row">
+              {viewingItem.created_at && (
+                <div className="form-group">
+                  <label
+                    className="form-label"
+                    style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}
+                  >
+                    Created
+                  </label>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    {formatDate(
+                      viewingItem.created_at,
+                      (settings?.date_format ?? 'MM/DD/YYYY') as DateFormatType
+                    )}
+                  </p>
+                </div>
+              )}
+              {viewingItem.updated_at && (
+                <div className="form-group">
+                  <label
+                    className="form-label"
+                    style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}
+                  >
+                    Updated
+                  </label>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    {formatDate(
+                      viewingItem.updated_at,
+                      (settings?.date_format ?? 'MM/DD/YYYY') as DateFormatType
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Edit Item Modal (Issue 2) */}
+      <Modal
+        isOpen={showEditItemModal}
+        onClose={() => {
+          setShowEditItemModal(false);
+          setEditingItem(null);
+        }}
+        title="Edit Item"
+        subtitle="Update item details"
+        footer={
+          <>
+            <button
+              className="btn btn-secondary"
+              onClick={() => {
+                setShowEditItemModal(false);
+                setEditingItem(null);
+              }}
+            >
+              Cancel
+            </button>
+            <button className="btn btn-primary" onClick={handleEditItem}>
+              <i className="fas fa-save"></i>
+              Save Changes
+            </button>
+          </>
+        }
+      >
+        <div className="form-group">
+          <label className="form-label" htmlFor="edit-item-name">
+            Item Name *
+          </label>
+          <input
+            type="text"
+            className="form-input"
+            id="edit-item-name"
+            placeholder="Enter item name"
+            value={editItemData.name ?? ''}
+            onChange={(e) => setEditItemData({ ...editItemData, name: e.target.value })}
+          />
+        </div>
+
+        {/* Dynamic Organizer Fields */}
+        {organizers.length > 0 && (
+          <div className="organizer-fields">
+            {organizers.map(
+              (org) =>
+                org.id && (
+                  <div className="form-group" key={org.id}>
+                    <label className="form-label" htmlFor={`edit-organizer-${org.id}`}>
+                      {org.name}
+                      {org.is_required ? ' *' : ''}
+                    </label>
+                    {org.input_type === 'select' ? (
+                      <select
+                        className="form-select"
+                        id={`edit-organizer-${org.id}`}
+                        value={editOrganizerValues[String(org.id)]?.optionId ?? ''}
+                        onChange={(e) =>
+                          setEditOrganizerValues({
+                            ...editOrganizerValues,
+                            [String(org.id)]: {
+                              optionId: e.target.value ? parseInt(e.target.value, 10) : undefined,
+                            },
+                          })
+                        }
+                      >
+                        <option value="">Select {org.name.toLowerCase()}</option>
+                        {org.options.map((opt) => (
+                          <option key={opt.id} value={opt.id}>
+                            {opt.name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        className="form-input"
+                        id={`edit-organizer-${org.id}`}
+                        placeholder={`Enter ${org.name.toLowerCase()}`}
+                        value={editOrganizerValues[String(org.id)]?.textValue ?? ''}
+                        onChange={(e) =>
+                          setEditOrganizerValues({
+                            ...editOrganizerValues,
+                            [String(org.id)]: { textValue: e.target.value },
+                          })
+                        }
+                      />
+                    )}
+                  </div>
+                )
+            )}
+          </div>
+        )}
+
+        {organizers.length === 0 && (
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label" htmlFor="edit-item-category">
+                Category
+              </label>
+              <input
+                type="text"
+                className="form-input"
+                id="edit-item-category"
+                placeholder="Enter category"
+                value={editItemData.category ?? ''}
+                onChange={(e) => setEditItemData({ ...editItemData, category: e.target.value })}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="edit-item-location">
+                Location
+              </label>
+              <input
+                type="text"
+                className="form-input"
+                id="edit-item-location"
+                placeholder="Enter location"
+                value={editItemData.location ?? ''}
+                onChange={(e) => setEditItemData({ ...editItemData, location: e.target.value })}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label" htmlFor="edit-item-price">
+              Purchase Price
+            </label>
+            <input
+              type="number"
+              className="form-input"
+              id="edit-item-price"
+              placeholder="0.00"
+              step="0.01"
+              min="0"
+              value={editItemData.purchase_price ?? ''}
+              onChange={(e) =>
+                setEditItemData({
+                  ...editItemData,
+                  purchase_price: e.target.value ? parseFloat(e.target.value) : undefined,
+                })
+              }
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="edit-item-quantity">
+              Quantity
+            </label>
+            <input
+              type="number"
+              className="form-input"
+              id="edit-item-quantity"
+              placeholder="1"
+              min="1"
+              value={editItemData.quantity ?? 1}
+              onChange={(e) =>
+                setEditItemData({ ...editItemData, quantity: parseInt(e.target.value, 10) || 1 })
+              }
+            />
+          </div>
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label" htmlFor="edit-item-purchase-date">
+              Purchase Date
+            </label>
+            <input
+              type="date"
+              className="form-input"
+              id="edit-item-purchase-date"
+              value={editItemData.purchase_date ?? ''}
+              onChange={(e) => setEditItemData({ ...editItemData, purchase_date: e.target.value })}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="edit-item-warranty">
+              Warranty Expiry
+            </label>
+            <input
+              type="date"
+              className="form-input"
+              id="edit-item-warranty"
+              value={editItemData.warranty_expiry ?? ''}
+              onChange={(e) =>
+                setEditItemData({ ...editItemData, warranty_expiry: e.target.value })
+              }
+            />
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label className="form-label" htmlFor="edit-item-description">
+            Description
+          </label>
+          <textarea
+            className="form-input"
+            id="edit-item-description"
+            placeholder="Optional description"
+            rows={3}
+            value={editItemData.description ?? ''}
+            onChange={(e) => setEditItemData({ ...editItemData, description: e.target.value })}
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label" htmlFor="edit-item-notes">
+            Notes
+          </label>
+          <textarea
+            className="form-input"
+            id="edit-item-notes"
+            placeholder="Optional notes"
+            rows={3}
+            value={editItemData.notes ?? ''}
+            onChange={(e) => setEditItemData({ ...editItemData, notes: e.target.value })}
+          />
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation Modal (Issue 3) */}
+      <ConfirmModal
+        isOpen={showDeleteItemModal}
+        onClose={() => {
+          setShowDeleteItemModal(false);
+          setDeletingItem(null);
+        }}
+        onConfirm={handleDeleteItem}
+        title="Delete Item"
+        message={`Are you sure you want to delete "${deletingItem?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        confirmButtonClass="btn-danger"
+        icon="fas fa-trash"
+      />
 
       <ShareInventoryModal
         isOpen={showShareModal}

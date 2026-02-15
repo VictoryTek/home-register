@@ -219,6 +219,22 @@ pub async fn initial_setup(
         warn!("Failed to create user settings: {}", e);
     }
 
+    // Auto-assign sample inventories (with NULL user_id) to this first admin
+    match db_service.assign_sample_inventories_to_user(user.id).await {
+        Ok(assigned_count) => {
+            if assigned_count > 0 {
+                info!(
+                    "Assigned {} sample inventories to first admin user: {}",
+                    assigned_count, user.username
+                );
+            }
+        },
+        Err(e) => {
+            // Non-fatal: log warning but don't fail setup
+            warn!("Failed to assign sample inventories: {}", e);
+        },
+    }
+
     // Optionally create first inventory
     if let Some(inventory_name) = &req.inventory_name {
         if !inventory_name.is_empty() {

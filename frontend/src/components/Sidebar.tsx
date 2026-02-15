@@ -29,6 +29,13 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
             <i className="fas fa-folder-tree"></i>
             <span>Organizers</span>
           </button>
+          <button
+            className={`nav-item ${currentPage === 'notifications' ? 'active' : ''}`}
+            onClick={() => onNavigate('notifications')}
+          >
+            <i className="fas fa-bell"></i>
+            <span>Notifications</span>
+          </button>
         </div>
 
         <div className="nav-section system-section">

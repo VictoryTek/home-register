@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import type { User, UserSettings, SetupStatusResponse } from '@/types';
+import type { User, UserSettings, SetupStatusResponse, DismissedWarranties } from '@/types';
 import { authApi } from '@/services/api';
 
 // Storage keys - similar to Humidor
@@ -19,6 +19,9 @@ interface AuthContextType {
   refreshUser: () => Promise<void>;
   refreshSettings: () => Promise<void>;
   updateSettings: (settings: Partial<UserSettings>) => Promise<boolean>;
+  getDismissedWarranties: () => DismissedWarranties;
+  dismissNotification: (itemId: number, warrantyExpiry: string) => Promise<boolean>;
+  clearAllDismissals: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -178,6 +181,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [token]
   );
 
+  // Enhancement 3: Dismissal functions
+  const getDismissedWarranties = useCallback((): DismissedWarranties => {
+    const dismissed = settings?.settings_json.dismissedWarranties;
+    return (dismissed as DismissedWarranties | undefined) ?? {};
+  }, [settings]);
+
+  const dismissNotification = useCallback(
+    async (itemId: number, warrantyExpiry: string): Promise<boolean> => {
+      if (!token) {
+        return false;
+      }
+
+      try {
+        const dismissed = getDismissedWarranties();
+        dismissed[String(itemId)] = {
+          dismissedAt: new Date().toISOString(),
+          warrantyExpiry,
+        };
+
+        const result = await authApi.updateSettings(token, {
+          settings_json: {
+            ...settings?.settings_json,
+            dismissedWarranties: dismissed,
+          },
+        });
+
+        if (result.success && result.data) {
+          setSettings(result.data);
+          return true;
+        }
+      } catch (error) {
+        console.error('Error dismissing notification:', error);
+      }
+      return false;
+    },
+    [token, settings, getDismissedWarranties]
+  );
+
+  const clearAllDismissals = useCallback(async (): Promise<boolean> => {
+    if (!token) {
+      return false;
+    }
+
+    try {
+      const result = await authApi.updateSettings(token, {
+        settings_json: {
+          ...settings?.settings_json,
+          dismissedWarranties: {},
+        },
+      });
+
+      if (result.success && result.data) {
+        setSettings(result.data);
+        return true;
+      }
+    } catch (error) {
+      console.error('Error clearing dismissals:', error);
+    }
+    return false;
+  }, [token, settings]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -193,6 +257,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         refreshUser,
         refreshSettings,
         updateSettings,
+        getDismissedWarranties,
+        dismissNotification,
+        clearAllDismissals,
       }}
     >
       {children}

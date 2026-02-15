@@ -415,3 +415,44 @@ export interface RecoveryCodeUsedResponse {
   message: string;
   remaining_codes: number;
 }
+
+// Inventory Report types
+export interface InventoryReportParams {
+  inventory_id?: number;
+  from_date?: string;
+  to_date?: string;
+  min_price?: number;
+  max_price?: number;
+  category?: string;
+  format?: string;
+}
+
+export interface InventoryStatistics {
+  total_items: number;
+  total_value: number;
+  category_count: number;
+  average_price: number;
+}
+
+export interface CategorySummary {
+  category: string;
+  item_count: number;
+  total_value: number;
+}
+
+export interface InventoryReportData {
+  statistics: InventoryStatistics;
+  category_breakdown: CategorySummary[];
+  items: Item[];
+  generated_at: string;
+  filters_applied: InventoryReportParams;
+}
+
+// Dismissed warranty notifications (stored in UserSettings.settings_json)
+export type DismissedWarranties = Record<
+  string,
+  {
+    dismissedAt: string; // ISO timestamp
+    warrantyExpiry: string; // Date at dismissal (to detect changes)
+  }
+>;

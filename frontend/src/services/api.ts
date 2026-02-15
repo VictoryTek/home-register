@@ -43,6 +43,11 @@ import type {
   RecoveryCodesResponse,
   RecoveryCodesStatus,
   RecoveryCodeUsedResponse,
+  // Report types
+  InventoryReportParams,
+  InventoryReportData,
+  InventoryStatistics,
+  CategorySummary,
 } from '@/types';
 
 const API_BASE = '/api';
@@ -781,3 +786,77 @@ export const authApi = {
     return handleResponse<RecoveryCodeUsedResponse>(response);
   },
 };
+
+// ==================== Inventory Reports ====================
+export const reportApi = {
+  // Get comprehensive inventory report
+  async getInventoryReport(
+    params: InventoryReportParams
+  ): Promise<ApiResponse<InventoryReportData>> {
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        queryParams.append(key, String(value));
+      }
+    });
+
+    const response = await fetchWithRetry(
+      `${API_BASE}/reports/inventory?${queryParams.toString()}`,
+      {
+        headers: getHeaders(),
+      }
+    );
+    return handleResponse<InventoryReportData>(response);
+  },
+
+  // Download report as CSV
+  async downloadReportCSV(params: InventoryReportParams): Promise<Blob> {
+    const queryParams = new URLSearchParams();
+    Object.entries({ ...params, format: 'csv' }).forEach(([key, value]) => {
+      if (value !== '') {
+        queryParams.append(key, String(value));
+      }
+    });
+
+    const response = await fetchWithRetry(
+      `${API_BASE}/reports/inventory?${queryParams.toString()}`,
+      {
+        headers: {
+          Authorization: `Bearer ${getToken()}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to download CSV');
+    }
+
+    return response.blob();
+  },
+
+  // Get inventory statistics
+  async getStatistics(inventoryId?: number): Promise<ApiResponse<InventoryStatistics>> {
+    const query = inventoryId ? `?inventory_id=${inventoryId}` : '';
+    const response = await fetchWithRetry(`${API_BASE}/reports/inventory/statistics${query}`, {
+      headers: getHeaders(),
+    });
+    return handleResponse<InventoryStatistics>(response);
+  },
+
+  // Get category breakdown
+  async getCategoryBreakdown(inventoryId?: number): Promise<ApiResponse<CategorySummary[]>> {
+    const query = inventoryId ? `?inventory_id=${inventoryId}` : '';
+    const response = await fetchWithRetry(`${API_BASE}/reports/inventory/categories${query}`, {
+      headers: getHeaders(),
+    });
+    return handleResponse<CategorySummary[]>(response);
+  },
+};
+
+// Export types for convenience
+export type {
+  InventoryReportParams,
+  InventoryStatistics,
+  CategorySummary,
+  InventoryReportData,
+} from '@/types';

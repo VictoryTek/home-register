@@ -128,6 +128,82 @@ pub struct ErrorResponse {
     pub message: Option<String>,
 }
 
+// Inventory Reporting Models
+#[derive(Serialize, Deserialize, Debug, Clone, Validate)]
+pub struct InventoryReportRequest {
+    pub inventory_id: Option<i32>,
+    #[validate(length(max = 255, message = "Category must be under 255 characters"))]
+    pub category: Option<String>,
+    #[validate(length(max = 500, message = "Location must be under 500 characters"))]
+    pub location: Option<String>,
+    pub from_date: Option<String>, // ISO 8601 format
+    pub to_date: Option<String>,
+    #[validate(range(
+        min = 0.0,
+        max = 1_000_000_000.0,
+        message = "Price must be between 0 and 1 billion"
+    ))]
+    pub min_price: Option<f64>,
+    #[validate(range(
+        min = 0.0,
+        max = 1_000_000_000.0,
+        message = "Price must be between 0 and 1 billion"
+    ))]
+    pub max_price: Option<f64>,
+    #[validate(length(max = 50, message = "Sort field must be under 50 characters"))]
+    pub sort_by: Option<String>, // "name", "price", "date", "category"
+    #[validate(length(max = 10, message = "Sort order must be under 10 characters"))]
+    pub sort_order: Option<String>, // "asc", "desc"
+    #[validate(length(max = 10, message = "Format must be under 10 characters"))]
+    pub format: Option<String>, // "json", "csv"
+}
+
+#[derive(Serialize, Debug)]
+pub struct InventoryStatistics {
+    pub total_items: i64,
+    pub total_value: f64,
+    pub total_quantity: i64,
+    pub category_count: i64,
+    pub inventories_count: i64,
+    pub oldest_item_date: Option<String>,
+    pub newest_item_date: Option<String>,
+    pub average_item_value: f64,
+}
+
+#[derive(Serialize, Debug)]
+pub struct CategoryBreakdown {
+    pub category: String,
+    pub item_count: i64,
+    pub total_quantity: i64,
+    pub total_value: f64,
+    pub percentage_of_total: f64,
+}
+
+#[derive(Serialize, Debug)]
+pub struct ItemExportRow {
+    pub id: i32,
+    pub inventory_name: String,
+    pub item_name: String,
+    pub description: String,
+    pub category: String,
+    pub location: String,
+    pub quantity: i32,
+    pub purchase_price: String,
+    pub total_value: String,
+    pub purchase_date: String,
+    pub warranty_expiry: String,
+    pub created_at: String,
+}
+
+#[derive(Serialize, Debug)]
+pub struct InventoryReportData {
+    pub statistics: InventoryStatistics,
+    pub category_breakdown: Vec<CategoryBreakdown>,
+    pub items: Vec<Item>,
+    pub generated_at: DateTime<Utc>,
+    pub filters_applied: InventoryReportRequest,
+}
+
 // Categories
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Category {

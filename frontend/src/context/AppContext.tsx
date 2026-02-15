@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import type { Theme, ToastMessage, Inventory, Item } from '@/types';
 import { checkWarrantyNotifications, type WarrantyNotification } from '@/utils/notifications';
+import { useAuth } from '@/context/AuthContext';
 
 interface AppContextType {
   theme: Theme;
@@ -21,6 +22,9 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  // CRITICAL FIX: Import useAuth to access dismissed warranties
+  const { getDismissedWarranties } = useAuth();
+
   const [theme, setTheme] = useState<Theme>(() => {
     const saved = localStorage.getItem('theme');
     return saved ? (saved as Theme) : 'light';
@@ -62,10 +66,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const checkNotifications = useCallback(() => {
-    // Check all items from all inventories for warranty notifications
-    const notifications = checkWarrantyNotifications(items);
+    // CRITICAL FIX: Pass dismissed warranties to filter at the source
+    // This ensures all downstream components get pre-filtered notifications
+    const dismissedWarranties = getDismissedWarranties();
+    const notifications = checkWarrantyNotifications(items, dismissedWarranties);
     setWarrantyNotifications(notifications);
-  }, [items]);
+  }, [items, getDismissedWarranties]);
 
   // Auto-check notifications when items change
   useEffect(() => {

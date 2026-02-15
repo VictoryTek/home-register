@@ -8,18 +8,24 @@ export function WarrantyNotificationBanner() {
   const { settings } = useAuth();
   const navigate = useNavigate();
 
-  // Don't show if notifications are disabled or there are no notifications
-  if (!settings?.notifications_enabled || warrantyNotifications.length === 0) {
+  // RECOMMENDED FIX: Removed redundant filtering - AppContext now filters at source
+  // warrantyNotifications already excludes dismissed notifications
+  const activeNotifications = warrantyNotifications;
+
+  // Don't show if notifications are disabled or there are no active notifications
+  if (!settings?.notifications_enabled || activeNotifications.length === 0) {
     return null;
   }
 
   // Group by status
-  const expired = warrantyNotifications.filter((n) => n.status === 'expired');
-  const expiringSoon = warrantyNotifications.filter((n) => n.status === 'expiring-soon');
-  const expiringThisMonth = warrantyNotifications.filter((n) => n.status === 'expiring-this-month');
+  const expired = activeNotifications.filter((n) => n.status === 'expired');
+  const expiringSoon = activeNotifications.filter((n) => n.status === 'expiring-soon');
+  const expiringThisMonth = activeNotifications.filter((n) => n.status === 'expiring-this-month');
 
-  const handleNotificationClick = (notification: (typeof warrantyNotifications)[0]) => {
-    navigate(`/inventory/${notification.inventoryId}`);
+  const handleNotificationClick = (notification: (typeof activeNotifications)[0]) => {
+    navigate(`/inventory/${notification.inventoryId}`, {
+      state: { openItemId: notification.id },
+    });
   };
 
   return (
@@ -52,7 +58,7 @@ export function WarrantyNotificationBanner() {
             color: 'var(--text-primary)',
           }}
         >
-          Warranty Notifications ({warrantyNotifications.length})
+          Warranty Notifications ({activeNotifications.length})
         </h3>
       </div>
 

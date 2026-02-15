@@ -5,12 +5,14 @@ import { Sidebar, Toast } from '@/components';
 import {
   InventoriesPage,
   InventoryDetailPage,
+  InventoryReportPage,
   OrganizersPage,
   SettingsPage,
   SetupPage,
   LoginPage,
   RegisterPage,
   RecoveryPage,
+  NotificationsPage,
 } from '@/pages';
 import '@/styles/index.css';
 
@@ -52,6 +54,9 @@ function AppContent() {
     if (location.pathname === '/settings') {
       return 'settings';
     }
+    if (location.pathname === '/notifications') {
+      return 'notifications';
+    }
     if (location.pathname.includes('/organizers')) {
       return 'organizers';
     }
@@ -71,6 +76,9 @@ function AppContent() {
         break;
       case 'settings':
         navigate('/settings');
+        break;
+      case 'notifications':
+        navigate('/notifications');
         break;
       default:
         navigate('/');
@@ -159,6 +167,14 @@ function AppContent() {
             }
           />
           <Route
+            path="/inventory/:id/report"
+            element={
+              <ProtectedRoute>
+                <InventoryReportPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/organizers"
             element={
               <ProtectedRoute>
@@ -179,6 +195,14 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <SettingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <NotificationsPage />
               </ProtectedRoute>
             }
           />

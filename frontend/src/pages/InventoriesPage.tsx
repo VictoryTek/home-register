@@ -1,13 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Header,
-  LoadingState,
-  EmptyState,
-  Modal,
-  ConfirmModal,
-  WarrantyNotificationBanner,
-} from '@/components';
+import { Header, LoadingState, EmptyState, Modal, ConfirmModal } from '@/components';
 import { inventoryApi } from '@/services/api';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
@@ -231,8 +224,6 @@ export function InventoriesPage() {
 
       <div className="content">
         <div className="inventories-container">
-          <WarrantyNotificationBanner />
-
           <div className="page-actions">
             <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
               <i className="fas fa-plus"></i>

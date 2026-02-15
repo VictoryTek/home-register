@@ -165,34 +165,91 @@ async fn main() -> std::io::Result<()> {
             )
             .route("/health", web::get().to(health))
             // Serve static assets (js, css, images, etc.)
-            .service(fs::Files::new("/assets", "static/assets"))
-            // Root route - serve index.html
+            // Versioned assets with content hashes can be cached indefinitely
+            .service(
+                fs::Files::new("/assets", "static/assets")
+                    .use_last_modified(true)
+                    .use_etag(true)
+            )
+            // Root route - serve index.html with no-cache to ensure updates are detected
             .route("/", web::get().to(|| async {
-                fs::NamedFile::open_async("static/index.html").await
+                fs::NamedFile::open_async("static/index.html")
+                    .await
+                    .map(|file| {
+                        file.customize()
+                            .insert_header(("Cache-Control", "no-cache, must-revalidate"))
+                    })
             }))
-            // Logo files at root level
+            // Logo files at root level - cache for 24 hours
             .route("/logo_icon.png", web::get().to(|| async {
-                fs::NamedFile::open_async("static/logo_icon.png").await
+                fs::NamedFile::open_async("static/logo_icon.png")
+                    .await
+                    .map(|file| {
+                        file.customize()
+                            .insert_header(("Cache-Control", "public, max-age=86400"))
+                    })
             }))
             .route("/logo_full.png", web::get().to(|| async {
-                fs::NamedFile::open_async("static/logo_full.png").await
+                fs::NamedFile::open_async("static/logo_full.png")
+                    .await
+                    .map(|file| {
+                        file.customize()
+                            .insert_header(("Cache-Control", "public, max-age=86400"))
+                    })
             }))
             .route("/logo_icon3.png", web::get().to(|| async {
-                fs::NamedFile::open_async("static/logo_icon3.png").await
+                fs::NamedFile::open_async("static/logo_icon3.png")
+                    .await
+                    .map(|file| {
+                        file.customize()
+                            .insert_header(("Cache-Control", "public, max-age=86400"))
+                    })
             }))
             .route("/favicon.ico", web::get().to(|| async {
-                fs::NamedFile::open_async("static/favicon.ico").await
+                fs::NamedFile::open_async("static/favicon.ico")
+                    .await
+                    .map(|file| {
+                        file.customize()
+                            .insert_header(("Cache-Control", "public, max-age=86400"))
+                    })
             }))
+            // PWA Manifest (backwards compatibility route for manifest.json)
+            // Both routes serve the same file with consistent 10-minute cache
             .route("/manifest.json", web::get().to(|| async {
-                fs::NamedFile::open_async("static/manifest.json").await
+                fs::NamedFile::open_async("static/manifest.webmanifest")
+                    .await
+                    .map(|file| {
+                        file.customize()
+                            .insert_header(("Cache-Control", "public, max-age=600, must-revalidate"))
+                    })
             }))
-            // Service Worker files for PWA
+            // Service Worker files for PWA - MUST have no-cache for SW update mechanism
             .route("/sw.js", web::get().to(|| async {
-                fs::NamedFile::open_async("static/sw.js").await
+                fs::NamedFile::open_async("static/sw.js")
+                    .await
+                    .map(|file| {
+                        file.customize()
+                            .insert_header(("Cache-Control", "no-cache, max-age=0, must-revalidate"))
+                    })
             }))
+            // Workbox runtime - hash-based filename, safe to cache forever
             .route("/workbox-{filename:.*}.js", web::get().to(|path: web::Path<String>| async move {
                 let filename = path.into_inner();
-                fs::NamedFile::open_async(format!("static/workbox-{filename}.js")).await
+                fs::NamedFile::open_async(format!("static/workbox-{filename}.js"))
+                    .await
+                    .map(|file| {
+                        file.customize()
+                            .insert_header(("Cache-Control", "public, max-age=31536000, immutable"))
+                    })
+            }))
+            // PWA Manifest - update every 10 minutes (app name/icons)
+            .route("/manifest.webmanifest", web::get().to(|| async {
+                fs::NamedFile::open_async("static/manifest.webmanifest")
+                    .await
+                    .map(|file| {
+                        file.customize()
+                            .insert_header(("Cache-Control", "public, max-age=600, must-revalidate"))
+                    })
             }))
             // Catch-all for SPA client-side routing - serve index.html for everything else
             // This comes last so API and static routes are handled first

@@ -130,8 +130,34 @@ Every user request follows this three-phase workflow:
                            │
                            ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ ORCHESTRATOR: Report completion to user                     │
-└─────────────────────────────────────────────────────────────┘
+│ PHASE 6: PREFLIGHT VALIDATION (FINAL GATE)                  │
+│ Orchestrator executes preflight checks                      │
+│ • Runs: bash scripts/preflight.sh                           │
+│ • Validates: builds, tests, coverage ≥80%, security scans   │
+│ • Docker build + Trivy scan + supply chain checks           │
+│ • Exit code 0 required for completion                       │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                  ┌────────┴────────┐
+                  │ Preflight Pass? │
+                  └────────┬────────┘
+                           │
+                ┌──────────┴──────────┐
+                │                     │
+               NO                    YES
+                │                     │
+                ↓                     ↓
+┌─────────────────────────────────────────────────────────────┐
+│ ORCHESTRATOR: Spawn refinement (max 2 cycles)               │
+│ • Treat preflight failures as CRITICAL                      │
+└──────────────────────────┬──────────────────────────────────┘
+                           ↓
+       (Return to Phase 4 Refinement)
+                                        ↓
+                           ┌─────────────────────────────────────────────────────────────┐
+                           │ ORCHESTRATOR: Report completion to user                     │
+                           │ "All checks passed. Code is ready to push to GitHub."      │
+                           └─────────────────────────────────────────────────────────────┘
 ```
 
 **Key Points:**
@@ -324,6 +350,53 @@ Tasks:
 
 Return: Final assessment (APPROVED/NEEDS_FURTHER_REFINEMENT), updated summary score table with overall grade, summary of verification, and any remaining concerns.
 ```
+
+### Phase 6: Preflight Validation (FINAL GATE)
+
+**Purpose:** Validate implementation against ALL CI/CD enforcement standards before declaring work complete.
+
+**When to run:** REQUIRED after:
+- Phase 3 review returns **PASS/APPROVED** (no refinement needed), OR
+- Phase 5 re-review returns **APPROVED** (after refinement)
+
+**Orchestrator Actions:**
+
+1. **Execute preflight checks:**
+   ```powershell
+   # Windows (PowerShell)
+   powershell -ExecutionPolicy Bypass -File scripts/preflight.ps1
+   
+   # Linux/Mac (bash)
+   bash scripts/preflight.sh
+   ```
+
+2. **Verify all checks pass:**
+   - Exit code is 0
+   - Rust: formatting, clippy (zero warnings), tests, coverage ≥80%, MSRV 1.75.0
+   - Frontend: TypeScript, ESLint (zero warnings), Prettier, build
+   - Container: Docker build, Trivy scan (no HIGH/CRITICAL)
+   - Supply chain: cargo audit, npm audit, SBOM generation
+
+3. **If preflight FAILS:**
+   - **CRITICAL failure** - overrides previous review approval
+   - Report which check(s) failed with specific error output
+   - Spawn refinement subagent (Phase 4) with preflight failures as CRITICAL issues
+   - Pass full preflight output to refinement prompt
+   - After refinement, run Phase 5 (re-review) → then Phase 6 again
+   - **Maximum 2 preflight→refinement cycles** - escalate to user if still failing
+
+4. **If preflight PASSES:**
+   - Declare work **CI-ready** and complete
+   - Report final summary to user
+   - Confirm: "All checks passed. Code is ready to push to GitHub."
+
+**Critical Rules:**
+- Preflight failure **ALWAYS** overrides code review approval
+- No work is considered complete until preflight passes
+- Build, lint, coverage, or security failures are **ALWAYS CRITICAL**
+- CI pipeline should succeed if preflight succeeds locally
+
+**Note:** Phase 3 review runs basic build validation (compile/test). Phase 6 runs comprehensive enforcement checks (coverage, security, formatting, vulnerabilities). Both are required.
 
 ---
 

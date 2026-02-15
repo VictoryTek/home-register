@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { UserMenu } from './UserMenu';
@@ -9,9 +10,12 @@ interface HeaderProps {
 }
 
 export function Header({ title, subtitle, icon }: HeaderProps) {
+  const navigate = useNavigate();
   const { theme, toggleTheme, warrantyNotifications } = useApp();
   const { user, settings } = useAuth();
 
+  // RECOMMENDED FIX: Removed redundant filtering - AppContext now filters at source
+  // warrantyNotifications already excludes dismissed notifications
   const notificationCount = settings?.notifications_enabled ? warrantyNotifications.length : 0;
 
   return (
@@ -25,14 +29,19 @@ export function Header({ title, subtitle, icon }: HeaderProps) {
           <p className="page-subtitle">{subtitle}</p>
         </div>
         <div className="header-actions">
-          {notificationCount > 0 && (
-            <div style={{ position: 'relative', marginRight: '0.5rem' }}>
-              <button
-                className="theme-toggle"
-                title={`${notificationCount} warranty notification${notificationCount !== 1 ? 's' : ''}`}
-                style={{ position: 'relative' }}
-              >
-                <i className="fas fa-bell"></i>
+          <div style={{ position: 'relative', marginRight: '0.5rem' }}>
+            <button
+              className="theme-toggle"
+              onClick={() => navigate('/notifications')}
+              title={
+                notificationCount > 0
+                  ? `${notificationCount} warranty notification${notificationCount !== 1 ? 's' : ''}`
+                  : 'Notifications'
+              }
+              style={{ position: 'relative', cursor: 'pointer' }}
+            >
+              <i className="fas fa-bell"></i>
+              {notificationCount > 0 && (
                 <span
                   style={{
                     position: 'absolute',
@@ -54,9 +63,9 @@ export function Header({ title, subtitle, icon }: HeaderProps) {
                 >
                   {notificationCount > 99 ? '99+' : notificationCount}
                 </span>
-              </button>
-            </div>
-          )}
+              )}
+            </button>
+          </div>
           <button
             className="theme-toggle"
             onClick={toggleTheme}
