@@ -203,13 +203,20 @@ jobs:
           digest="${{ steps.build.outputs.digest }}"
           touch "/tmp/digests/${digest#sha256:}"
 
+      - name: Generate platform identifier
+        id: platform
+        run: |
+          # Convert platform string to valid artifact name
+          # linux/amd64 -> linux-amd64, linux/arm64 -> linux-arm64
+          platform="${{ matrix.platform }}"
+          echo "id=${platform//\//-}" >> $GITHUB_OUTPUT
+
       - name: Upload digest
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           # Use sanitized platform name for deterministic artifact naming
-          # Replace / with - to make valid artifact names
           # linux/amd64 -> digests-linux-amd64, linux/arm64 -> digests-linux-arm64
-          name: digests-${{ replace(matrix.platform, '/', '-') }}
+          name: digests-${{ steps.platform.outputs.id }}
           path: /tmp/digests/*
           retention-days: 1
           if-no-files-found: error
