@@ -79,8 +79,12 @@ RUN cargo build --release && \
 # Copy actual source code
 COPY src ./src
 
+# Copy migrations directory (required for embed_migrations! macro at compile time)
+COPY migrations ./migrations
+
 # Build the actual application — cargo detects missing fingerprints and
 # recompiles home-registry from real source, linking against cached deps.
+# The embed_migrations! macro will bundle all SQL files into the binary.
 RUN touch src/main.rs src/lib.rs && cargo build --release --locked
 
 # Strip the binary for smaller size
@@ -120,22 +124,17 @@ RUN addgroup -S appgroup \
 # Set working directory
 WORKDIR /app
 
-# Copy the compiled binary from builder
+# Copy the compiled binary from builder (includes embedded migrations)
 COPY --from=backend-builder --chown=appuser:appgroup /app/target/release/home-registry ./
 
 # Copy built frontend to static directory
 COPY --from=frontend-builder --chown=appuser:appgroup /app/frontend/dist ./static
 
-# Copy migrations (read-only)
-COPY --chown=appuser:appgroup migrations ./migrations
-
 # Create backups directory with proper ownership
 RUN mkdir -p /app/backups && chown appuser:appgroup /app/backups
 
 # Set proper permissions
-RUN chmod 755 /app/home-registry \
-    && chmod -R 644 /app/migrations/* \
-    && chmod 755 /app/migrations
+RUN chmod 755 /app/home-registry
 
 # Switch to non-root user
 USER appuser

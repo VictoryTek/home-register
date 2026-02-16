@@ -17,10 +17,15 @@ use actix_web::{
     web, App, HttpResponse, HttpServer, Responder,
 };
 use dotenvy::dotenv;
+use refinery::embed_migrations;
 use std::{env, time::Duration};
 
 // Use the library crate
 use home_registry::{api, auth, db};
+
+// Embed migrations from the migrations directory at compile time
+// This allows the application to run migrations programmatically on startup
+embed_migrations!("migrations");
 
 async fn health() -> impl Responder {
     HttpResponse::Ok().json(serde_json::json!({
@@ -68,6 +73,43 @@ async fn main() -> std::io::Result<()> {
             std::process::exit(1);
         },
     };
+
+    // Run database migrations automatically at startup
+    // Migrations are embedded in the binary and applied idempotently
+    log::info!("Running database migrations...");
+    let mut client = match pool.get().await {
+        Ok(c) => c,
+        Err(e) => {
+            log::error!("Failed to get database connection for migrations: {}", e);
+            std::process::exit(1);
+        },
+    };
+
+    match migrations::runner().run_async(&mut **client).await {
+        Ok(report) => {
+            let applied_count = report.applied_migrations().len();
+            if applied_count > 0 {
+                log::info!(
+                    "Database migrations completed successfully. Applied {} new migration(s)",
+                    applied_count
+                );
+            } else {
+                log::info!("Database schema is up to date. No new migrations to apply");
+            }
+        },
+        Err(e) => {
+            log::error!("Database migrations failed: {}", e);
+            log::error!(
+                "Cannot start application with outdated database schema. \
+                 Please check migration files and database connectivity."
+            );
+            std::process::exit(1);
+        },
+    }
+
+    // Drop the migration client back to the pool
+    drop(client);
+    log::info!("Migration client returned to pool");
 
     // Rate limiting configuration from environment variables
     // Migrated from actix-governor (GPL-3.0) to actix-extensible-rate-limit (MIT/Apache-2.0)
