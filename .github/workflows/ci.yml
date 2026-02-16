@@ -138,6 +138,12 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
+      - name: Set lowercase repository name
+        id: repo
+        run: |
+          REPO_LOWER=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')
+          echo "name=${REPO_LOWER}" >> $GITHUB_OUTPUT
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
 
@@ -149,6 +155,6 @@ jobs:
           tags: home-registry:${{ github.sha }}
           # Multi-layer cache: registry (fast reads) + GHA fallback (fork-compatible writes)
           cache-from: |
-            type=registry,ref=ghcr.io/${{ github.repository }}:buildcache
+            type=registry,ref=ghcr.io/${{ steps.repo.outputs.name }}:buildcache
             type=gha
           cache-to: type=gha,mode=max

@@ -30,7 +30,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build-and-push:
@@ -43,10 +42,18 @@ jobs:
     outputs:
       image-tag: ${{ steps.meta.outputs.tags }}
       version: ${{ steps.version.outputs.version }}
+      image-name: ${{ steps.repo.outputs.name }}
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Set lowercase repository name
+        id: repo
+        run: |
+          REPO_LOWER=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')
+          echo "name=${REPO_LOWER}" >> $GITHUB_OUTPUT
+          echo "📦 Using registry image: ${REPO_LOWER}"
 
       - name: Determine version
         id: version
@@ -73,7 +80,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}
           tags: |
             type=raw,value=${{ steps.version.outputs.version }}
             type=raw,value=beta,enable=${{ contains(steps.version.outputs.version, 'beta') }}
@@ -90,16 +97,16 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           # Registry cache: faster, no size limits, persistent across workflows
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}:buildcache,mode=max
           # Conditional multi-platform: ARM64 adds ~20 min (default: AMD64 only)
           platforms: ${{ github.event.inputs.include_arm64 == 'true' && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
 
       - name: Pull pushed image for scanning
         run: |
           # Pull the amd64 variant from the multi-platform manifest
-          docker pull --platform linux/amd64 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
-          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }} home-registry:scan
+          docker pull --platform linux/amd64 ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}:${{ steps.version.outputs.version }}
+          docker tag ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}:${{ steps.version.outputs.version }} home-registry:scan
           echo "✅ Pulled image for Trivy scan (eliminates redundant 15-20 min rebuild)"
 
       - name: Run Trivy security scan
@@ -112,7 +119,8 @@ jobs:
 
       - name: Upload Trivy results
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: success() || failure()  # Only run if steps executed (not skipped/canceled)
+        continue-on-error: true      # Don't fail workflow if upload fails
         with:
           sarif_file: 'trivy-results.sarif'
 
@@ -162,12 +170,12 @@ jobs:
             
             **Pull from GHCR:**
             ```bash
-            docker pull ghcr.io/${{ github.repository }}:${{ needs.build-and-push.outputs.version }}
+            docker pull ghcr.io/${{ needs.build-and-push.outputs.image-name }}:${{ needs.build-and-push.outputs.version }}
             ```
             
             **Or use docker-compose.prod.yml:**
             ```bash
-            curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.prod.yml -o docker-compose.yml
+            curl -sSL https://raw.githubusercontent.com/${{ needs.build-and-push.outputs.image-name }}/main/docker-compose.prod.yml -o docker-compose.yml
             VERSION=${{ needs.build-and-push.outputs.version }} docker compose up -d
             ```
             
