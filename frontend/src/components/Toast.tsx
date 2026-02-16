@@ -54,7 +54,7 @@ function ToastItem({ id, message, type, index, onRemove }: ToastItemProps) {
   return (
     <div
       className={`toast toast-${type} ${visible ? 'visible' : ''}`}
-      style={{ top: `${2 + index * 4.5}rem` }}
+      style={{ bottom: `${2 + index * 4.5}rem` }}
     >
       <i className={`fas fa-${icons[type]} toast-icon`}></i>
       <span className="toast-message">{message}</span>

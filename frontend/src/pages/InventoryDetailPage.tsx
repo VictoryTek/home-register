@@ -58,8 +58,6 @@ export function InventoryDetailPage() {
     inventory_id: parseInt(id ?? '0', 10),
     name: '',
     description: '',
-    category: '',
-    location: '',
     purchase_date: undefined,
     purchase_price: undefined,
     warranty_expiry: undefined,
@@ -187,8 +185,6 @@ export function InventoryDetailPage() {
           inventory_id: parseInt(id ?? '0', 10),
           name: '',
           description: '',
-          category: '',
-          location: '',
           purchase_date: undefined,
           purchase_price: undefined,
           warranty_expiry: undefined,
@@ -226,8 +222,6 @@ export function InventoryDetailPage() {
     setEditItemData({
       name: item.name,
       description: item.description ?? '',
-      category: item.category ?? '',
-      location: item.location ?? '',
       purchase_date: item.purchase_date ?? '',
       purchase_price: item.purchase_price,
       warranty_expiry: item.warranty_expiry ?? '',
@@ -665,38 +659,6 @@ export function InventoryDetailPage() {
           </div>
         )}
 
-        {organizers.length === 0 && (
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label" htmlFor="item-category">
-                Category
-              </label>
-              <input
-                type="text"
-                className="form-input"
-                id="item-category"
-                placeholder="Enter category"
-                value={newItem.category}
-                onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label" htmlFor="item-location">
-                Location
-              </label>
-              <input
-                type="text"
-                className="form-input"
-                id="item-location"
-                placeholder="Enter location"
-                value={newItem.location}
-                onChange={(e) => setNewItem({ ...newItem, location: e.target.value })}
-              />
-            </div>
-          </div>
-        )}
-
         <div className="form-row">
           <div className="form-group">
             <label className="form-label" htmlFor="item-price">
@@ -1054,38 +1016,6 @@ export function InventoryDetailPage() {
                   </div>
                 )
             )}
-          </div>
-        )}
-
-        {organizers.length === 0 && (
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label" htmlFor="edit-item-category">
-                Category
-              </label>
-              <input
-                type="text"
-                className="form-input"
-                id="edit-item-category"
-                placeholder="Enter category"
-                value={editItemData.category ?? ''}
-                onChange={(e) => setEditItemData({ ...editItemData, category: e.target.value })}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label" htmlFor="edit-item-location">
-                Location
-              </label>
-              <input
-                type="text"
-                className="form-input"
-                id="edit-item-location"
-                placeholder="Enter location"
-                value={editItemData.location ?? ''}
-                onChange={(e) => setEditItemData({ ...editItemData, location: e.target.value })}
-              />
-            </div>
           </div>
         )}
 

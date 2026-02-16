@@ -199,6 +199,12 @@ export function InventoriesPage() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Limit file size to 5MB (base64 encoding increases size ~33%)
+      const MAX_FILE_SIZE = 5 * 1024 * 1024;
+      if (file.size > MAX_FILE_SIZE) {
+        showToast('Image must be under 5MB', 'error');
+        return;
+      }
       const reader = new FileReader();
       reader.onload = (event) => {
         const dataUrl = event.target?.result as string;

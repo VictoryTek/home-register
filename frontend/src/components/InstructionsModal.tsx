@@ -8,24 +8,32 @@ export function InstructionsModal() {
   const { showToast } = useApp();
   const [isChecked, setIsChecked] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [sessionDismissed, setSessionDismissed] = useState(() => {
+    return sessionStorage.getItem('home_registry_instructions_dismissed') === 'true';
+  });
 
   // Don't show if settings not loaded yet or already acknowledged
   const isAcknowledged = settings?.settings_json.instructionsAcknowledged === true;
 
   // Prevent body scroll when modal is open
   useEffect(() => {
-    if (!settings || isAcknowledged) {
+    if (!settings || isAcknowledged || sessionDismissed) {
       return undefined;
     }
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = '';
     };
-  }, [settings, isAcknowledged]);
+  }, [settings, isAcknowledged, sessionDismissed]);
 
-  if (!settings || isAcknowledged) {
+  if (!settings || isAcknowledged || sessionDismissed) {
     return null;
   }
+
+  const handleSessionDismiss = () => {
+    sessionStorage.setItem('home_registry_instructions_dismissed', 'true');
+    setSessionDismissed(true);
+  };
 
   const handleConfirm = async () => {
     if (!isChecked) {
@@ -59,124 +67,83 @@ export function InstructionsModal() {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-header instructions-modal-header">
+          <button
+            className="instructions-close-btn"
+            onClick={handleSessionDismiss}
+            aria-label="Close"
+            title="Close (will appear again next login)"
+          >
+            <i className="fas fa-times"></i>
+          </button>
           <div className="instructions-welcome-icon">
             <i className="fas fa-home"></i>
           </div>
           <h2 className="modal-title" id="instructions-title">
             Welcome to Home Registry!
           </h2>
-          <p className="modal-subtitle">Here&apos;s a quick guide to help you get started</p>
+          <p className="modal-subtitle">Get up and running in 3 simple steps</p>
         </div>
 
         <div className="modal-body instructions-modal-body">
-          <div className="instructions-section">
-            <div className="instructions-icon">
-              <i className="fas fa-boxes-stacked"></i>
+          <div className="instructions-steps">
+            <div className="instructions-step">
+              <div className="step-number-badge">1</div>
+              <div className="instructions-step-icon">
+                <i className="fas fa-boxes-stacked"></i>
+              </div>
+              <div className="instructions-text">
+                <h3>Create Your First Inventory</h3>
+                <p>
+                  Head to the Inventories page and click <strong>Add Inventory</strong>. Name it
+                  after a room or category &mdash; like &quot;Kitchen&quot; or
+                  &quot;Electronics.&quot;
+                </p>
+              </div>
             </div>
-            <div className="instructions-text">
-              <h3>Inventories</h3>
-              <p>
-                Think of inventories as containers for your belongings. You might create one for
-                each room in your home (Kitchen, Garage, Bedroom) or for different categories
-                (Electronics, Tools, Documents). Create as many as you need!
-              </p>
-            </div>
-          </div>
 
-          <div className="instructions-section">
-            <div className="instructions-icon">
-              <i className="fas fa-cube"></i>
+            <div className="instructions-step-connector">
+              <i className="fas fa-arrow-down"></i>
             </div>
-            <div className="instructions-text">
-              <h3>Items</h3>
-              <p>
-                Inside each inventory, you can add items — the actual things you own. For each item,
-                you can record details like its name, description, purchase date, price, warranty
-                expiration, and more. The more details you add, the more useful your registry
-                becomes!
-              </p>
-            </div>
-          </div>
 
-          <div className="instructions-section">
-            <div className="instructions-icon">
-              <i className="fas fa-tags"></i>
+            <div className="instructions-step">
+              <div className="step-number-badge">2</div>
+              <div className="instructions-step-icon">
+                <i className="fas fa-tags"></i>
+              </div>
+              <div className="instructions-text">
+                <h3>Set Up Organizers</h3>
+                <p>
+                  Before adding items, go to your inventory&apos;s <strong>Organizers</strong> tab.
+                  Add custom fields you want to track &mdash; like &quot;Serial Number,&quot;
+                  &quot;Condition,&quot; or &quot;Location.&quot;
+                </p>
+              </div>
             </div>
-            <div className="instructions-text">
-              <h3>Organizers</h3>
-              <p>
-                Organizers let you create custom fields to track your items within an inventory. For
-                example, you could create an organizer for &quot;Serial Number&quot;, or
-                &quot;Condition&quot; with options like &quot;New,&quot; &quot;Good,&quot; or
-                &quot;Needs Repair.&quot; Each inventory created automatically generates its own set
-                of organizers. You should create your custom organizers for the inventory before
-                adding items.
-              </p>
-            </div>
-          </div>
 
-          <div className="instructions-section">
-            <div className="instructions-icon">
-              <i className="fas fa-bell"></i>
+            <div className="instructions-step-connector">
+              <i className="fas fa-arrow-down"></i>
             </div>
-            <div className="instructions-text">
-              <h3>Warranty Notifications</h3>
-              <p>
-                When you add warranty expiration dates to your items, Home Registry will
-                automatically notify you when warranties are about to expire or have already
-                expired. Never miss a warranty claim again!
-              </p>
-            </div>
-          </div>
 
-          <div className="instructions-section">
-            <div className="instructions-icon">
-              <i className="fas fa-share-nodes"></i>
-            </div>
-            <div className="instructions-text">
-              <h3>Sharing</h3>
-              <p>
-                You can share your inventories with other users in your household. Choose whether
-                they can just view your inventory or also make changes to it. Great for families
-                managing a home together!
-              </p>
-            </div>
-          </div>
-
-          <div className="instructions-section">
-            <div className="instructions-icon">
-              <i className="fas fa-chart-bar"></i>
-            </div>
-            <div className="instructions-text">
-              <h3>Reports</h3>
-              <p>
-                Generate reports to see the total value of your belongings, breakdowns by category,
-                and other useful statistics. Perfect for insurance purposes or simply keeping track
-                of what you own.
-              </p>
-            </div>
-          </div>
-
-          <div className="instructions-section">
-            <div className="instructions-icon">
-              <i className="fas fa-database"></i>
-            </div>
-            <div className="instructions-text">
-              <h3>Backups</h3>
-              <p>
-                Regularly back up your data to keep it safe. You can create backups from the
-                Settings page and restore them at any time. Your data is important — protect it!
-              </p>
+            <div className="instructions-step">
+              <div className="step-number-badge">3</div>
+              <div className="instructions-step-icon">
+                <i className="fas fa-cube"></i>
+              </div>
+              <div className="instructions-text">
+                <h3>Add Items</h3>
+                <p>
+                  Click <strong>Add Item</strong> inside your inventory. Fill in the details &mdash;
+                  name, price, warranty date, and any custom organizer fields you created.
+                </p>
+              </div>
             </div>
           </div>
 
           <div className="instructions-tip">
             <i className="fas fa-lightbulb"></i>
             <p>
-              <strong>Pro tip:</strong> Start by creating your first inventory (like &quot;Living
-              Room&quot; or &quot;Kitchen&quot;), then add organizers for fields you want to track,
-              then add a few items to get familiar with how everything works. You can always edit or
-              reorganize later!
+              <strong>Tip:</strong> You can always edit, reorganize, or add more inventories and
+              organizers later. Start small and build from there!
             </p>
           </div>
         </div>
@@ -189,7 +156,7 @@ export function InstructionsModal() {
               onChange={(e) => setIsChecked(e.target.checked)}
               className="instructions-checkbox"
             />
-            <span>I have read and understand these instructions</span>
+            <span>I have read this and don&apos;t want to see it again</span>
           </label>
           <button
             className="btn btn-primary instructions-confirm-btn"

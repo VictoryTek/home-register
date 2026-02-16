@@ -98,50 +98,57 @@ function AppContent() {
     location.pathname === '/recover'
   ) {
     return (
-      <Routes>
-        <Route
-          path="/setup"
-          element={
-            needsSetup ? <SetupPage /> : <Navigate to={isAuthenticated ? '/' : '/login'} replace />
-          }
-        />
-        <Route
-          path="/login"
-          element={
-            needsSetup ? (
-              <Navigate to="/setup" replace />
-            ) : isAuthenticated ? (
-              <Navigate to="/" replace />
-            ) : (
-              <LoginPage />
-            )
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            needsSetup ? (
-              <Navigate to="/setup" replace />
-            ) : isAuthenticated ? (
-              <Navigate to="/" replace />
-            ) : (
-              <RegisterPage />
-            )
-          }
-        />
-        <Route
-          path="/recover"
-          element={
-            needsSetup ? (
-              <Navigate to="/setup" replace />
-            ) : isAuthenticated ? (
-              <Navigate to="/" replace />
-            ) : (
-              <RecoveryPage />
-            )
-          }
-        />
-      </Routes>
+      <>
+        <Routes>
+          <Route
+            path="/setup"
+            element={
+              needsSetup ? (
+                <SetupPage />
+              ) : (
+                <Navigate to={isAuthenticated ? '/' : '/login'} replace />
+              )
+            }
+          />
+          <Route
+            path="/login"
+            element={
+              needsSetup ? (
+                <Navigate to="/setup" replace />
+              ) : isAuthenticated ? (
+                <Navigate to="/" replace />
+              ) : (
+                <LoginPage />
+              )
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              needsSetup ? (
+                <Navigate to="/setup" replace />
+              ) : isAuthenticated ? (
+                <Navigate to="/" replace />
+              ) : (
+                <RegisterPage />
+              )
+            }
+          />
+          <Route
+            path="/recover"
+            element={
+              needsSetup ? (
+                <Navigate to="/setup" replace />
+              ) : isAuthenticated ? (
+                <Navigate to="/" replace />
+              ) : (
+                <RecoveryPage />
+              )
+            }
+          />
+        </Routes>
+        <Toast />
+      </>
     );
   }
 

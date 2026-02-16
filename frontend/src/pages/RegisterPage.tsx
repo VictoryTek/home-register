@@ -2,10 +2,12 @@ import { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authApi } from '@/services/api';
 import { escapeHtml } from '@/utils/security';
+import { useApp } from '@/context/AppContext';
 import '@/styles/auth.css';
 
 export function RegisterPage() {
   const navigate = useNavigate();
+  const { showToast } = useApp();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -194,8 +196,10 @@ export function RegisterPage() {
 
     try {
       await navigator.clipboard.writeText(recoveryCodes.join('\n'));
+      showToast('Codes copied to clipboard!', 'success');
     } catch (err) {
       console.error('Failed to copy codes:', err);
+      showToast('Failed to copy codes. Please try manually selecting.', 'error');
     }
   };
 

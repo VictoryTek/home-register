@@ -180,6 +180,8 @@ async fn main() -> std::io::Result<()> {
 
         App::new()
             .app_data(web::Data::new(pool.clone()))
+            // Allow up to 10 MiB JSON bodies (default is 32KB, too small for image uploads)
+            .app_data(web::JsonConfig::default().limit(10_485_760))
             // Security headers
             .wrap(DefaultHeaders::new()
                 .add(("X-Frame-Options", "DENY"))

@@ -39,7 +39,7 @@ pub struct CreateInventoryRequest {
     pub description: Option<String>,
     #[validate(length(max = 500, message = "Location must be under 500 characters"))]
     pub location: Option<String>,
-    #[validate(length(max = 2000, message = "Image URL must be under 2000 characters"))]
+    #[validate(length(max = 10_485_760, message = "Image URL/data must be under 10MB"))]
     pub image_url: Option<String>,
 }
 
@@ -51,7 +51,7 @@ pub struct UpdateInventoryRequest {
     pub description: Option<String>,
     #[validate(length(max = 500, message = "Location must be under 500 characters"))]
     pub location: Option<String>,
-    #[validate(length(max = 2000, message = "Image URL must be under 2000 characters"))]
+    #[validate(length(max = 10_485_760, message = "Image URL/data must be under 10MB"))]
     pub image_url: Option<String>,
 }
 

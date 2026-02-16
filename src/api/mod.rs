@@ -13,6 +13,16 @@ use deadpool_postgres::Pool;
 use log::{error, info};
 use validator::Validate;
 
+/// Validates that data URIs in `image_url` start with `data:image/` to prevent arbitrary data storage.
+fn validate_image_url(image_url: Option<&str>) -> std::result::Result<(), String> {
+    if let Some(url) = image_url {
+        if url.starts_with("data:") && !url.starts_with("data:image/") {
+            return Err("Invalid image data URI: must start with 'data:image/'".to_string());
+        }
+    }
+    Ok(())
+}
+
 #[get("/")]
 pub async fn index() -> impl Responder {
     // Serve the static HTML file instead of embedded HTML
@@ -86,6 +96,15 @@ pub async fn create_inventory(
             success: false,
             error: "Validation failed".to_string(),
             message: Some(validation_errors.to_string()),
+        }));
+    }
+
+    // Reject data URIs that are not images
+    if let Err(msg) = validate_image_url(req.image_url.as_deref()) {
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: "Validation failed".to_string(),
+            message: Some(msg),
         }));
     }
 
@@ -194,6 +213,15 @@ pub async fn update_inventory(
             success: false,
             error: "Validation failed".to_string(),
             message: Some(validation_errors.to_string()),
+        }));
+    }
+
+    // Reject data URIs that are not images
+    if let Err(msg) = validate_image_url(req.image_url.as_deref()) {
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: "Validation failed".to_string(),
+            message: Some(msg),
         }));
     }
 
