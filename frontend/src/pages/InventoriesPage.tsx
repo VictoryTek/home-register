@@ -5,6 +5,7 @@ import { inventoryApi } from '@/services/api';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import type { Inventory, Item } from '@/types';
+import { compressImage } from '@/utils/imageCompression';
 
 export function InventoriesPage() {
   const navigate = useNavigate();
@@ -196,22 +197,25 @@ export function InventoriesPage() {
     setDeletingInventory(null);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // Limit file size to 5MB (base64 encoding increases size ~33%)
-      const MAX_FILE_SIZE = 5 * 1024 * 1024;
-      if (file.size > MAX_FILE_SIZE) {
-        showToast('Image must be under 5MB', 'error');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const dataUrl = event.target?.result as string;
-        setImagePreview(dataUrl);
-        setFormData({ ...formData, image_url: dataUrl });
-      };
-      reader.readAsDataURL(file);
+    if (!file) {
+      return;
+    }
+
+    // Allow larger raw files since compression will reduce size significantly
+    const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB raw (will be compressed)
+    if (file.size > MAX_FILE_SIZE) {
+      showToast('Image must be under 20MB', 'error');
+      return;
+    }
+
+    try {
+      const compressedDataUrl = await compressImage(file, 1920, 0.85);
+      setImagePreview(compressedDataUrl);
+      setFormData({ ...formData, image_url: compressedDataUrl });
+    } catch {
+      showToast('Failed to process image', 'error');
     }
   };
 

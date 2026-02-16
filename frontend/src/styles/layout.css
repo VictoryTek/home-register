@@ -417,12 +417,24 @@
     min-height: 100px;
   }
 
-  .content {
-    padding: 1rem;
+  .header-content {
+    gap: 0.5rem;
+  }
+
+  .page-title-section {
+    min-width: 0;
+    flex: 1;
   }
 
   .page-title {
     font-size: 1.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .content {
+    padding: 1rem;
   }
 }
 
@@ -433,12 +445,21 @@
     min-height: 80px;
   }
 
+  .content {
+    padding: 0.75rem;
+  }
+
   .page-title {
     font-size: 1.25rem;
   }
 
   .page-subtitle {
     font-size: 0.75rem;
+  }
+
+  .page-actions {
+    margin-bottom: 1rem;
+    margin-top: 0.5rem;
   }
 
   .header-actions {

@@ -1381,6 +1381,8 @@ async fn api_not_found(req: HttpRequest) -> impl Responder {
 // Create scope with all API routes
 pub fn api_scope() -> Scope {
     web::scope("/api")
+        .app_data(web::JsonConfig::default().limit(15_728_640))
+        .app_data(web::PayloadConfig::new(20 * 1024 * 1024))
         .service(api_health)
         // Auth routes (setup, login, profile, admin user management) - imported directly to avoid nested scope
         .service(auth::get_setup_status)

@@ -180,8 +180,23 @@ async fn main() -> std::io::Result<()> {
 
         App::new()
             .app_data(web::Data::new(pool.clone()))
-            // Allow up to 10 MiB JSON bodies (default is 32KB, too small for image uploads)
-            .app_data(web::JsonConfig::default().limit(10_485_760))
+            // Allow up to 15 MiB JSON bodies (default is 32KB, too small for image uploads)
+            .app_data(
+                web::JsonConfig::default()
+                    .limit(15_728_640)
+                    .error_handler(|err, req| {
+                        let detail = format!("JSON payload error on {}: {}", req.path(), err);
+                        log::error!("{}", detail);
+                        let response = HttpResponse::BadRequest().json(serde_json::json!({
+                            "success": false,
+                            "error": "Request body error",
+                            "message": detail
+                        }));
+                        actix_web::error::InternalError::from_response(err, response).into()
+                    })
+            )
+            // Set payload limit to 20 MiB (default is 256KB, too small for image uploads)
+            .app_data(web::PayloadConfig::new(20 * 1024 * 1024))
             // Security headers
             .wrap(DefaultHeaders::new()
                 .add(("X-Frame-Options", "DENY"))

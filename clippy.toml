@@ -27,7 +27,7 @@ trivial-copy-size-limit = 8
 future-size-threshold = 16384
 
 # MSRV for lint suggestions
-msrv = "1.75.0"
+msrv = "1.88"
 
 # Disallowed methods (add security-sensitive methods here)
 disallowed-methods = [

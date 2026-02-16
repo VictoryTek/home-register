@@ -94,13 +94,13 @@ if (( $(echo "$COVERAGE < $MIN_COVERAGE" | bc -l) )); then
 fi
 success "Coverage ${COVERAGE}% meets minimum ${MIN_COVERAGE}%"
 
-section "RUST: MSRV Compatibility (1.75.0)"
-if ! rustup toolchain list | grep -q "1.75.0"; then
-    warning "Rust 1.75.0 not installed, skipping MSRV check"
-    warning "Install with: rustup toolchain install 1.75.0"
+section "RUST: MSRV Compatibility (1.88.0)"
+if ! rustup toolchain list | grep -q "1.88.0"; then
+    warning "Rust 1.88.0 not installed, skipping MSRV check"
+    warning "Install with: rustup toolchain install 1.88.0"
 else
-    cargo +1.75.0 check --all-targets --all-features || error "MSRV 1.75.0 compatibility check failed"
-    success "MSRV 1.75.0 compatibility verified"
+    cargo +1.88.0 check --all-targets --all-features || error "MSRV 1.88.0 compatibility check failed"
+    success "MSRV 1.88.0 compatibility verified"
 fi
 
 # ==============================================================================

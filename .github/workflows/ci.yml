@@ -147,5 +147,8 @@ jobs:
           context: .
           push: false
           tags: home-registry:${{ github.sha }}
-          cache-from: type=gha
+          # Multi-layer cache: registry (fast reads) + GHA fallback (fork-compatible writes)
+          cache-from: |
+            type=registry,ref=ghcr.io/${{ github.repository }}:buildcache
+            type=gha
           cache-to: type=gha,mode=max

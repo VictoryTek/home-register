@@ -22,6 +22,11 @@ on:
         description: 'Version to release (e.g., 0.1.0-beta.1)'
         required: true
         type: string
+      include_arm64:
+        description: 'Build ARM64 image (adds ~20 min build time)'
+        required: false
+        type: boolean
+        default: false
 
 env:
   REGISTRY: ghcr.io
@@ -84,19 +89,18 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
+          # Registry cache: faster, no size limits, persistent across workflows
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+          # Conditional multi-platform: ARM64 adds ~20 min (default: AMD64 only)
+          platforms: ${{ github.event.inputs.include_arm64 == 'true' && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
 
-      - name: Build local image for scanning
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: false
-          load: true
-          tags: home-registry:scan
-          cache-from: type=gha
+      - name: Pull pushed image for scanning
+        run: |
+          # Pull the amd64 variant from the multi-platform manifest
+          docker pull --platform linux/amd64 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }} home-registry:scan
+          echo "✅ Pulled image for Trivy scan (eliminates redundant 15-20 min rebuild)"
 
       - name: Run Trivy security scan
         uses: aquasecurity/trivy-action@0.28.0
@@ -168,7 +172,7 @@ jobs:
             ```
             
             ### 🔒 Security
-            - Multi-architecture support: `linux/amd64`, `linux/arm64`
+            - Platform: `linux/amd64` (ARM64 available via workflow dispatch)
             - Trivy vulnerability scanning passed
             - SBOM included (see artifacts)
             

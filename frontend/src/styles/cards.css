@@ -367,4 +367,66 @@
   .stats-grid {
     grid-template-columns: 1fr;
   }
+
+  .inventories-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .inventory-card {
+    min-height: auto;
+    padding: 1rem;
+  }
+
+  .inventory-card-header {
+    margin: -1rem -1rem 0.75rem -1rem;
+  }
+
+  .inventory-card-image {
+    height: 120px;
+  }
+
+  .inventory-card-title {
+    font-size: 1rem;
+  }
+
+  .inventory-card-description {
+    font-size: 0.8125rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .inventory-card-footer {
+    padding-top: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .inventories-grid {
+    gap: 0.75rem;
+  }
+
+  .inventory-card {
+    padding: 0.75rem;
+  }
+
+  .inventory-card-header {
+    margin: -0.75rem -0.75rem 0.5rem -0.75rem;
+  }
+
+  .inventory-card-image {
+    height: 100px;
+  }
+
+  .inventory-card-title {
+    font-size: 0.9375rem;
+  }
+
+  .inventory-card-stats {
+    gap: 1rem;
+    padding-top: 0.75rem;
+  }
+
+  .inventory-card-footer {
+    padding-top: 0.5rem;
+  }
 }
