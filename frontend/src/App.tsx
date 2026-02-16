@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
-import { AppProvider } from '@/context/AppContext';
+import { AppProvider, useApp } from '@/context/AppContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { Sidebar, Toast, InstructionsModal } from '@/components';
 import {
@@ -49,6 +49,7 @@ function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, isLoading, needsSetup } = useAuth();
+  const { sidebarOpen, closeSidebar } = useApp();
 
   const getCurrentPage = () => {
     if (location.pathname === '/settings') {
@@ -154,7 +155,12 @@ function AppContent() {
 
   return (
     <>
-      <Sidebar currentPage={getCurrentPage()} onNavigate={handleNavigate} />
+      <Sidebar
+        currentPage={getCurrentPage()}
+        onNavigate={handleNavigate}
+        isOpen={sidebarOpen}
+        onClose={closeSidebar}
+      />
       <InstructionsModal />
       <main className="main-content">
         <Routes>

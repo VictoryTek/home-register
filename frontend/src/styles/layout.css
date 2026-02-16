@@ -427,8 +427,36 @@
 }
 
 @media (max-width: 480px) {
+  .header {
+    padding: 1rem 0.75rem;
+    height: auto;
+    min-height: 80px;
+  }
+
+  .page-title {
+    font-size: 1.25rem;
+  }
+
+  .page-subtitle {
+    font-size: 0.75rem;
+  }
+
   .header-actions {
-    flex-direction: column;
     gap: 0.5rem;
+  }
+
+  .header-actions .theme-toggle {
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.9rem;
+  }
+
+  /* Hide user details text on very small screens */
+  .user-menu-trigger .user-details {
+    display: none;
+  }
+
+  .user-menu-trigger .menu-chevron {
+    display: none;
   }
 }

@@ -11,7 +11,7 @@ interface HeaderProps {
 
 export function Header({ title, subtitle, icon }: HeaderProps) {
   const navigate = useNavigate();
-  const { theme, toggleTheme, warrantyNotifications } = useApp();
+  const { theme, toggleTheme, warrantyNotifications, toggleSidebar, sidebarOpen } = useApp();
   const { user, settings } = useAuth();
 
   // RECOMMENDED FIX: Removed redundant filtering - AppContext now filters at source
@@ -21,6 +21,17 @@ export function Header({ title, subtitle, icon }: HeaderProps) {
   return (
     <header className="header">
       <div className="header-content">
+        {/* Hamburger menu button — visible only on mobile via CSS */}
+        <button
+          className="mobile-menu-toggle"
+          onClick={toggleSidebar}
+          aria-label="Toggle navigation menu"
+          aria-expanded={sidebarOpen}
+          type="button"
+        >
+          <i className="fas fa-bars"></i>
+        </button>
+
         <div className="page-title-section">
           <h1 className="page-title">
             {icon && <i className={icon}></i>}

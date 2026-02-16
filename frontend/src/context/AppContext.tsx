@@ -17,6 +17,9 @@ interface AppContextType {
   setItems: (items: Item[]) => void;
   warrantyNotifications: WarrantyNotification[];
   checkNotifications: () => void;
+  sidebarOpen: boolean;
+  toggleSidebar: () => void;
+  closeSidebar: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -35,6 +38,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [inventories, setInventories] = useState<Inventory[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [warrantyNotifications, setWarrantyNotifications] = useState<WarrantyNotification[]>([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     document.body.setAttribute('data-theme', theme);
@@ -63,6 +67,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Wrap removeToast in useCallback for consistency and to prevent unnecessary re-renders
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  }, []);
+
+  const toggleSidebar = useCallback(() => {
+    setSidebarOpen((prev) => !prev);
+  }, []);
+
+  const closeSidebar = useCallback(() => {
+    setSidebarOpen(false);
   }, []);
 
   const checkNotifications = useCallback(() => {
@@ -94,6 +106,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setItems,
         warrantyNotifications,
         checkNotifications,
+        sidebarOpen,
+        toggleSidebar,
+        closeSidebar,
       }}
     >
       {children}
