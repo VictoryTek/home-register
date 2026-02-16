@@ -6,6 +6,16 @@ on:
       - 'v*.*.*'
       - 'v*.*.*-beta.*'
       - 'v*.*.*-rc.*'
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/docs/**'
+      - 'release_notes/**'
+      - 'screenshots/**'
+      - 'LICENSE'
+      - 'LICENSE-POLICY.md'
+      - '.gitignore'
+      - '.vscode/**'
   workflow_dispatch:
     inputs:
       version:

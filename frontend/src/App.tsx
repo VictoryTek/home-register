@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { AppProvider } from '@/context/AppContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
-import { Sidebar, Toast } from '@/components';
+import { Sidebar, Toast, InstructionsModal } from '@/components';
 import {
   InventoriesPage,
   InventoryDetailPage,
@@ -148,6 +148,7 @@ function AppContent() {
   return (
     <>
       <Sidebar currentPage={getCurrentPage()} onNavigate={handleNavigate} />
+      <InstructionsModal />
       <main className="main-content">
         <Routes>
           <Route

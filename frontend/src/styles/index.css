@@ -8,6 +8,7 @@
 @import './organizers.css';
 @import './notifications.css';
 @import './auth.css';
+@import './instructions.css';
 
 /* Loading Screen */
 .loading-screen {
