@@ -29,7 +29,7 @@ The application will be available at `http://YOUR_IP_ADDRESS:8210`
 - **Application Port:** `8210` (can be changed in docker-compose.yml)
 - **Database:** `home_inventory`
 - **Username:** `postgres`
-- **Password:** `password` (⚠️ change for production!)
+- **Password:** `changeme` (⚠️ **change this to a strong password!**)
 
 **Data Persistence:**
 - Database data is persisted in the `pgdata` Docker volume
@@ -38,11 +38,10 @@ The application will be available at `http://YOUR_IP_ADDRESS:8210`
 - Your data will survive container restarts and updates
 
 **For Production Use:**
-1. Edit `docker-compose.yml` or use the production configuration example
-2. Change the default database password to a strong password
-3. Optionally set a custom JWT_SECRET for consistency across redeployments
-4. Adjust JWT_TOKEN_LIFETIME_HOURS if needed (default: 24 hours)
-5. Tune RATE_LIMIT_RPS and RATE_LIMIT_BURST based on expected traffic
+1. Copy the docker-compose.yml configuration above
+2. **Change the database password** from `changeme` to your own strong password
+3. Update the `DATABASE_URL` to match your new password
+4. Adjust `RATE_LIMIT_RPS` and `RATE_LIMIT_BURST` based on your expected traffic
 
 **Useful Commands:**
 ```bash
@@ -64,86 +63,10 @@ docker-compose logs -f db
 
 ### Docker Compose Configuration
 
-Here's the complete `docker-compose.yml` file for **development**:
+Here's the complete `docker-compose.yml` file:
 
 ```yaml
 services:
-  app:
-    build: .
-    container_name: home-registry-app
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: postgres://postgres:password@db:5432/home_inventory
-      PORT: 8210
-      RUST_LOG: info
-      RATE_LIMIT_RPS: 100  # API requests per second limit (default: 50)
-      RATE_LIMIT_BURST: 200  # Burst capacity for traffic spikes (default: 100)
-    ports:
-      - "8210:8210"
-    volumes:
-      - appdata:/app/data  # Persist JWT secret and other app data
-      - backups:/app/backups  # Persist backup files
-    command: ["./home-registry"]
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8210/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      start_period: 10s
-      retries: 3
-
-  db:
-    image: postgres:17
-    container_name: home-registry-db
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password  # ⚠️ Change for production
-      POSTGRES_DB: home_inventory
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
-volumes:
-  pgdata:
-  appdata:
-  backups:
-```
-
-**For production deployment**, use the pre-built image from GitHub Container Registry:
-**If you prefer manually adding your own JWT_SECRET and token lifetime, you can set these environment variables in the `app` service:**
-```
-  JWT_SECRET: "your-secure-secret-here"  # Uncomment and set for production
-  JWT_TOKEN_LIFETIME_HOURS: 24  # Token lifetime in hours (default: 24)
-```
-
-```yaml
-services:
-  db:
-    image: postgres:17
-    container_name: home-registry-db
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: homeregistry2026  # Use a strong password
-      POSTGRES_DB: home_inventory
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
   app:
     image: ghcr.io/victorytek/home-registry:beta
     container_name: home-registry-app
@@ -151,7 +74,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgres://postgres:homeregistry2026@db:5432/home_inventory
+      DATABASE_URL: postgres://postgres:changeme@db:5432/home_inventory
       PORT: 8210
       RUST_LOG: info
       RATE_LIMIT_RPS: 100  # API requests per second limit
@@ -168,6 +91,25 @@ services:
       timeout: 10s
       start_period: 10s
       retries: 3
+
+  db:
+    image: postgres:17
+    container_name: home-registry-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: changeme  # ⚠️ Change this password
+      POSTGRES_DB: home_inventory
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
 volumes:
   pgdata:
     name: home-registry-pgdata
