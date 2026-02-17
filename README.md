@@ -132,7 +132,6 @@ docker run -d \
   -e DATABASE_URL="postgres://postgres:password@your-db-host:5432/home_inventory" \
   -e PORT=8210 \
   -e RUST_LOG=info \
-  -e JWT_SECRET="your-secure-secret-here" \
   -e JWT_TOKEN_LIFETIME_HOURS=24 \
   -e RATE_LIMIT_RPS=100 \
   -e RATE_LIMIT_BURST=200 \
@@ -143,31 +142,10 @@ docker run -d \
 
 **Important Notes:**
 - Replace `your-db-host` with your PostgreSQL server address
-- Change `your-secure-secret-here` to a secure random string (or omit for auto-generation)
 - Ensure your PostgreSQL database is accessible from the container
 - The `/app/data` volume persists JWT secrets and other application data
 - The `/app/backups` volume stores database backup files
 - Rate limiting protects your API from being overwhelmed (adjust RPS/BURST as needed)
-
-**Useful Docker Commands:**
-```bash
-# View logs
-docker logs -f home-registry
-
-# Stop the container
-docker stop home-registry
-
-# Remove the container
-docker rm home-registry
-
-# Run with host network (Linux only)
-docker run -d \
-  --name home-registry \
-  --network host \
-  -e DATABASE_URL="postgres://postgres:password@localhost:5432/home_inventory" \
-  -e RUST_LOG=info \
-  home-registry
-```
 
 ## Environment Variables
 
