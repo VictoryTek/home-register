@@ -11,6 +11,7 @@ Release notes follow this naming convention:
 
 ## Current Releases
 
+- [v0.1.0-beta.2](v0.1.0-beta.2.md) - Security & UI update (February 17, 2026)
 - [v0.1.0-beta.1](v0.1.0-beta.1.md) - First public beta (February 15, 2026)
 
 ## Structure

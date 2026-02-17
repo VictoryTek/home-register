@@ -40,7 +40,7 @@ export function Header({ title, subtitle, icon }: HeaderProps) {
           <p className="page-subtitle">{subtitle}</p>
         </div>
         <div className="header-actions">
-          <div style={{ position: 'relative', marginRight: '0.5rem' }}>
+          <div style={{ position: 'relative' }}>
             <button
               className="theme-toggle"
               onClick={() => navigate('/notifications')}

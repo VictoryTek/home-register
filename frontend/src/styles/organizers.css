@@ -142,7 +142,7 @@
 }
 
 .organizer-text-info i {
-  color: var(--primary-color);
+  color: var(--accent-color);
 }
 
 /* Badges */
@@ -215,7 +215,7 @@
 .back-button:hover {
   background: var(--bg-hover);
   color: var(--text-primary);
-  border-color: var(--primary-color);
+  border-color: var(--accent-color);
 }
 
 /* Form help text */
@@ -281,7 +281,7 @@
 .form-checkbox input[type='checkbox'] {
   width: 1.25rem;
   height: 1.25rem;
-  accent-color: var(--primary-color);
+  accent-color: var(--accent-color);
   cursor: pointer;
   border-radius: var(--radius-sm);
   flex-shrink: 0;
@@ -314,7 +314,7 @@
 }
 
 .organizer-inventory-item:hover {
-  border-color: var(--primary-color);
+  border-color: var(--accent-color);
   background: var(--bg-secondary);
   transform: translateX(4px);
 }
@@ -325,7 +325,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--primary-color);
+  background: var(--accent-color);
   border-radius: var(--radius-md);
   color: white;
   font-size: 1.25rem;
@@ -362,6 +362,6 @@
 }
 
 .organizer-inventory-item:hover .organizer-inventory-action {
-  color: var(--primary-color);
+  color: var(--accent-color);
   transform: translateX(4px);
 }

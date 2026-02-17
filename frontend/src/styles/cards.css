@@ -404,6 +404,28 @@
   .inventory-card-footer {
     padding-top: 0.75rem;
   }
+
+  .stat-card {
+    padding: 1rem;
+  }
+
+  .stat-card::before {
+    height: 3px;
+  }
+
+  .stat-card .stat-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    font-size: 1.1rem;
+  }
+
+  .stat-card .stat-value {
+    font-size: 1.25rem;
+  }
+
+  .stat-card .stat-label {
+    font-size: 0.75rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -438,5 +460,19 @@
 
   .inventory-card-footer {
     padding-top: 0.5rem;
+  }
+
+  .stat-card {
+    padding: 0.75rem;
+  }
+
+  .stat-card .stat-icon {
+    width: 2rem;
+    height: 2rem;
+    font-size: 1rem;
+  }
+
+  .stat-card .stat-value {
+    font-size: 1.1rem;
   }
 }

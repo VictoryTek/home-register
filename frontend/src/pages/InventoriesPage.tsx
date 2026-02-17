@@ -13,6 +13,7 @@ import {
   getFileExtension,
 } from '@/utils/validateImageFile';
 import { convertHeicToJpeg, HeicConversionError } from '@/utils/heicConversion';
+import { sanitizeImageUrl } from '@/utils/sanitizeImageUrl';
 
 export function InventoriesPage() {
   const navigate = useNavigate();
@@ -179,14 +180,19 @@ export function InventoriesPage() {
   const openEditModal = (e: React.MouseEvent, inventory: Inventory) => {
     e.stopPropagation();
     setEditingInventory(inventory);
+
+    // Sanitize URL loaded from database to prevent stored XSS
+    const sanitizedImageUrl = sanitizeImageUrl(inventory.image_url ?? '');
+    const imageUrl = sanitizedImageUrl ?? ''; // Use empty string if invalid
+
     setFormData({
       name: inventory.name,
       description: inventory.description ?? '',
       location: inventory.location ?? '',
-      image_url: inventory.image_url ?? '',
+      image_url: imageUrl,
     });
-    setImagePreview(inventory.image_url ?? '');
-    setImageOption(inventory.image_url?.startsWith('data:') ? 'upload' : 'url');
+    setImagePreview(imageUrl);
+    setImageOption(imageUrl.startsWith('data:') ? 'upload' : 'url');
     setShowEditModal(true);
   };
 
@@ -249,8 +255,15 @@ export function InventoriesPage() {
 
       // Compress image (works on both original and converted files)
       const compressedDataUrl = await compressImage(processedFile, 1920, 0.85);
-      setImagePreview(compressedDataUrl);
-      setFormData({ ...formData, image_url: compressedDataUrl });
+
+      // Sanity check: validate generated data URL (defense in depth)
+      const sanitizedDataUrl = sanitizeImageUrl(compressedDataUrl);
+      if (sanitizedDataUrl) {
+        setImagePreview(sanitizedDataUrl);
+        setFormData({ ...formData, image_url: sanitizedDataUrl });
+      } else {
+        throw new Error('Generated data URL failed validation');
+      }
 
       // Clear any lingering info toasts with success message
       if (isHeicFile(file)) {
@@ -270,8 +283,24 @@ export function InventoriesPage() {
   };
 
   const handleImageUrlChange = (url: string) => {
-    setFormData({ ...formData, image_url: url });
-    setImagePreview(url);
+    // Sanitize URL to prevent XSS attacks
+    const sanitizedUrl = sanitizeImageUrl(url);
+
+    if (sanitizedUrl !== null) {
+      // Valid URL: update state
+      setFormData({ ...formData, image_url: sanitizedUrl });
+      setImagePreview(sanitizedUrl);
+    } else if (url.trim() !== '') {
+      // Invalid non-empty URL: show error
+      showToast('Invalid image URL. Please use HTTPS/HTTP URLs or upload an image.', 'error');
+      // Clear preview but keep input value for user to correct
+      setImagePreview('');
+      setFormData({ ...formData, image_url: '' });
+    } else {
+      // Empty URL: clear state
+      setImagePreview('');
+      setFormData({ ...formData, image_url: '' });
+    }
   };
 
   return (
@@ -491,23 +520,46 @@ export function InventoriesPage() {
                 onChange={handleImageUpload}
               />
               <div className="image-preview">
-                {imagePreview ? (
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    style={{
-                      maxWidth: '100%',
-                      maxHeight: '120px',
-                      borderRadius: 'var(--radius-md)',
-                      objectFit: 'cover',
-                    }}
-                  />
-                ) : (
-                  <div className="image-placeholder">
-                    <i className="fas fa-image" style={{ fontSize: '2rem', opacity: 0.6 }}></i>
-                    <span>Click to upload an image</span>
-                  </div>
-                )}
+                {/* Security: Inline sanitization for CodeQL recognition - defense-in-depth */}
+                {(() => {
+                  if (!imagePreview) {
+                    return (
+                      <div className="image-placeholder">
+                        <i className="fas fa-image" style={{ fontSize: '2rem', opacity: 0.6 }}></i>
+                        <span>Click to upload an image</span>
+                      </div>
+                    );
+                  }
+
+                  // Sanitize at point of use - CodeQL can trace this directly to the img src
+                  const safeSrc = sanitizeImageUrl(imagePreview);
+                  if (!safeSrc) {
+                    return (
+                      <div className="image-placeholder">
+                        <i className="fas fa-image" style={{ fontSize: '2rem', opacity: 0.6 }}></i>
+                        <span>Click to upload an image</span>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <img
+                      src={safeSrc}
+                      alt="Preview"
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '120px',
+                        borderRadius: 'var(--radius-md)',
+                        objectFit: 'cover',
+                      }}
+                      onError={() => {
+                        // Fallback if image fails to load
+                        console.warn('Image preview failed to load');
+                        setImagePreview('');
+                      }}
+                    />
+                  );
+                })()}
               </div>
             </div>
           )}
@@ -637,23 +689,46 @@ export function InventoriesPage() {
                 onChange={handleImageUpload}
               />
               <div className="image-preview">
-                {imagePreview ? (
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    style={{
-                      maxWidth: '100%',
-                      maxHeight: '120px',
-                      borderRadius: 'var(--radius-md)',
-                      objectFit: 'cover',
-                    }}
-                  />
-                ) : (
-                  <div className="image-placeholder">
-                    <i className="fas fa-image" style={{ fontSize: '2rem', opacity: 0.6 }}></i>
-                    <span>Click to upload an image</span>
-                  </div>
-                )}
+                {/* Security: Inline sanitization for CodeQL recognition - defense-in-depth */}
+                {(() => {
+                  if (!imagePreview) {
+                    return (
+                      <div className="image-placeholder">
+                        <i className="fas fa-image" style={{ fontSize: '2rem', opacity: 0.6 }}></i>
+                        <span>Click to upload an image</span>
+                      </div>
+                    );
+                  }
+
+                  // Sanitize at point of use - CodeQL can trace this directly to the img src
+                  const safeSrc = sanitizeImageUrl(imagePreview);
+                  if (!safeSrc) {
+                    return (
+                      <div className="image-placeholder">
+                        <i className="fas fa-image" style={{ fontSize: '2rem', opacity: 0.6 }}></i>
+                        <span>Click to upload an image</span>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <img
+                      src={safeSrc}
+                      alt="Preview"
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '120px',
+                        borderRadius: 'var(--radius-md)',
+                        objectFit: 'cover',
+                      }}
+                      onError={() => {
+                        // Fallback if image fails to load
+                        console.warn('Image preview failed to load');
+                        setImagePreview('');
+                      }}
+                    />
+                  );
+                })()}
               </div>
             </div>
           )}

@@ -101,7 +101,7 @@ FROM alpine:3.21 AS runtime
 # Labels for container metadata
 LABEL org.opencontainers.image.title="Home Registry"
 LABEL org.opencontainers.image.description="Home inventory management system"
-LABEL org.opencontainers.image.version="0.1.0"
+LABEL org.opencontainers.image.version="0.1.0-beta.2"
 LABEL org.opencontainers.image.licenses="MIT"
 
 # Install minimal runtime dependencies

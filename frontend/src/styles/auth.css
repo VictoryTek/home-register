@@ -6,6 +6,7 @@
   position: fixed !important;
   inset: 0 !important;
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100vw;
   display: flex;
   align-items: center;
@@ -22,6 +23,7 @@
     #f97316 100%
   );
   z-index: 9999;
+  overflow-y: auto;
 }
 
 /* Subtle animated gradient overlay for depth */
@@ -483,14 +485,22 @@
 /* ==================== Responsive ==================== */
 
 @media (max-width: 640px) {
+  .auth-page {
+    position: absolute !important;
+    align-items: flex-start;
+    padding: 1rem 0 !important;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
   .auth-container {
     padding: 1rem;
     max-width: 100%;
   }
 
   .auth-card {
-    padding: 1.75rem;
-    border-radius: 20px;
+    padding: 1.5rem;
+    border-radius: 16px;
   }
 
   .auth-card-register {
@@ -502,7 +512,15 @@
   }
 
   .auth-title {
-    font-size: 1.5rem;
+    font-size: 1.35rem;
+  }
+
+  .auth-subtitle {
+    font-size: 0.85rem;
+  }
+
+  .auth-logo-img {
+    height: 52px;
   }
 
   .setup-progress {
@@ -525,16 +543,16 @@
 
 .codes-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 0.5rem;
   margin: 0.75rem 0;
 }
 
 .code-item {
   font-family: 'Courier New', Courier, monospace;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  padding: 0.5rem 0.4rem;
+  padding: 0.5rem 0.3rem;
   background: rgba(30, 58, 138, 0.3);
   border: 1px solid rgba(249, 115, 22, 0.3);
   border-radius: 6px;
@@ -605,6 +623,20 @@
   flex: 1;
 }
 
+/* Tablet: 3 columns */
+@media (max-width: 768px) {
+  .codes-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Mobile: 2 columns */
+@media (max-width: 480px) {
+  .codes-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 380px) {
   .auth-card {
     padding: 1.5rem;
@@ -616,10 +648,6 @@
 
   .auth-actions {
     flex-direction: column;
-  }
-
-  .codes-grid {
-    grid-template-columns: repeat(2, 1fr);
   }
 
   .recovery-actions {

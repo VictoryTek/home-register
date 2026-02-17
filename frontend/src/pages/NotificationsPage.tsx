@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header, EmptyState, LoadingState } from '@/components';
 import { useApp } from '@/context/AppContext';
@@ -13,6 +13,18 @@ export function NotificationsPage() {
   const { warrantyNotifications, inventories } = useApp();
   const { settings, dismissNotification, clearAllDismissals } = useAuth();
   const { showToast } = useApp();
+  const [loading, setLoading] = useState(true);
+
+  // Track when initial data has been loaded from AppContext
+  useEffect(() => {
+    // Data is loaded when inventories have been fetched (even if empty)
+    // We use a short timeout to allow AppContext to populate on initial mount
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // RECOMMENDED FIX: Removed redundant filtering - AppContext now filters at source
   // warrantyNotifications already excludes dismissed notifications
@@ -184,8 +196,8 @@ export function NotificationsPage() {
     );
   }
 
-  // Loading state — items haven't been fetched yet (e.g. direct URL navigation)
-  if (inventories.length === 0 && warrantyNotifications.length === 0) {
+  // Loading state
+  if (loading) {
     return (
       <>
         <Header title="Notifications" subtitle="Warranty alerts and reminders" icon="fas fa-bell" />
@@ -196,7 +208,7 @@ export function NotificationsPage() {
     );
   }
 
-  // Empty state
+  // Empty state - No notifications after loading is complete
   if (activeNotifications.length === 0) {
     return (
       <>

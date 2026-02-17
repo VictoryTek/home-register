@@ -7,19 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-beta.2] - 2026-02-17
+
+### Security
+- **CRITICAL:** Fixed 2 GitHub CodeQL DOM-based XSS security alerts in InventoriesPage
+  - Added inline sanitization for image preview URLs (lines 526 and 694)
+  - Implemented defense-in-depth security with IIFE pattern
+  - Prevents potential XSS via malicious image URLs
+
 ### Added
 - Multi-architecture Docker images (linux/amd64, linux/arm64)
 - Automated GHCR publishing workflow
 - Security attestation (SBOM, provenance)
 - Production Docker Compose configuration
+- PWA icon improvements:
+  - Multiple favicon sizes (16x16, 32x32, 48x48)
+  - Apple touch icon for iOS devices (180x180)
+  - Android Chrome icon for PWA (192x192)
+  - Updated manifest.webmanifest with new icon references
 
 ### Changed
 - Split docker-compose.yml into dev and prod variants
 - Improved container deployment documentation
 
-### Security
-- Added Trivy vulnerability scanning in release pipeline
-- Enabled SLSA provenance attestation
+### Fixed
+- Prettier formatting issues in InventoriesPage.tsx and sanitizeImageUrl.ts
+- Trivy vulnerability scanning in release pipeline
+- SLSA provenance attestation in CI/CD
 
 ## [0.1.0-beta.1] - 2026-02-15
 
@@ -98,5 +112,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [0.1.0-beta.1](https://github.com/VictoryTek/home-registry/releases/tag/v0.1.0-beta.1)
 
-[Unreleased]: https://github.com/VictoryTek/home-registry/compare/v0.1.0-beta.1...HEAD
+[Unreleased]: https://github.com/VictoryTek/home-registry/compare/v0.1.0-beta.2...HEAD
+[0.1.0-beta.2]: https://github.com/VictoryTek/home-registry/compare/v0.1.0-beta.1...v0.1.0-beta.2
 [0.1.0-beta.1]: https://github.com/VictoryTek/home-registry/releases/tag/v0.1.0-beta.1

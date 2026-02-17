@@ -355,55 +355,56 @@ export function InventoryDetailPage() {
 
       <div className="content">
         <div className="inventory-detail">
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '1.5rem',
-            }}
-          >
-            <button className="btn btn-ghost" onClick={() => navigate('/')}>
-              <i className="fas fa-arrow-left"></i>
-              Back to Inventories
-            </button>
-            <div
-              style={{
-                display: 'flex',
-                gap: '0.5rem',
-                flexWrap: 'wrap',
-                justifyContent: 'flex-end',
-              }}
+          <div className="inventory-actions">
+            <button
+              className="btn btn-ghost"
+              onClick={() => navigate('/')}
+              aria-label="Back to Inventories"
             >
+              <i className="fas fa-arrow-left"></i>
+              <span className="btn-label">Back to Inventories</span>
+            </button>
+            <div className="inventory-actions-right">
               <button
                 className="btn btn-secondary"
                 onClick={() => navigate(`/inventory/${id}/report`)}
+                title="Report"
+                aria-label="Report"
               >
                 <i className="fas fa-chart-bar"></i>
-                Report
+                <span className="btn-label">Report</span>
               </button>
-              <button className="btn btn-secondary" onClick={() => setShowShareModal(true)}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowShareModal(true)}
+                title="Share"
+                aria-label="Share"
+              >
                 <i className="fas fa-share-nodes"></i>
-                Share
+                <span className="btn-label">Share</span>
               </button>
               <button
                 className="btn btn-secondary"
                 onClick={() => navigate(`/inventory/${id}/organizers`)}
+                title="Organizers"
+                aria-label="Organizers"
               >
                 <i className="fas fa-folder-tree"></i>
-                Organizers
+                <span className="btn-label">Organizers</span>
               </button>
-              <button className="btn btn-primary" onClick={() => setShowAddItemModal(true)}>
+              <button
+                className="btn btn-primary"
+                onClick={() => setShowAddItemModal(true)}
+                title="Add Item"
+                aria-label="Add Item"
+              >
                 <i className="fas fa-plus"></i>
-                Add Item
+                <span className="btn-label">Add Item</span>
               </button>
             </div>
           </div>
 
-          <div
-            className="stats-row"
-            style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}
-          >
+          <div className="stats-row">
             <div className="stat-card">
               <div className="stat-icon" style={{ background: 'var(--primary-color)' }}>
                 <i className="fas fa-boxes"></i>
