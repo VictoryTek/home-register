@@ -119,9 +119,11 @@ volumes:
 ```
 
 **For production deployment**, use the pre-built image from GitHub Container Registry:
-# If you prefer manually adding your own JWT_SECRET and token lifetime, you can set these environment variables in the `app` service:
-# JWT_SECRET: "your-secure-secret-here"  # Uncomment and set for production
-# JWT_TOKEN_LIFETIME_HOURS: 24  # Token lifetime in hours (default: 24)
+**If you prefer manually adding your own JWT_SECRET and token lifetime, you can set these environment variables in the `app` service:**
+```
+  JWT_SECRET: "your-secure-secret-here"  # Uncomment and set for production
+  JWT_TOKEN_LIFETIME_HOURS: 24  # Token lifetime in hours (default: 24)
+```
 
 ```yaml
 services:
