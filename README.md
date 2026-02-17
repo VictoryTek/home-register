@@ -16,8 +16,6 @@ A modern, universal, web-based home inventory management system built with **Rus
 - � **Inventory Management** - Organize items by categories, locations, and custom tags
 - 🗄️ **Database-Driven** - PostgreSQL backend with comprehensive data relationships
 - 🏷️ **Flexible Organization** - Categories, tags, and custom fields for any item type
-- 🔍 **Advanced Search** - Find items quickly with powerful filtering options
-- 📊 **Dashboard Analytics** - Overview of your inventory with statistics and insights
 
 ## Quick Start with Docker Compose
 
