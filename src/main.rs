@@ -204,13 +204,13 @@ async fn main() -> std::io::Result<()> {
                 .add(("X-XSS-Protection", "1; mode=block"))
                 .add(("Referrer-Policy", "strict-origin-when-cross-origin"))
                 .add(("Permissions-Policy", "geolocation=(), microphone=(), camera=()"))
-                // CSP: Allow external resources for fonts (Google Fonts, Font Awesome)
-                // Updated to fix CSP violations for Font Awesome CDN
+                // CSP: Allow external resources for fonts (Google Fonts, Font Awesome) and blob URLs for image processing
+                // Updated to fix CSP violations for Font Awesome CDN and blob URL image uploads
                 .add(("Content-Security-Policy", 
                       "default-src 'self'; \
                        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://use.fontawesome.com https://cdnjs.cloudflare.com; \
                        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://use.fontawesome.com https://cdnjs.cloudflare.com; \
-                       img-src 'self' data: https:; \
+                       img-src 'self' data: blob: https:; \
                        font-src 'self' https://fonts.gstatic.com https://use.fontawesome.com https://cdnjs.cloudflare.com data:; \
                        connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://cdnjs.cloudflare.com; \
                        frame-ancestors 'none'")))

@@ -6,6 +6,13 @@ import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import type { Inventory, Item } from '@/types';
 import { compressImage } from '@/utils/imageCompression';
+import {
+  isValidImageExtension,
+  isHeicFile,
+  getAllowedFormatsString,
+  getFileExtension,
+} from '@/utils/validateImageFile';
+import { convertHeicToJpeg, HeicConversionError } from '@/utils/heicConversion';
 
 export function InventoriesPage() {
   const navigate = useNavigate();
@@ -203,7 +210,17 @@ export function InventoriesPage() {
       return;
     }
 
-    // Allow larger raw files since compression will reduce size significantly
+    // Validate file extension FIRST (immediate feedback)
+    if (!isValidImageExtension(file.name)) {
+      const ext = getFileExtension(file.name) || 'unknown';
+      showToast(
+        `Unsupported file format (.${ext}). Supported formats: ${getAllowedFormatsString()}`,
+        'error'
+      );
+      return;
+    }
+
+    // Check file size
     const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB raw (will be compressed)
     if (file.size > MAX_FILE_SIZE) {
       showToast('Image must be under 20MB', 'error');
@@ -211,11 +228,44 @@ export function InventoriesPage() {
     }
 
     try {
-      const compressedDataUrl = await compressImage(file, 1920, 0.85);
+      let processedFile = file;
+
+      // Convert HEIC to JPEG if needed
+      if (isHeicFile(file)) {
+        showToast('Converting HEIC image...', 'info');
+        try {
+          processedFile = await convertHeicToJpeg(file);
+          // Update toast to show compression step
+          showToast('Compressing image...', 'info');
+        } catch (error) {
+          if (error instanceof HeicConversionError) {
+            showToast('Failed to convert HEIC image. Please convert to JPG or PNG first.', 'error');
+          } else {
+            showToast('HEIC conversion failed. Please try a different image format.', 'error');
+          }
+          return;
+        }
+      }
+
+      // Compress image (works on both original and converted files)
+      const compressedDataUrl = await compressImage(processedFile, 1920, 0.85);
       setImagePreview(compressedDataUrl);
       setFormData({ ...formData, image_url: compressedDataUrl });
-    } catch {
-      showToast('Failed to process image', 'error');
+
+      // Clear any lingering info toasts with success message
+      if (isHeicFile(file)) {
+        showToast('Image processed successfully', 'success');
+      }
+    } catch (error) {
+      console.error('Image processing error:', error);
+
+      // Provide context-specific error message
+      const wasHeic = isHeicFile(file);
+      const errorMessage = wasHeic
+        ? 'Failed to process HEIC image. Please convert to JPG or PNG and try again.'
+        : `Failed to process image. Please ensure it's a valid ${getAllowedFormatsString()} file.`;
+
+      showToast(errorMessage, 'error');
     }
   };
 
@@ -436,7 +486,7 @@ export function InventoriesPage() {
               <input
                 type="file"
                 id="inventory-image-input"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/gif,image/webp,image/heic,image/heif"
                 style={{ display: 'none' }}
                 onChange={handleImageUpload}
               />
@@ -582,7 +632,7 @@ export function InventoriesPage() {
               <input
                 type="file"
                 id="edit-inventory-image-input"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/gif,image/webp,image/heic,image/heif"
                 style={{ display: 'none' }}
                 onChange={handleImageUpload}
               />

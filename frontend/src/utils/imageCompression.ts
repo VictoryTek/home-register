@@ -48,7 +48,12 @@ export function compressImage(file: File, maxDimension = 1920, quality = 0.85): 
 
     img.onerror = () => {
       URL.revokeObjectURL(img.src);
-      reject(new Error('Failed to load image for compression'));
+      console.error('Failed to load image for compression:', { name: file.name, type: file.type });
+      reject(
+        new Error(
+          `Failed to load image for compression: ${file.name} (${file.type || 'unknown type'})`
+        )
+      );
     };
 
     img.src = URL.createObjectURL(file);

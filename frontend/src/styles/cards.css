@@ -3,7 +3,7 @@
 /* Modern Stats Grid */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
   gap: 1.5rem;
   margin-bottom: 2rem;
 }
@@ -69,7 +69,7 @@
 /* Inventories Grid */
 .inventories-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
   gap: 1.5rem;
   margin-top: 1.5rem;
 }
@@ -194,7 +194,7 @@
 /* Items Grid */
 .items-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
   gap: 1.5rem;
   margin-top: 2rem;
 }
@@ -373,6 +373,12 @@
     gap: 1rem;
   }
 
+  /* Mobile: stack item cards in single column */
+  .items-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
   .inventory-card {
     min-height: auto;
     padding: 1rem;
@@ -402,6 +408,10 @@
 
 @media (max-width: 480px) {
   .inventories-grid {
+    gap: 0.75rem;
+  }
+
+  .items-grid {
     gap: 0.75rem;
   }
 

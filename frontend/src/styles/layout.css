@@ -4,6 +4,8 @@
   min-height: 100vh;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   flex: 1;
+  max-width: 100%; /* Prevent horizontal overflow on mobile */
+  overflow-x: hidden; /* Contain any child overflow */
 }
 
 .header {
@@ -382,6 +384,9 @@
 .content {
   padding: 2rem;
   position: relative;
+  max-width: 100%; /* Prevent content from exceeding container */
+  overflow-x: hidden; /* Contain grid overflow on narrow viewports */
+  min-width: 0; /* Allow flex child to shrink below content size */
 }
 
 /* Page Actions */
@@ -479,5 +484,18 @@
 
   .user-menu-trigger .menu-chevron {
     display: none;
+  }
+
+  /* Constrain user menu dropdown on narrow screens */
+  .user-menu-dropdown {
+    min-width: unset;
+    width: calc(100vw - 2rem);
+    max-width: 280px;
+    right: -0.5rem;
+  }
+
+  /* Allow header content to wrap on very narrow screens */
+  .header-content {
+    flex-wrap: wrap;
   }
 }

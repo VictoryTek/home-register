@@ -100,4 +100,6 @@ body {
 #root {
   display: flex;
   min-height: 100vh;
+  max-width: 100vw; /* Prevent root from exceeding viewport */
+  overflow-x: hidden; /* Defensive overflow containment */
 }
