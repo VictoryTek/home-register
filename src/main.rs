@@ -272,6 +272,14 @@ async fn main() -> std::io::Result<()> {
                             .insert_header(("Cache-Control", "public, max-age=86400"))
                     })
             }))
+            .route("/favicon.png", web::get().to(|| async {
+                fs::NamedFile::open_async("static/favicon.png")
+                    .await
+                    .map(|file| {
+                        file.customize()
+                            .insert_header(("Cache-Control", "public, max-age=86400"))
+                    })
+            }))
             // PWA Manifest (backwards compatibility route for manifest.json)
             // Both routes serve the same file with consistent 10-minute cache
             .route("/manifest.json", web::get().to(|| async {

@@ -8,12 +8,12 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       injectRegister: 'inline',
       devOptions: {
         enabled: true
       },
-      includeAssets: ['logo_icon.png', 'logo_full.png'],
+      includeAssets: ['favicon.png', 'logo_full.png'],
       manifest: {
         name: 'Home Registry',
         short_name: 'HomeReg',
@@ -25,14 +25,8 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: 'logo_icon.png',
-            sizes: '192x192',
-            type: 'image/png',
-            purpose: 'any maskable'
-          },
-          {
-            src: 'logo_icon.png',
-            sizes: '512x512',
+            src: 'favicon.png',
+            sizes: 'any',
             type: 'image/png',
             purpose: 'any maskable'
           }

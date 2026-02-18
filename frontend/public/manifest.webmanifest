@@ -1,0 +1,20 @@
+{
+  "name": "Home Registry",
+  "short_name": "HomeReg",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#3b82f6",
+  "lang": "en",
+  "scope": "/",
+  "description": "Modern home inventory management system",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
