@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Header,
@@ -74,6 +74,20 @@ export function InventoryDetailPage() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState('');
   const [lightboxAlt, setLightboxAlt] = useState('');
+
+  // Determine if image section should be displayed on item cards
+  // Show images only if BOTH conditions are true:
+  // 1. Inventory has an Image Organizer (input_type === 'image')
+  // 2. At least one item in the inventory has an image
+  const shouldShowImageSection = useMemo(() => {
+    // Check if inventory has an Image Organizer
+    const hasImageOrganizer = organizers.some((org) => org.input_type === 'image');
+
+    // Check if any item has an image
+    const hasAnyImages = Object.keys(itemImages).length > 0;
+
+    return hasImageOrganizer && hasAnyImages;
+  }, [organizers, itemImages]);
 
   // Enhancement 2: Helper to get notification for an item
   const getItemNotification = (itemId: number | undefined) => {
@@ -470,27 +484,38 @@ export function InventoryDetailPage() {
                   const thumbnailUrl = item.id ? itemImages[String(item.id)] : undefined;
                   return (
                     <div key={item.id} className="item-card">
-                      {thumbnailUrl && (
+                      {/* Conditionally render thumbnail only if inventory has image organizer AND has images */}
+                      {shouldShowImageSection && (
                         <div
                           className="item-card-thumbnail"
-                          onClick={() => {
-                            setLightboxUrl(thumbnailUrl);
-                            setLightboxAlt(item.name);
-                            setLightboxOpen(true);
-                          }}
-                          role="button"
-                          tabIndex={0}
-                          aria-label={`View photo of ${item.name}`}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              setLightboxUrl(thumbnailUrl);
-                              setLightboxAlt(item.name);
-                              setLightboxOpen(true);
-                            }
-                          }}
+                          {...(thumbnailUrl
+                            ? {
+                                onClick: () => {
+                                  setLightboxUrl(thumbnailUrl);
+                                  setLightboxAlt(item.name);
+                                  setLightboxOpen(true);
+                                },
+                                role: 'button',
+                                tabIndex: 0,
+                                'aria-label': `View photo of ${item.name}`,
+                                onKeyDown: (e: React.KeyboardEvent) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    setLightboxUrl(thumbnailUrl);
+                                    setLightboxAlt(item.name);
+                                    setLightboxOpen(true);
+                                  }
+                                },
+                              }
+                            : {})}
                         >
-                          <img src={thumbnailUrl} alt={item.name} loading="lazy" />
+                          {thumbnailUrl ? (
+                            <img src={thumbnailUrl} alt={item.name} loading="lazy" />
+                          ) : (
+                            <div className="item-card-placeholder" aria-label="No image available">
+                              <i className="fas fa-box-open" aria-hidden="true"></i>
+                            </div>
+                          )}
                         </div>
                       )}
                       <div className="item-card-header">

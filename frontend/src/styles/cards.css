@@ -303,6 +303,29 @@
   outline-offset: -2px;
 }
 
+/* Item Card Placeholder (for items without images) */
+.item-card-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+  color: var(--text-tertiary);
+  font-size: 3rem;
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+.item-card-thumbnail:hover .item-card-placeholder {
+  opacity: 0.8;
+  color: var(--accent-color);
+}
+
+.item-card-placeholder i {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
 /* Item Notification Badge */
 .item-notification-badge {
   display: inline-flex;
