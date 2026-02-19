@@ -55,6 +55,15 @@ async fn main() -> std::io::Result<()> {
         env::var("RUST_ENV").unwrap_or_else(|_| "development".to_string())
     );
 
+    // Ensure uploads directory exists for image storage
+    match std::fs::create_dir_all("uploads/img") {
+        Ok(()) => log::info!("Uploads directory ready: uploads/img/"),
+        Err(e) => log::warn!(
+            "Could not create uploads/img directory: {}. Image uploads will be unavailable.",
+            e
+        ),
+    }
+
     // Initialize JWT secret at startup (will auto-generate if not found)
     let _ = auth::get_or_init_jwt_secret();
     log::info!(
@@ -227,6 +236,12 @@ async fn main() -> std::io::Result<()> {
             // Versioned assets with content hashes can be cached indefinitely
             .service(
                 fs::Files::new("/assets", "static/assets")
+                    .use_last_modified(true)
+                    .use_etag(true)
+            )
+            // Serve uploaded images with caching
+            .service(
+                fs::Files::new("/uploads/img", "uploads/img")
                     .use_last_modified(true)
                     .use_etag(true)
             )

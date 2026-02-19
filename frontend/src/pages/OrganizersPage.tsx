@@ -42,7 +42,7 @@ export function OrganizersPage() {
 
   // Form states
   const [typeName, setTypeName] = useState('');
-  const [typeInputType, setTypeInputType] = useState<'select' | 'text'>('select');
+  const [typeInputType, setTypeInputType] = useState<'select' | 'text' | 'image'>('select');
   const [typeIsRequired, setTypeIsRequired] = useState(false);
   const [optionName, setOptionName] = useState('');
 
@@ -365,9 +365,13 @@ export function OrganizersPage() {
                       <h3>{organizer.name}</h3>
                       <div className="organizer-meta">
                         <span
-                          className={`badge badge-${organizer.input_type === 'select' ? 'primary' : 'secondary'}`}
+                          className={`badge badge-${organizer.input_type === 'select' ? 'primary' : organizer.input_type === 'image' ? 'accent' : 'secondary'}`}
                         >
-                          {organizer.input_type === 'select' ? 'Dropdown' : 'Text Input'}
+                          {organizer.input_type === 'select'
+                            ? 'Dropdown'
+                            : organizer.input_type === 'image'
+                              ? 'Image Upload'
+                              : 'Text Input'}
                         </span>
                         {organizer.is_required && (
                           <span className="badge badge-warning">Required</span>
@@ -444,6 +448,13 @@ export function OrganizersPage() {
                       <span>Users will enter free-form text</span>
                     </div>
                   )}
+
+                  {organizer.input_type === 'image' && (
+                    <div className="organizer-image-info">
+                      <i className="fas fa-camera"></i>
+                      <span>Users can upload a photo for each item</span>
+                    </div>
+                  )}
                 </div>
               ))}
           </div>
@@ -489,15 +500,18 @@ export function OrganizersPage() {
               className="form-select"
               id="typeInputType"
               value={typeInputType}
-              onChange={(e) => setTypeInputType(e.target.value as 'select' | 'text')}
+              onChange={(e) => setTypeInputType(e.target.value as 'select' | 'text' | 'image')}
             >
               <option value="select">Dropdown (Select from options)</option>
               <option value="text">Text Input (Free-form entry)</option>
+              <option value="image">Image Upload (Photo attachment)</option>
             </select>
             <p className="form-hint">
               {typeInputType === 'select'
                 ? 'Users will select from predefined options you create after saving.'
-                : 'Users can enter any text value (e.g., serial numbers, custom notes).'}
+                : typeInputType === 'image'
+                  ? 'Users can upload a photo (JPEG, PNG, GIF, WebP — max 5 MB).'
+                  : 'Users can enter any text value (e.g., serial numbers, custom notes).'}
             </p>
           </div>
 

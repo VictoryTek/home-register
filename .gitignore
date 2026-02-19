@@ -1,6 +1,7 @@
 /target
 analysis/
 backups/
+uploads/
 .history/
 
 # SubAgent generated documentation

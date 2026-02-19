@@ -34,9 +34,11 @@ services:
     volumes:
       - appdata:/app/data  # Persist JWT secret and other app data
       - backups:/app/backups  # Persist backup files across container restarts
+      - uploads:/app/uploads  # Persist uploaded images
     command: ["./home-registry"]
     restart: unless-stopped
 volumes:
   pgdata:
   appdata:
   backups:
+  uploads:

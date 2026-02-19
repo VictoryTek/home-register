@@ -7,8 +7,10 @@ import {
   Modal,
   ConfirmModal,
   ShareInventoryModal,
+  ImageLightbox,
+  ImageOrganizerInput,
 } from '@/components';
-import { inventoryApi, itemApi, organizerApi } from '@/services/api';
+import { inventoryApi, itemApi, organizerApi, imageApi } from '@/services/api';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { formatDate, type DateFormatType } from '@/utils/dateFormat';
@@ -67,6 +69,12 @@ export function InventoryDetailPage() {
     Record<string, { optionId?: number; textValue?: string }>
   >({});
 
+  // Image organizer state
+  const [itemImages, setItemImages] = useState<Record<string, string>>({});
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState('');
+  const [lightboxAlt, setLightboxAlt] = useState('');
+
   // Enhancement 2: Helper to get notification for an item
   const getItemNotification = (itemId: number | undefined) => {
     if (!itemId) {
@@ -103,6 +111,19 @@ export function InventoryDetailPage() {
 
       if (organizersResult.success && organizersResult.data) {
         setOrganizers(organizersResult.data);
+
+        // Fetch item images if any image-type organizers exist
+        const hasImageOrg = organizersResult.data.some((o) => o.input_type === 'image');
+        if (hasImageOrg) {
+          try {
+            const imgResult = await imageApi.getInventoryItemImages(inventoryId);
+            if (imgResult.success && imgResult.data) {
+              setItemImages(imgResult.data);
+            }
+          } catch {
+            // Non-critical, continue without thumbnails
+          }
+        }
       }
     } catch {
       showToast('Failed to load inventory', 'error');
@@ -147,7 +168,8 @@ export function InventoryDetailPage() {
         if (
           !value ||
           (org.input_type === 'select' && !value.optionId) ||
-          (org.input_type === 'text' && !value.textValue?.trim())
+          (org.input_type === 'text' && !value.textValue?.trim()) ||
+          (org.input_type === 'image' && !value.textValue?.trim())
         ) {
           showToast(`Please fill in the required field: ${org.name}`, 'error');
           return;
@@ -262,7 +284,8 @@ export function InventoryDetailPage() {
         if (
           !value ||
           (org.input_type === 'select' && !value.optionId) ||
-          (org.input_type === 'text' && !value.textValue?.trim())
+          (org.input_type === 'text' && !value.textValue?.trim()) ||
+          (org.input_type === 'image' && !value.textValue?.trim())
         ) {
           showToast(`Please fill in the required field: ${org.name}`, 'error');
           return;
@@ -444,8 +467,32 @@ export function InventoryDetailPage() {
                 {items.map((item) => {
                   const itemValue = (item.purchase_price ?? 0) * (item.quantity ?? 1);
                   const notification = getItemNotification(item.id);
+                  const thumbnailUrl = item.id ? itemImages[String(item.id)] : undefined;
                   return (
                     <div key={item.id} className="item-card">
+                      {thumbnailUrl && (
+                        <div
+                          className="item-card-thumbnail"
+                          onClick={() => {
+                            setLightboxUrl(thumbnailUrl);
+                            setLightboxAlt(item.name);
+                            setLightboxOpen(true);
+                          }}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`View photo of ${item.name}`}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setLightboxUrl(thumbnailUrl);
+                              setLightboxAlt(item.name);
+                              setLightboxOpen(true);
+                            }
+                          }}
+                        >
+                          <img src={thumbnailUrl} alt={item.name} loading="lazy" />
+                        </div>
+                      )}
                       <div className="item-card-header">
                         <h3 className="item-card-title">{item.name}</h3>
                         {item.category && (
@@ -639,6 +686,18 @@ export function InventoryDetailPage() {
                           </option>
                         ))}
                       </select>
+                    ) : org.input_type === 'image' ? (
+                      <ImageOrganizerInput
+                        value={organizerValues[String(org.id)]?.textValue ?? undefined}
+                        onChange={(url) =>
+                          setOrganizerValues({
+                            ...organizerValues,
+                            [String(org.id)]: { textValue: url },
+                          })
+                        }
+                        itemName={newItem.name || 'item'}
+                        required={org.is_required}
+                      />
                     ) : (
                       <input
                         type="text"
@@ -876,14 +935,48 @@ export function InventoryDetailPage() {
                 {viewingItemOrganizerValues.map((val) => (
                   <div
                     key={val.organizer_type_id}
-                    style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.25rem' }}
+                    style={{
+                      display: 'flex',
+                      flexDirection:
+                        val.input_type === 'image' ? ('column' as const) : ('row' as const),
+                      gap: '0.5rem',
+                      marginBottom: '0.5rem',
+                    }}
                   >
                     <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>
                       {val.organizer_type_name}:
                     </span>
-                    <span style={{ color: 'var(--text-secondary)' }}>
-                      {val.value ?? val.text_value ?? '—'}
-                    </span>
+                    {val.input_type === 'image' && val.text_value ? (
+                      (() => {
+                        const imageUrl = val.text_value;
+                        return (
+                          <img
+                            src={imageUrl}
+                            alt={`${val.organizer_type_name} for ${viewingItem.name}`}
+                            className="organizer-image-preview"
+                            onClick={() => {
+                              setLightboxUrl(imageUrl);
+                              setLightboxAlt(`${val.organizer_type_name} — ${viewingItem.name}`);
+                              setLightboxOpen(true);
+                            }}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setLightboxUrl(imageUrl);
+                                setLightboxAlt(`${val.organizer_type_name} — ${viewingItem.name}`);
+                                setLightboxOpen(true);
+                              }
+                            }}
+                          />
+                        );
+                      })()
+                    ) : (
+                      <span style={{ color: 'var(--text-secondary)' }}>
+                        {val.value ?? val.text_value ?? '—'}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -999,6 +1092,18 @@ export function InventoryDetailPage() {
                           </option>
                         ))}
                       </select>
+                    ) : org.input_type === 'image' ? (
+                      <ImageOrganizerInput
+                        value={editOrganizerValues[String(org.id)]?.textValue ?? undefined}
+                        onChange={(url) =>
+                          setEditOrganizerValues({
+                            ...editOrganizerValues,
+                            [String(org.id)]: { textValue: url },
+                          })
+                        }
+                        itemName={editItemData.name ?? 'item'}
+                        required={org.is_required}
+                      />
                     ) : (
                       <input
                         type="text"
@@ -1139,6 +1244,13 @@ export function InventoryDetailPage() {
         onClose={() => setShowShareModal(false)}
         inventoryId={parseInt(id ?? '0', 10)}
         inventoryName={inventory.name}
+      />
+
+      <ImageLightbox
+        isOpen={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+        imageUrl={lightboxUrl}
+        altText={lightboxAlt}
       />
     </>
   );

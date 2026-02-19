@@ -1131,6 +1131,48 @@ impl DatabaseService {
         Ok(rows_affected)
     }
 
+    // ==================== Item Image Operations ====================
+
+    /// Bulk-fetch item images for an inventory.
+    /// Returns a map of `item_id` → `image_url` for all items that have an image organizer value.
+    /// This avoids N+1 queries when rendering item card thumbnails.
+    pub async fn get_item_image_urls_by_inventory(
+        &self,
+        inventory_id: i32,
+    ) -> Result<std::collections::HashMap<i32, String>, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        let rows = client
+            .query(
+                "SELECT iov.item_id, iov.text_value
+                 FROM item_organizer_values iov
+                 JOIN organizer_types ot ON iov.organizer_type_id = ot.id
+                 JOIN items i ON iov.item_id = i.id
+                 WHERE ot.inventory_id = $1
+                   AND ot.input_type = 'image'
+                   AND iov.text_value IS NOT NULL
+                   AND iov.text_value != ''
+                 ORDER BY ot.display_order ASC",
+                &[&inventory_id],
+            )
+            .await?;
+
+        let mut image_map = std::collections::HashMap::new();
+        for row in rows {
+            let item_id: i32 = row.get(0);
+            let image_url: String = row.get(1);
+            // First image organizer wins (by display_order)
+            image_map.entry(item_id).or_insert(image_url);
+        }
+
+        info!(
+            "Retrieved {} item image URLs for inventory {}",
+            image_map.len(),
+            inventory_id
+        );
+        Ok(image_map)
+    }
+
     // ==================== User Operations ====================
 
     /// Get user count for setup status check

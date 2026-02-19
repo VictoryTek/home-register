@@ -133,6 +133,9 @@ COPY --from=frontend-builder --chown=appuser:appgroup /app/frontend/dist ./stati
 # Create backups directory with proper ownership
 RUN mkdir -p /app/backups && chown appuser:appgroup /app/backups
 
+# Create uploads directory for image storage with proper ownership
+RUN mkdir -p /app/uploads/img && chown -R appuser:appgroup /app/uploads
+
 # Set proper permissions
 RUN chmod 755 /app/home-registry
 

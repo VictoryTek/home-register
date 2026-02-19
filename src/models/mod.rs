@@ -204,6 +204,13 @@ pub struct InventoryReportData {
     pub filters_applied: InventoryReportRequest,
 }
 
+// Image upload response
+#[derive(Serialize, Debug)]
+pub struct ImageUploadResponse {
+    pub url: String,
+    pub filename: String,
+}
+
 // Categories
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Category {

@@ -9,6 +9,7 @@
 @import './notifications.css';
 @import './auth.css';
 @import './instructions.css';
+@import './lightbox.css';
 
 /* Loading Screen */
 .loading-screen {

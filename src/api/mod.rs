@@ -4,13 +4,15 @@ pub mod backup;
 use crate::db::DatabaseService;
 use crate::models::{
     ApiResponse, CreateInventoryRequest, CreateItemRequest, CreateOrganizerOptionRequest,
-    CreateOrganizerTypeRequest, ErrorResponse, InventoryReportData, InventoryReportRequest, Item,
-    ItemExportRow, SetItemOrganizerValuesRequest, UpdateInventoryRequest, UpdateItemRequest,
-    UpdateOrganizerOptionRequest, UpdateOrganizerTypeRequest,
+    CreateOrganizerTypeRequest, ErrorResponse, ImageUploadResponse, InventoryReportData,
+    InventoryReportRequest, Item, ItemExportRow, SetItemOrganizerValuesRequest,
+    UpdateInventoryRequest, UpdateItemRequest, UpdateOrganizerOptionRequest,
+    UpdateOrganizerTypeRequest,
 };
+use actix_multipart::form::{tempfile::TempFile, MultipartForm};
 use actix_web::{delete, get, post, put, web, HttpRequest, HttpResponse, Responder, Result, Scope};
 use deadpool_postgres::Pool;
-use log::{error, info};
+use log::{error, info, warn};
 use validator::Validate;
 
 /// Validates that data URIs in `image_url` start with `data:image/` to prevent arbitrary data storage.
@@ -946,6 +948,271 @@ pub async fn delete_item_organizer_value(
     }
 }
 
+// ==================== Image Upload/Delete Endpoints ====================
+
+/// Validate file magic bytes to determine actual image type.
+/// Returns the file extension if valid, or None if not a recognized image.
+fn detect_image_type(data: &[u8]) -> Option<&'static str> {
+    if data.len() < 4 {
+        return None;
+    }
+    // JPEG: starts with FF D8 FF
+    if data.len() >= 3 && data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF {
+        return Some("jpg");
+    }
+    // PNG: starts with 89 50 4E 47 0D 0A 1A 0A
+    if data.len() >= 8 && data[0] == 0x89 && data[1] == 0x50 && data[2] == 0x4E && data[3] == 0x47 {
+        return Some("png");
+    }
+    // GIF: starts with GIF87a or GIF89a
+    if data.len() >= 6 && data[0] == 0x47 && data[1] == 0x49 && data[2] == 0x46 {
+        return Some("gif");
+    }
+    // WebP: starts with RIFF....WEBP
+    if data.len() >= 12
+        && data[0] == 0x52
+        && data[1] == 0x49
+        && data[2] == 0x46
+        && data[3] == 0x46
+        && data[8] == 0x57
+        && data[9] == 0x45
+        && data[10] == 0x42
+        && data[11] == 0x50
+    {
+        return Some("webp");
+    }
+    None
+}
+
+/// Validate that a filename is safe (no path traversal).
+/// Only allows alphanumeric chars, underscores, hyphens, a single dot, and an extension.
+fn is_safe_filename(filename: &str) -> bool {
+    if filename.contains("..")
+        || filename.contains('/')
+        || filename.contains('\\')
+        || filename.is_empty()
+    {
+        return false;
+    }
+    // Must be: one or more [a-zA-Z0-9_-], then a dot, then one or more [a-zA-Z0-9]
+    filename
+        .bytes()
+        .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-' || b == b'.')
+        && filename.chars().filter(|c| *c == '.').count() == 1
+        && !filename.starts_with('.')
+        && !filename.ends_with('.')
+}
+
+const MAX_IMAGE_SIZE: usize = 5 * 1024 * 1024; // 5 MB
+
+/// Multipart form for image upload
+#[derive(MultipartForm)]
+struct ImageUploadForm {
+    #[multipart(limit = "5MB")]
+    image: TempFile,
+}
+
+#[post("/images/upload")]
+pub async fn upload_image(
+    req: HttpRequest,
+    pool: web::Data<Pool>,
+    MultipartForm(form): MultipartForm<ImageUploadForm>,
+) -> Result<impl Responder> {
+    // Auth check
+    let _auth = match auth::get_auth_context_from_request(&req, pool.get_ref()).await {
+        Ok(a) => a,
+        Err(e) => return Ok(e),
+    };
+
+    // Read the temp file contents
+    let file_data = match tokio::fs::read(form.image.file.path()).await {
+        Ok(data) => data,
+        Err(e) => {
+            error!("Failed to read uploaded temp file: {}", e);
+            return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+                success: false,
+                error: "Upload read error".to_string(),
+                message: Some(format!("Failed to read upload data: {e}")),
+            }));
+        },
+    };
+
+    // Check size limit
+    if file_data.len() > MAX_IMAGE_SIZE {
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: "File too large".to_string(),
+            message: Some(format!(
+                "Image must be under {} MB",
+                MAX_IMAGE_SIZE / 1024 / 1024
+            )),
+        }));
+    }
+
+    if file_data.is_empty() {
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: "No image provided".to_string(),
+            message: Some("Please include an 'image' field with file data".to_string()),
+        }));
+    }
+
+    // Validate magic bytes
+    let Some(ext) = detect_image_type(&file_data) else {
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: "Invalid image type".to_string(),
+            message: Some("Only JPEG, PNG, GIF, and WebP images are allowed".to_string()),
+        }));
+    };
+
+    // Generate unique filename: {uuid}_{timestamp}.{ext}
+    let timestamp = chrono::Utc::now().timestamp();
+    let unique_id = uuid::Uuid::new_v4().to_string().replace('-', "");
+    let filename = format!("{unique_id}_{timestamp}.{ext}");
+
+    // Ensure uploads/img directory exists
+    let upload_dir = std::path::Path::new("uploads/img");
+    if let Err(e) = tokio::fs::create_dir_all(upload_dir).await {
+        error!("Failed to create upload directory: {}", e);
+        return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+            success: false,
+            error: "Upload directory error".to_string(),
+            message: Some("Failed to prepare upload directory".to_string()),
+        }));
+    }
+
+    // Write file
+    let file_path = upload_dir.join(&filename);
+    if let Err(e) = tokio::fs::write(&file_path, &file_data).await {
+        error!("Failed to write uploaded image: {}", e);
+        return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+            success: false,
+            error: "File write error".to_string(),
+            message: Some("Failed to save uploaded image".to_string()),
+        }));
+    }
+
+    let url = format!("/uploads/img/{filename}");
+    info!(
+        "Image uploaded successfully: {} ({} bytes)",
+        filename,
+        file_data.len()
+    );
+
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        success: true,
+        data: Some(ImageUploadResponse {
+            url: url.clone(),
+            filename,
+        }),
+        message: Some("Image uploaded successfully".to_string()),
+        error: None,
+    }))
+}
+
+#[delete("/images/{filename}")]
+pub async fn delete_image(
+    req: HttpRequest,
+    pool: web::Data<Pool>,
+    path: web::Path<String>,
+) -> Result<impl Responder> {
+    // Auth check
+    let _auth = match auth::get_auth_context_from_request(&req, pool.get_ref()).await {
+        Ok(a) => a,
+        Err(e) => return Ok(e),
+    };
+
+    let filename = path.into_inner();
+
+    // Validate filename to prevent path traversal
+    if !is_safe_filename(&filename) {
+        warn!(
+            "Path traversal attempt detected in image delete: {}",
+            filename
+        );
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: "Invalid filename".to_string(),
+            message: Some("Filename contains invalid characters".to_string()),
+        }));
+    }
+
+    let file_path = std::path::Path::new("uploads/img").join(&filename);
+
+    if !file_path.exists() {
+        return Ok(HttpResponse::NotFound().json(ErrorResponse {
+            success: false,
+            error: format!("Image not found: {filename}"),
+            message: Some("The specified image does not exist".to_string()),
+        }));
+    }
+
+    if let Err(e) = tokio::fs::remove_file(&file_path).await {
+        error!("Failed to delete image {}: {}", filename, e);
+        return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+            success: false,
+            error: "File delete error".to_string(),
+            message: Some("Failed to delete image file".to_string()),
+        }));
+    }
+
+    info!("Image deleted successfully: {}", filename);
+
+    Ok(HttpResponse::Ok().json(ApiResponse::<()> {
+        success: true,
+        data: None,
+        message: Some("Image deleted successfully".to_string()),
+        error: None,
+    }))
+}
+
+#[get("/inventories/{id}/item-images")]
+pub async fn get_inventory_item_images(
+    req: HttpRequest,
+    pool: web::Data<Pool>,
+    path: web::Path<i32>,
+) -> Result<impl Responder> {
+    // Auth check — consistent with other inventory endpoints
+    let _auth = match auth::get_auth_context_from_request(&req, pool.get_ref()).await {
+        Ok(a) => a,
+        Err(e) => return Ok(e),
+    };
+
+    let inventory_id = path.into_inner();
+    let db_service = DatabaseService::new(pool.get_ref().clone());
+
+    match db_service
+        .get_item_image_urls_by_inventory(inventory_id)
+        .await
+    {
+        Ok(image_map) => {
+            let count = image_map.len();
+            info!(
+                "Retrieved {} item images for inventory {}",
+                count, inventory_id
+            );
+            Ok(HttpResponse::Ok().json(ApiResponse {
+                success: true,
+                data: Some(image_map),
+                message: Some(format!("Retrieved {count} item images")),
+                error: None,
+            }))
+        },
+        Err(e) => {
+            error!(
+                "Error retrieving item images for inventory {}: {}",
+                inventory_id, e
+            );
+            Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: "An internal error occurred".to_string(),
+                message: Some("Failed to retrieve item images".to_string()),
+            }))
+        },
+    }
+}
+
 // ==================== Inventory Reporting Endpoints ====================
 
 /// Formats a collection of items as CSV data.
@@ -1442,6 +1709,10 @@ pub fn api_scope() -> Scope {
         .service(create_organizer_option)
         .service(update_organizer_option)
         .service(delete_organizer_option)
+        // Image upload/delete routes
+        .service(upload_image)
+        .service(delete_image)
+        .service(get_inventory_item_images)
         // Inventory reporting routes
         .service(get_inventory_report)
         .service(get_inventory_statistics_endpoint)

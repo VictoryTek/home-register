@@ -38,6 +38,7 @@ services:
     volumes:
       - appdata:/app/data
       - backups:/app/backups
+      - uploads:/app/uploads
     command: ["./home-registry"]
     restart: unless-stopped
     healthcheck:
@@ -52,3 +53,4 @@ volumes:
   pgdata:
   appdata:
   backups:
+  uploads:

@@ -172,6 +172,11 @@
   color: #d97706;
 }
 
+.badge-accent {
+  background: rgba(139, 92, 246, 0.15);
+  color: #7c3aed;
+}
+
 /* Page header enhancements */
 .page-header {
   display: flex;
@@ -364,4 +369,118 @@
 .organizer-inventory-item:hover .organizer-inventory-action {
   color: var(--accent-color);
   transform: translateX(4px);
+}
+
+/* Image Organizer Info */
+.organizer-image-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.organizer-image-info i {
+  color: #7c3aed;
+}
+
+/* Image Upload Component */
+.image-organizer-container {
+  width: 100%;
+}
+
+.image-upload-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  border: 2px dashed var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+  text-align: center;
+  min-height: 100px;
+}
+
+.image-upload-dropzone:hover {
+  border-color: var(--accent-color);
+  background: var(--bg-tertiary);
+}
+
+.image-upload-dropzone.dragging {
+  border-color: var(--accent-color);
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.image-upload-dropzone i {
+  font-size: 1.5rem;
+  color: var(--text-tertiary);
+}
+
+.image-upload-dropzone span {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.image-upload-preview {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+}
+
+.image-upload-preview img {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: var(--radius-md);
+  object-fit: contain;
+}
+
+.image-upload-remove {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.image-upload-remove:hover {
+  background: rgba(239, 68, 68, 0.85);
+}
+
+.form-hint-upload {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+/* Organizer image preview in view details */
+.organizer-image-preview {
+  max-width: 100%;
+  max-height: 160px;
+  border-radius: var(--radius-md);
+  object-fit: contain;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.organizer-image-preview:hover {
+  opacity: 0.85;
 }

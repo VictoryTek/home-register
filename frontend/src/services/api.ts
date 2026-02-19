@@ -50,6 +50,8 @@ import type {
   CategorySummary,
   // Backup types
   BackupInfo,
+  // Image types
+  ImageUploadResponse,
 } from '@/types';
 
 const API_BASE = '/api';
@@ -458,6 +460,41 @@ export const organizerApi = {
       headers: getHeaders(),
     });
     return handleResponse<Record<string, never>>(response);
+  },
+};
+
+// ==================== Image API ====================
+
+export const imageApi = {
+  async upload(file: File): Promise<ApiResponse<ImageUploadResponse>> {
+    const token = getToken();
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const response = await fetchWithRetry(`${API_BASE}/images/upload`, {
+      method: 'POST',
+      headers: {
+        // Do NOT set Content-Type for multipart - browser sets it with boundary
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+    return handleResponse<ImageUploadResponse>(response);
+  },
+
+  async delete(filename: string): Promise<ApiResponse<void>> {
+    const response = await fetchWithRetry(`${API_BASE}/images/${encodeURIComponent(filename)}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return handleResponse<undefined>(response);
+  },
+
+  async getInventoryItemImages(inventoryId: number): Promise<ApiResponse<Record<string, string>>> {
+    const response = await fetchWithRetry(`${API_BASE}/inventories/${inventoryId}/item-images`, {
+      headers: getHeaders(),
+    });
+    return handleResponse<Record<string, string>>(response);
   },
 };
 

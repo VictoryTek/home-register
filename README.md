@@ -3,8 +3,8 @@
 </div>
 
 # Home Registry
-
-** WORK IN PROGRESS **
+  <p><em>Universal Home Inventory Management System</em></p>
+  <p><strong>Version 0.1.0-beta.2</strong></p>
 
 Inspired by HomeBox project, which I used for years. When it was no longer maintained, I thought I would attempt to build a successor to that project.
 

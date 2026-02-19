@@ -15,3 +15,5 @@ export { AllAccessManagement } from './AllAccessManagement';
 export { RecoveryCodesSection } from './RecoveryCodesSection';
 export { BackupRestoreSection } from './BackupRestoreSection';
 export { InstructionsModal } from './InstructionsModal';
+export { ImageLightbox } from './ImageLightbox';
+export { ImageOrganizerInput } from './ImageOrganizerInput';
