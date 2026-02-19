@@ -13,25 +13,15 @@ export default defineConfig({
       devOptions: {
         enabled: true
       },
-      includeAssets: ['favicon.png', 'logo_full.png'],
-      manifest: {
-        name: 'Home Registry',
-        short_name: 'HomeReg',
-        description: 'Modern home inventory management system',
-        theme_color: '#3b82f6',
-        background_color: '#1a1a2e',
-        display: 'standalone',
-        scope: '/',
-        start_url: '/',
-        icons: [
-          {
-            src: 'favicon.png',
-            sizes: 'any',
-            type: 'image/png',
-            purpose: 'any maskable'
-          }
-        ]
-      },
+      // CRITICAL: Disable automatic manifest generation to prevent VitePWA from
+      // overwriting the standalone manifest.webmanifest file at build time.
+      // Without this setting, VitePWA generates a minimal default manifest that
+      // lacks icon declarations, breaking PWA installation on Android/Desktop.
+      // The standalone manifest.webmanifest file in public/ contains all 17 icon
+      // declarations and is the single source of truth for PWA configuration.
+      manifest: false,
+      // Include key PWA assets for precaching
+      includeAssets: ['logo_full.png', 'icons/icon-192.png', 'icons/icon-512.png'],
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         runtimeCaching: [

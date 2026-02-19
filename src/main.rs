@@ -245,6 +245,12 @@ async fn main() -> std::io::Result<()> {
                     .use_last_modified(true)
                     .use_etag(true)
             )
+            // Serve PWA icon files from icons directory with caching
+            .service(
+                fs::Files::new("/icons", "static/icons")
+                    .use_last_modified(true)
+                    .use_etag(true)
+            )
             // Root route - serve index.html with no-cache to ensure updates are detected
             .route("/", web::get().to(|| async {
                 fs::NamedFile::open_async("static/index.html")
@@ -280,7 +286,7 @@ async fn main() -> std::io::Result<()> {
                     })
             }))
             .route("/favicon.ico", web::get().to(|| async {
-                fs::NamedFile::open_async("static/favicon.ico")
+                fs::NamedFile::open_async("static/icons/icon-32.png")
                     .await
                     .map(|file| {
                         file.customize()
@@ -288,7 +294,7 @@ async fn main() -> std::io::Result<()> {
                     })
             }))
             .route("/favicon.png", web::get().to(|| async {
-                fs::NamedFile::open_async("static/favicon.png")
+                fs::NamedFile::open_async("static/icons/icon-32.png")
                     .await
                     .map(|file| {
                         file.customize()

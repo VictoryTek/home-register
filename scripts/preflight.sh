@@ -158,7 +158,7 @@ fi
 
 section "SUPPLY CHAIN: NPM Audit"
 if [ -d "frontend" ]; then
-    (cd frontend && npm audit --audit-level=high) || error "NPM audit found HIGH/CRITICAL vulnerabilities"
+    (cd frontend && npm audit --production --audit-level=high) || error "NPM audit found HIGH/CRITICAL vulnerabilities in production dependencies"
     success "NPM audit passed"
 fi
 

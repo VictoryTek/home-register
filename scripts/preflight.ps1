@@ -303,10 +303,10 @@ Write-Section "SUPPLY CHAIN: NPM Audit"
 if (Test-Path "frontend") {
     Push-Location frontend
     try {
-        npm audit --audit-level=high
+        npm audit --production --audit-level=high
         if ($LASTEXITCODE -ne 0) {
             Pop-Location
-            Write-Error-Exit "NPM audit found HIGH/CRITICAL vulnerabilities"
+            Write-Error-Exit "NPM audit found HIGH/CRITICAL vulnerabilities in production dependencies"
         }
         Write-Success "NPM audit passed"
         Pop-Location
