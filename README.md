@@ -30,6 +30,8 @@ The easiest way to try Home Registry is with Docker Compose, which sets up both 
 cp .env.example .env
 
 # Edit .env and set your database password
+# POSTGRES_PASSWORD=your_secure_password
+
 # The docker-compose.yml has a random default, but you should set your own:
 # - Open .env in a text editor
 # - Set POSTGRES_PASSWORD to your secure password (16+ characters)
