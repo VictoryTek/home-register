@@ -136,6 +136,9 @@ RUN mkdir -p /app/backups && chown appuser:appgroup /app/backups
 # Create uploads directory for image storage with proper ownership
 RUN mkdir -p /app/uploads/img && chown -R appuser:appgroup /app/uploads
 
+# Create data directory for JWT secrets and other app data with proper ownership
+RUN mkdir -p /app/data && chown -R appuser:appgroup /app/data
+
 # Set proper permissions
 RUN chmod 755 /app/home-registry
 

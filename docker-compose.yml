@@ -1,15 +1,43 @@
+##############################################################################
+# ⚠️  DATABASE PASSWORD CONFIGURATION
+##############################################################################
+# DO NOT edit the password in this file!
+# 
+# The default password below is randomly generated for security. However,
+# you MUST use your own password by creating a .env file:
+#
+#   1. Copy .env.example to .env:
+#      cp .env.example .env
+#
+#   2. Edit .env and set POSTGRES_PASSWORD to your own secure password:
+#      POSTGRES_PASSWORD=your_secure_password_here
+#
+# WHY USE .env FILE:
+#   - .env is excluded from version control (.gitignore)
+#   - Prevents accidentally committing passwords to Git
+#   - Allows different passwords per environment (dev/staging/prod)
+#   - Maintains clean separation of config and code
+#
+# PASSWORD REQUIREMENTS:
+#   - Minimum 16 characters (20+ recommended)
+#   - Mix uppercase, lowercase, numbers, symbols
+#   - Avoid characters: @ : / (conflict with connection strings)
+#   - Use password manager to generate: openssl rand -base64 24
+#
+# NEVER commit your .env file to version control!
+##############################################################################
 services:
   db:
     image: postgres:17
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-uK8m3NvQ7wPxRj2Y5tLz}
+      # ☝️ Default above is randomly generated. Override in .env file!
       POSTGRES_DB: home_inventory
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      # Migrations now run programmatically from app container via refinery crate
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -22,13 +50,14 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgres://postgres:password@db:5432/home_inventory
-      PORT: 8210
-      RUST_LOG: info
-      # JWT_SECRET: "your-secure-secret-here"  # Uncomment and set for production
-      # JWT_TOKEN_LIFETIME_HOURS: 24  # Token lifetime in hours (default: 24)
-      RATE_LIMIT_RPS: 100  # Increased from 50 for home use - allows 100 requests/sec sustained
-      RATE_LIMIT_BURST: 200  # Increased from 100 to handle page load spikes (20+ requests)
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-uK8m3NvQ7wPxRj2Y5tLz}@db:5432/home_inventory
+      # ☝️ Database password matches db service above. Override in .env file!
+      PORT: ${PORT:-8210}
+      RUST_LOG: ${RUST_LOG:-info}
+      JWT_SECRET: ${JWT_SECRET}  # Optional - auto-generated if not set
+      JWT_TOKEN_LIFETIME_HOURS: ${JWT_TOKEN_LIFETIME_HOURS:-24}
+      RATE_LIMIT_RPS: ${RATE_LIMIT_RPS:-100}
+      RATE_LIMIT_BURST: ${RATE_LIMIT_BURST:-200}
     ports:
       - "8210:8210"
     volumes:

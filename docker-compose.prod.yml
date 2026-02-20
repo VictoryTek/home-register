@@ -1,12 +1,25 @@
 # docker-compose.prod.yml
 # Production deployment using pre-built image from GHCR
 
+##############################################################################
+# ⚠️  PRODUCTION DATABASE PASSWORD - REQUIRED
+##############################################################################
+# You MUST set POSTGRES_PASSWORD in your production environment!
+#
+# Methods:
+#   - Docker secrets: /run/secrets/postgres_password
+#   - Environment variables: export POSTGRES_PASSWORD="..."
+#   - .env file (if not using orchestration)
+#
+# DO NOT use the default value in production deployments!
+##############################################################################
 services:
   db:
     image: postgres:17
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}  # Override via env var
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-INSECURE_DEFAULT_CHANGE_ME}
+      # ☝️ This MUST be overridden in production! Never use the default!
       POSTGRES_DB: home_inventory
     ports:
       - "5432:5432"
@@ -26,7 +39,8 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-password}@db:5432/home_inventory
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-INSECURE_DEFAULT_CHANGE_ME}@db:5432/home_inventory
+      # ☝️ Database password MUST be set via environment variable in production!
       PORT: 8210
       RUST_LOG: ${RUST_LOG:-info}
       # JWT_SECRET: "${JWT_SECRET}"  # Optional - auto-generated if not set
