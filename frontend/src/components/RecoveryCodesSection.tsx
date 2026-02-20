@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import type { RecoveryCodesStatus } from '@/types';
 import { authApi } from '@/services/api';
-import { escapeHtml } from '@/utils/security';
 
 interface RecoveryCodesSectionProps {
   onCodesGenerated?: () => void;
@@ -88,11 +87,23 @@ export function RecoveryCodesSection({ onCodesGenerated }: RecoveryCodesSectionP
     if (!codes) {
       return;
     }
+
     try {
+      console.warn('[RecoveryCodesSection] Attempting to copy recovery codes to clipboard');
       await navigator.clipboard.writeText(codes.join('\n'));
+      console.warn('[RecoveryCodesSection] Clipboard write successful');
       showToast('Codes copied to clipboard!', 'success');
-    } catch {
-      showToast('Failed to copy codes', 'error');
+    } catch (err) {
+      // CRITICAL FIX: Capture and log the actual error object for debugging
+      console.error('[RecoveryCodesSection] Failed to copy codes to clipboard:', err);
+
+      // Provide detailed error information based on error type
+      if (err instanceof Error) {
+        console.error('[RecoveryCodesSection] Error name:', err.name);
+        console.error('[RecoveryCodesSection] Error message:', err.message);
+      }
+
+      showToast('Failed to copy codes. Please try the download button instead.', 'error');
     }
   };
 
@@ -122,52 +133,6 @@ export function RecoveryCodesSection({ onCodesGenerated }: RecoveryCodesSectionP
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     showToast('Recovery codes downloaded!', 'success');
-  };
-
-  const handlePrint = () => {
-    if (!codes) {
-      return;
-    }
-
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      return;
-    }
-
-    // Build document safely without using innerHTML
-    const doc = printWindow.document;
-    doc.open();
-
-    // Create safe HTML with escaped content - build from data, not DOM
-    const safeCodes = codes.map((code) => `<div class="code">${escapeHtml(code)}</div>`).join('');
-
-    doc.write(`
-      <html>
-        <head>
-          <title>Recovery Codes - Home Registry</title>
-          <style>
-            body { font-family: monospace; padding: 20px; }
-            h2 { margin-bottom: 10px; }
-            .warning { color: #dc3545; font-weight: bold; margin-bottom: 20px; }
-            .code { 
-              font-size: 18px; 
-              padding: 8px 16px; 
-              margin: 4px 0;
-              background: #f5f5f5;
-              border-radius: 4px;
-            }
-          </style>
-        </head>
-        <body>
-          <h2>Home Registry - Recovery Codes</h2>
-          <p class="warning">IMPORTANT: Keep these codes safe! Each code can only be used once.</p>
-          <div class="codes">${safeCodes}</div>
-          <p style="margin-top: 20px; color: #666;">Generated: ${escapeHtml(new Date().toLocaleString())}</p>
-        </body>
-      </html>
-    `);
-    doc.close();
-    printWindow.print();
   };
 
   if (loading) {
@@ -373,9 +338,6 @@ export function RecoveryCodesSection({ onCodesGenerated }: RecoveryCodesSectionP
             </button>
             <button className="btn btn-secondary btn-sm" onClick={handleDownload}>
               <i className="fas fa-download"></i> Download
-            </button>
-            <button className="btn btn-secondary btn-sm" onClick={handlePrint}>
-              <i className="fas fa-print"></i> Print
             </button>
           </div>
 

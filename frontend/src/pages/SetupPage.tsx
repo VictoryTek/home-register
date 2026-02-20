@@ -147,6 +147,7 @@ export function SetupPage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    showToast('Recovery codes downloaded!', 'success');
   };
 
   const copyCodes = async () => {
@@ -155,11 +156,21 @@ export function SetupPage() {
     }
 
     try {
+      console.warn('[SetupPage] Attempting to copy recovery codes to clipboard');
       await navigator.clipboard.writeText(recoveryCodes.join('\n'));
+      console.warn('[SetupPage] Clipboard write successful');
       showToast('Codes copied to clipboard!', 'success');
-    } catch {
-      console.error('Failed to copy codes');
-      showToast('Failed to copy codes. Please try manually selecting.', 'error');
+    } catch (err) {
+      // CRITICAL FIX: Capture and log the actual error object for debugging
+      console.error('[SetupPage] Failed to copy codes to clipboard:', err);
+
+      // Provide detailed error information based on error type
+      if (err instanceof Error) {
+        console.error('[SetupPage] Error name:', err.name);
+        console.error('[SetupPage] Error message:', err.message);
+      }
+
+      showToast('Failed to copy codes. Please try the download button instead.', 'error');
     }
   };
 

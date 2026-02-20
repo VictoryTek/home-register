@@ -1,7 +1,6 @@
 import { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authApi } from '@/services/api';
-import { escapeHtml } from '@/utils/security';
 import { useApp } from '@/context/AppContext';
 import '@/styles/auth.css';
 
@@ -133,60 +132,7 @@ export function RegisterPage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  };
-
-  const printCodes = () => {
-    if (!recoveryCodes) {
-      return;
-    }
-
-    const printWindow = window.open('', '', 'width=800,height=600');
-    if (!printWindow) {
-      return;
-    }
-
-    // Build document safely without using document.write with user content
-    const doc = printWindow.document;
-    doc.open();
-
-    // Create safe HTML with escaped user content
-    const safeUsername = escapeHtml(formData.username);
-    const safeCodes = recoveryCodes
-      .map((code) => `<div class="code">${escapeHtml(code)}</div>`)
-      .join('');
-
-    doc.write(`
-      <html>
-        <head>
-          <title>Recovery Codes</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
-            h1 { font-size: 24px; margin-bottom: 10px; }
-            .info { margin-bottom: 20px; color: #666; }
-            .codes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-            .code { font-family: monospace; font-size: 14px; padding: 8px; border: 1px solid #ddd; }
-            .warning { margin-top: 20px; padding: 10px; background: #fff3cd; border: 1px solid #ffc107; }
-          </style>
-        </head>
-        <body>
-          <h1>Home Registry Recovery Codes</h1>
-          <div class="info">
-            <p><strong>Username:</strong> ${safeUsername}</p>
-            <p><strong>Generated:</strong> ${escapeHtml(new Date().toLocaleString())}</p>
-          </div>
-          <div class="codes">
-            ${safeCodes}
-          </div>
-          <div class="warning">
-            <strong>Important:</strong> Each code can only be used once. Store these in a secure location.
-          </div>
-        </body>
-      </html>
-    `);
-    doc.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
+    showToast('Recovery codes downloaded!', 'success');
   };
 
   const copyCodes = async () => {
@@ -195,11 +141,21 @@ export function RegisterPage() {
     }
 
     try {
+      console.warn('[RegisterPage] Attempting to copy recovery codes to clipboard');
       await navigator.clipboard.writeText(recoveryCodes.join('\n'));
+      console.warn('[RegisterPage] Clipboard write successful');
       showToast('Codes copied to clipboard!', 'success');
     } catch (err) {
-      console.error('Failed to copy codes:', err);
-      showToast('Failed to copy codes. Please try manually selecting.', 'error');
+      // CRITICAL FIX: Enhanced error logging with detailed diagnostic information
+      console.error('[RegisterPage] Failed to copy codes to clipboard:', err);
+
+      // Provide detailed error information based on error type
+      if (err instanceof Error) {
+        console.error('[RegisterPage] Error name:', err.name);
+        console.error('[RegisterPage] Error message:', err.message);
+      }
+
+      showToast('Failed to copy codes. Please try the download button instead.', 'error');
     }
   };
 
@@ -369,9 +325,6 @@ export function RegisterPage() {
                 </button>
                 <button type="button" className="btn-secondary" onClick={copyCodes}>
                   📋 Copy All
-                </button>
-                <button type="button" className="btn-secondary" onClick={printCodes}>
-                  🖨️ Print
                 </button>
               </div>
 
