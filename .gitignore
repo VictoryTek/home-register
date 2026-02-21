@@ -11,6 +11,7 @@ uploads/
 test_results.txt
 *.test.log
 preflight-output.txt
+coverage/
 
 # Environment and secrets
 .env
