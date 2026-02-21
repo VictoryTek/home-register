@@ -20,6 +20,11 @@ async fn test_register_and_login_flow() {
     // Initialize JWT secret for token generation
     home_registry::auth::get_or_init_jwt_secret();
 
+    // Create initial admin user (required for registration endpoint)
+    // The register endpoint requires at least one user to exist (initial setup)
+    let admin_username = common::test_username("admin_initial");
+    common::create_admin_user(&pool, &admin_username).await;
+
     let app = test::init_service(
         App::new().app_data(web::Data::new(pool.clone())).service(
             web::scope("/api")
@@ -67,6 +72,7 @@ async fn test_register_and_login_flow() {
 
     // Cleanup
     common::delete_test_user(&pool, &username).await.ok();
+    common::delete_test_user(&pool, &admin_username).await.ok();
 }
 
 // ==================== Inventory CRUD Tests ====================
