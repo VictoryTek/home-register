@@ -214,3 +214,115 @@ fn test_update_item_validation() {
     };
     assert!(invalid.validate().is_err());
 }
+
+// ==================== Additional Model Tests ====================
+
+#[test]
+fn test_user_response_serialization() {
+    use chrono::Utc;
+    use home_registry::models::UserResponse;
+    use uuid::Uuid;
+
+    let user = UserResponse {
+        id: Uuid::new_v4(),
+        username: "testuser".to_string(),
+        full_name: "Test User".to_string(),
+        is_admin: false,
+        is_active: true,
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
+    };
+
+    // Test serialization
+    let json = serde_json::to_string(&user).expect("Failed to serialize");
+    assert!(json.contains("testuser"));
+    assert!(json.contains("Test User"));
+
+    // Test deserialization
+    let deserialized: UserResponse = serde_json::from_str(&json).expect("Failed to deserialize");
+    assert_eq!(deserialized.username, "testuser");
+}
+
+#[test]
+fn test_api_response_structure() {
+    use home_registry::models::ApiResponse;
+
+    let response: ApiResponse<String> = ApiResponse {
+        success: true,
+        data: Some("test data".to_string()),
+        message: Some("Operation successful".to_string()),
+        error: None,
+    };
+
+    let json = serde_json::to_string(&response).expect("Failed to serialize");
+    assert!(json.contains("test data"));
+    assert!(json.contains("Operation successful"));
+
+    let deserialized: ApiResponse<String> =
+        serde_json::from_str(&json).expect("Failed to deserialize");
+    assert!(deserialized.success);
+    assert_eq!(deserialized.data, Some("test data".to_string()));
+}
+
+#[test]
+fn test_error_response_structure() {
+    use home_registry::models::ErrorResponse;
+
+    let response = ErrorResponse {
+        success: false,
+        error: "An error occurred".to_string(),
+        message: Some("Please try again".to_string()),
+    };
+
+    let json = serde_json::to_string(&response).expect("Failed to serialize");
+    assert!(json.contains("An error occurred"));
+    assert!(json.contains("Please try again"));
+
+    let deserialized: ErrorResponse = serde_json::from_str(&json).expect("Failed to deserialize");
+    assert!(!deserialized.success);
+    assert_eq!(deserialized.error, "An error occurred");
+}
+
+#[test]
+fn test_login_request_validation() {
+    use home_registry::models::LoginRequest;
+
+    // Valid login request - test deserialization only (LoginRequest has Deserialize)
+    let json = r#"{"username":"testuser","password":"password123"}"#;
+    let deserialized: LoginRequest = serde_json::from_str(json).expect("Failed to deserialize");
+    assert_eq!(deserialized.username, "testuser");
+    assert_eq!(deserialized.password, "password123");
+}
+
+#[test]
+fn test_item_model_with_optional_fields() {
+    // Test that item creation works with minimal fields
+    let minimal = CreateItemRequest {
+        inventory_id: Some(1),
+        name: "Minimal Item".to_string(),
+        description: None,
+        category: None,
+        location: None,
+        purchase_date: None,
+        purchase_price: None,
+        warranty_expiry: None,
+        notes: None,
+        quantity: None,
+    };
+    assert!(minimal.validate().is_ok());
+
+    // Test with all optional fields populated
+    let complete = CreateItemRequest {
+        inventory_id: Some(1),
+        name: "Complete Item".to_string(),
+        description: Some("Full description".to_string()),
+        category: Some("Electronics".to_string()),
+        location: Some("Shelf A".to_string()),
+        purchase_date: Some("2024-01-01".to_string()),
+        purchase_price: Some(99.99),
+        warranty_expiry: Some("2025-01-01".to_string()),
+        notes: Some("Important notes".to_string()),
+        quantity: Some(5),
+    };
+    assert!(complete.validate().is_ok());
+}

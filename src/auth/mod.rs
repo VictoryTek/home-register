@@ -1,6 +1,9 @@
 //! Authentication and authorization module
 //!
-//! Provides JWT token handling, password hashing with Argon2, and auth middleware for Actix-Web.
+//! Provides JWT token handling, password hashing with Argon2, auth middleware for Actix-Web,
+//! and TOTP-based two-factor authentication.
+
+pub mod totp;
 
 use actix_web::HttpRequest;
 use argon2::{
@@ -160,6 +163,40 @@ pub fn generate_token(user: &User) -> Result<String, jsonwebtoken::errors::Error
             reason = "Unix timestamps are always positive; max(0) ensures safety"
         )]
         iat: now.timestamp().max(0) as u64,
+        totp_pending: false,
+    };
+
+    let header = Header::new(Algorithm::HS256);
+    encode(
+        &header,
+        &claims,
+        &EncodingKey::from_secret(jwt_secret().as_bytes()),
+    )
+}
+
+/// Generate a short-lived partial JWT token for TOTP verification.
+/// This token has `totp_pending: true` and expires in 5 minutes.
+/// It can ONLY be used with the TOTP verify endpoint.
+pub fn generate_partial_token(user: &User) -> Result<String, jsonwebtoken::errors::Error> {
+    let now = Utc::now();
+    // 5-minute expiration for partial tokens
+    #[allow(
+        clippy::cast_sign_loss,
+        reason = "Unix timestamps are always positive; max(0) ensures safety"
+    )]
+    let expiration = (now + chrono::Duration::minutes(5)).timestamp().max(0) as u64;
+
+    let claims = Claims {
+        sub: user.id.to_string(),
+        username: user.username.clone(),
+        is_admin: user.is_admin,
+        exp: expiration,
+        #[allow(
+            clippy::cast_sign_loss,
+            reason = "Unix timestamps are always positive; max(0) ensures safety"
+        )]
+        iat: now.timestamp().max(0) as u64,
+        totp_pending: true,
     };
 
     let header = Header::new(Algorithm::HS256);

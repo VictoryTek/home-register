@@ -47,9 +47,23 @@ pub fn create_test_pool() -> Pool {
 }
 
 /// Generate a unique test username
+/// Ensures the username is under 50 characters to fit DB constraint
 #[allow(dead_code)]
 pub fn test_username(prefix: &str) -> String {
-    format!("{}_{}", prefix, uuid::Uuid::new_v4())
+    // Use first 8 characters of UUID to keep total length under 50
+    let short_id = uuid::Uuid::new_v4()
+        .to_string()
+        .chars()
+        .take(8)
+        .collect::<String>();
+    // Truncate prefix if needed to ensure total is under 50 chars
+    let max_prefix_len = 40; // Leave room for underscore and short_id
+    let truncated_prefix = if prefix.len() > max_prefix_len {
+        &prefix[..max_prefix_len]
+    } else {
+        prefix
+    };
+    format!("{truncated_prefix}_{short_id}")
 }
 
 /// Generate a test password
@@ -72,10 +86,10 @@ pub async fn create_test_user(pool: &Pool, username: &str) -> (String, String) {
     let user = db
         .create_user(
             username,
-            &password_hash,
-            "Test User", // full_name
-            false,       // is_admin
-            false,       // recovery_codes_confirmed
+            "Test User",    // full_name
+            &password_hash, // password_hash
+            false,          // is_admin
+            true,           // is_active (must be true!)
         )
         .await
         .expect("Failed to create test user");
@@ -86,11 +100,11 @@ pub async fn create_test_user(pool: &Pool, username: &str) -> (String, String) {
 /// Get a JWT token for a test user
 #[allow(dead_code)]
 pub async fn get_test_token(pool: &Pool, username: &str) -> String {
-    use home_registry::auth::{create_token, get_or_init_jwt_secret};
+    use home_registry::auth::{generate_token, get_or_init_jwt_secret};
     use home_registry::db::DatabaseService;
 
-    // Initialize JWT secret
-    let _ = get_or_init_jwt_secret();
+    // Initialize JWT secret (critical for tests)
+    get_or_init_jwt_secret();
 
     let db = DatabaseService::new(pool.clone());
     let user = db
@@ -99,5 +113,142 @@ pub async fn get_test_token(pool: &Pool, username: &str) -> String {
         .expect("Failed to get user")
         .expect("User not found");
 
-    create_token(&user.id, &user.username).expect("Failed to create token")
+    generate_token(&user).expect("Failed to create token")
+}
+
+/// Create an admin test user and return their credentials
+#[allow(dead_code)]
+pub async fn create_admin_user(pool: &Pool, username: &str) -> (String, String) {
+    use home_registry::db::DatabaseService;
+
+    let password = test_password();
+    let password_hash = home_registry::auth::hash_password(password.clone())
+        .await
+        .expect("Failed to hash password");
+
+    let db = DatabaseService::new(pool.clone());
+    let user = db
+        .create_user(
+            username,
+            "Test Admin",   // full_name
+            &password_hash, // password_hash
+            true,           // is_admin
+            true,           // is_active (must be true!)
+        )
+        .await
+        .expect("Failed to create admin user");
+
+    (user.username, password)
+}
+
+/// Delete a test user by username
+#[allow(dead_code)]
+pub async fn delete_test_user(
+    pool: &Pool,
+    username: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use home_registry::db::DatabaseService;
+
+    let db = DatabaseService::new(pool.clone());
+    if let Some(user) = db.get_user_by_username(username).await? {
+        db.delete_user(user.id).await?;
+    }
+    Ok(())
+}
+
+/// Create a test inventory and return its ID
+#[allow(dead_code)]
+pub async fn create_test_inventory(
+    pool: &Pool,
+    user_id: uuid::Uuid,
+    name: &str,
+) -> Result<i32, Box<dyn std::error::Error>> {
+    use home_registry::db::DatabaseService;
+    use home_registry::models::CreateInventoryRequest;
+
+    let db = DatabaseService::new(pool.clone());
+    let request = CreateInventoryRequest {
+        name: name.to_string(),
+        description: Some("Test inventory description".to_string()),
+        location: Some("Test location".to_string()),
+        image_url: None,
+    };
+
+    let inventory = db.create_inventory(request, user_id).await?;
+
+    Ok(inventory.id.expect("Inventory should have ID"))
+}
+
+/// Delete a test inventory by ID
+#[allow(dead_code)]
+pub async fn delete_test_inventory(pool: &Pool, id: i32) -> Result<(), Box<dyn std::error::Error>> {
+    use home_registry::db::DatabaseService;
+
+    let db = DatabaseService::new(pool.clone());
+    db.delete_inventory(id).await?;
+    Ok(())
+}
+
+/// Create a test item and return its ID
+#[allow(dead_code)]
+pub async fn create_test_item(
+    pool: &Pool,
+    inventory_id: i32,
+    name: &str,
+) -> Result<i32, Box<dyn std::error::Error>> {
+    use home_registry::db::DatabaseService;
+    use home_registry::models::CreateItemRequest;
+
+    let db = DatabaseService::new(pool.clone());
+    let request = CreateItemRequest {
+        inventory_id: Some(inventory_id),
+        name: name.to_string(),
+        description: Some("Test item description".to_string()),
+        category: None,
+        location: None,
+        purchase_date: None,
+        purchase_price: None,
+        warranty_expiry: None,
+        notes: None,
+        quantity: Some(1),
+    };
+
+    let item = db.create_item(request).await?;
+
+    Ok(item.id.expect("Item should have ID"))
+}
+
+/// Delete a test item by ID
+#[allow(dead_code)]
+pub async fn delete_test_item(pool: &Pool, id: i32) -> Result<(), Box<dyn std::error::Error>> {
+    use home_registry::db::DatabaseService;
+
+    let db = DatabaseService::new(pool.clone());
+    db.delete_item(id).await?;
+    Ok(())
+}
+
+/// Cleanup all test data for a given username prefix
+#[allow(dead_code)]
+pub async fn cleanup_test_data(
+    pool: &Pool,
+    username_prefix: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use home_registry::db::DatabaseService;
+
+    let db = DatabaseService::new(pool.clone());
+
+    // Find and delete all test users matching the prefix
+    let conn = pool.get().await?;
+    let stmt = conn
+        .prepare("SELECT id FROM users WHERE username LIKE $1")
+        .await?;
+    let rows = conn.query(&stmt, &[&format!("{username_prefix}%")]).await?;
+
+    for row in rows {
+        let user_id: uuid::Uuid = row.get(0);
+        db.delete_user(user_id).await.ok(); // Ignore errors
+    }
+
+    Ok(())
 }

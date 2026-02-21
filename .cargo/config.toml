@@ -25,6 +25,8 @@ incremental = true
 [env]
 # Ensure RUST_BACKTRACE is available in builds
 RUST_BACKTRACE = { value = "1", force = false }
+# Test database connection string
+TEST_DATABASE_URL = "postgres://postgres:uK8m3NvQ7wPxRj2Y5tLz@localhost:5432/home_inventory_test"
 
 [profile.dev]
 # Faster dev builds with some optimization

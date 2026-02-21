@@ -113,7 +113,7 @@ pub struct UpdateItemRequest {
     pub inventory_id: Option<i32>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct ApiResponse<T> {
     pub success: bool,
     pub data: Option<T>,
@@ -121,7 +121,7 @@ pub struct ApiResponse<T> {
     pub error: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct ErrorResponse {
     pub success: bool,
     pub error: String,
@@ -482,6 +482,7 @@ fn default_true() -> bool {
 pub struct AdminUpdateUserRequest {
     pub username: Option<String>,
     pub full_name: Option<String>,
+    pub password: Option<String>,
     pub is_admin: Option<bool>,
     pub is_active: Option<bool>,
 }
@@ -522,6 +523,8 @@ pub struct Claims {
     pub is_admin: bool,
     pub exp: u64, // Expiration time (Unix timestamp)
     pub iat: u64, // Issued at (Unix timestamp)
+    #[serde(default)]
+    pub totp_pending: bool, // True if user needs to complete TOTP verification
 }
 
 // ==================== Permission Models ====================
@@ -842,6 +845,154 @@ pub struct RecoveryCodesStatus {
     pub codes_confirmed: bool,
     pub unused_count: i32,
     pub generated_at: Option<DateTime<Utc>>,
+}
+
+// ==================== TOTP Authenticator Models ====================
+
+/// TOTP mode configuration
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TotpMode {
+    /// Required at login for additional security
+    #[serde(rename = "2fa_only")]
+    TwoFaOnly,
+    /// Usable to reset password (alternative to recovery codes)
+    RecoveryOnly,
+    /// Required at login AND usable for password recovery
+    Both,
+}
+
+impl TotpMode {
+    /// Convert to database string representation
+    #[must_use]
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            TotpMode::TwoFaOnly => "2fa_only",
+            TotpMode::RecoveryOnly => "recovery_only",
+            TotpMode::Both => "both",
+        }
+    }
+
+    /// Whether this mode requires TOTP at login
+    #[must_use]
+    pub fn requires_login_totp(&self) -> bool {
+        matches!(self, TotpMode::TwoFaOnly | TotpMode::Both)
+    }
+
+    /// Whether this mode allows password recovery via TOTP
+    #[must_use]
+    pub fn allows_recovery(&self) -> bool {
+        matches!(self, TotpMode::RecoveryOnly | TotpMode::Both)
+    }
+}
+
+impl std::str::FromStr for TotpMode {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "2fa_only" => Ok(TotpMode::TwoFaOnly),
+            "recovery_only" => Ok(TotpMode::RecoveryOnly),
+            "both" => Ok(TotpMode::Both),
+            _ => Err(format!(
+                "Invalid TOTP mode: {s}. Must be one of: 2fa_only, recovery_only, both"
+            )),
+        }
+    }
+}
+
+impl std::fmt::Display for TotpMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+/// TOTP settings database row
+#[derive(Debug, Clone)]
+pub struct TotpSettings {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub totp_secret_encrypted: String,
+    pub totp_mode: String,
+    pub is_enabled: bool,
+    pub is_verified: bool,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub last_used_at: Option<DateTime<Utc>>,
+    pub failed_attempts: i32,
+    pub last_failed_at: Option<DateTime<Utc>>,
+}
+
+/// Response from TOTP setup (secret + QR code)
+#[derive(Serialize, Debug)]
+pub struct TotpSetupResponse {
+    pub secret: String,
+    pub otpauth_uri: String,
+    pub qr_code_data_uri: String,
+    pub issuer: String,
+    pub algorithm: String,
+    pub digits: u32,
+    pub period: u32,
+}
+
+/// Request to verify TOTP setup (first code entry + mode selection)
+#[derive(Deserialize, Debug)]
+pub struct TotpVerifySetupRequest {
+    pub code: String,
+    pub mode: TotpMode,
+}
+
+/// Response after successful TOTP setup verification
+#[derive(Serialize, Debug)]
+pub struct TotpVerifySetupResponse {
+    pub enabled: bool,
+    pub mode: TotpMode,
+}
+
+/// Request to verify TOTP during login
+#[derive(Deserialize, Debug)]
+pub struct TotpVerifyRequest {
+    pub code: String,
+}
+
+/// Request for password recovery via TOTP
+#[derive(Deserialize, Debug)]
+pub struct TotpRecoveryRequest {
+    pub username: String,
+    pub totp_code: String,
+    pub new_password: String,
+}
+
+/// Request to change TOTP mode
+#[derive(Deserialize, Debug)]
+pub struct TotpModeRequest {
+    pub mode: TotpMode,
+}
+
+/// Request to disable TOTP (requires password confirmation)
+#[derive(Deserialize, Debug)]
+pub struct TotpDisableRequest {
+    pub password: String,
+}
+
+/// TOTP status response
+#[derive(Serialize, Debug)]
+pub struct TotpStatusResponse {
+    pub is_enabled: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mode: Option<TotpMode>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_used_at: Option<DateTime<Utc>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub created_at: Option<DateTime<Utc>>,
+}
+
+/// Login response when TOTP verification is required
+#[derive(Serialize, Debug)]
+pub struct LoginTotpRequiredResponse {
+    pub requires_totp: bool,
+    pub partial_token: String,
+    pub user: UserResponse,
 }
 
 // ==================== Backup & Restore Models ====================

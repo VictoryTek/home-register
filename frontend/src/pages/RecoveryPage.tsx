@@ -3,8 +3,11 @@ import { useNavigate, Link } from 'react-router-dom';
 import { authApi } from '@/services/api';
 import '@/styles/auth.css';
 
+type RecoveryMethod = 'code' | 'totp';
+
 export function RecoveryPage() {
   const navigate = useNavigate();
+  const [method, setMethod] = useState<RecoveryMethod>('code');
   const [step, setStep] = useState<'input' | 'success'>('input');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -14,6 +17,7 @@ export function RecoveryPage() {
   const [formData, setFormData] = useState({
     username: '',
     recoveryCode: '',
+    totpCode: '',
     newPassword: '',
     confirmPassword: '',
   });
@@ -40,6 +44,17 @@ export function RecoveryPage() {
     setError(null);
   };
 
+  const handleTotpCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+    setFormData((prev) => ({ ...prev, totpCode: value }));
+    setError(null);
+  };
+
+  const handleMethodChange = (newMethod: RecoveryMethod) => {
+    setMethod(newMethod);
+    setError(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -48,9 +63,16 @@ export function RecoveryPage() {
       return;
     }
 
-    if (!formData.recoveryCode || formData.recoveryCode.length < 14) {
-      setError('Please enter a valid recovery code (format: XXXX-XXXX-XXXX)');
-      return;
+    if (method === 'code') {
+      if (!formData.recoveryCode || formData.recoveryCode.length < 14) {
+        setError('Please enter a valid recovery code (format: XXXX-XXXX-XXXX)');
+        return;
+      }
+    } else {
+      if (!formData.totpCode || formData.totpCode.length !== 6) {
+        setError('Please enter a valid 6-digit authenticator code');
+        return;
+      }
     }
 
     if (!formData.newPassword) {
@@ -72,17 +94,31 @@ export function RecoveryPage() {
     setError(null);
 
     try {
-      const result = await authApi.useRecoveryCode(
-        formData.username,
-        formData.recoveryCode,
-        formData.newPassword
-      );
+      if (method === 'code') {
+        const result = await authApi.useRecoveryCode(
+          formData.username,
+          formData.recoveryCode,
+          formData.newPassword
+        );
 
-      if (result.success && result.data) {
-        setRemainingCodes(result.data.remaining_codes);
-        setStep('success');
+        if (result.success && result.data) {
+          setRemainingCodes(result.data.remaining_codes);
+          setStep('success');
+        } else {
+          setError(result.error ?? 'Failed to reset password. Please check your credentials.');
+        }
       } else {
-        setError(result.error ?? 'Failed to reset password. Please check your credentials.');
+        const result = await authApi.recoverWithTotp(
+          formData.username,
+          formData.totpCode,
+          formData.newPassword
+        );
+
+        if (result.success) {
+          setStep('success');
+        } else {
+          setError(result.error ?? 'Failed to reset password. Please check your credentials.');
+        }
       }
     } catch {
       setError('An error occurred. Please try again.');
@@ -127,31 +163,49 @@ export function RecoveryPage() {
               <p className="auth-subtitle">Your password has been successfully changed.</p>
             </div>
 
-            <div
-              style={{
-                padding: '1rem',
-                background: 'var(--surface-alt, #f8f9fa)',
-                borderRadius: '8px',
-                marginBottom: '1.5rem',
-                textAlign: 'center',
-              }}
-            >
-              <p style={{ margin: 0, fontSize: '0.9rem' }}>
-                You have <strong>{remainingCodes}</strong> recovery code
-                {remainingCodes !== 1 ? 's' : ''} remaining.
-                {remainingCodes !== null && remainingCodes <= 2 && (
-                  <span
-                    style={{
-                      display: 'block',
-                      marginTop: '0.5rem',
-                      color: 'var(--warning, #ffc107)',
-                    }}
-                  >
-                    ⚠️ Consider generating new recovery codes in Settings.
-                  </span>
-                )}
-              </p>
-            </div>
+            {method === 'code' && remainingCodes !== null && (
+              <div
+                style={{
+                  padding: '1rem',
+                  background: 'var(--surface-alt, #f8f9fa)',
+                  borderRadius: '8px',
+                  marginBottom: '1.5rem',
+                  textAlign: 'center',
+                }}
+              >
+                <p style={{ margin: 0, fontSize: '0.9rem' }}>
+                  You have <strong>{remainingCodes}</strong> recovery code
+                  {remainingCodes !== 1 ? 's' : ''} remaining.
+                  {remainingCodes <= 2 && (
+                    <span
+                      style={{
+                        display: 'block',
+                        marginTop: '0.5rem',
+                        color: 'var(--warning, #ffc107)',
+                      }}
+                    >
+                      ⚠️ Consider generating new recovery codes in Settings.
+                    </span>
+                  )}
+                </p>
+              </div>
+            )}
+
+            {method === 'totp' && (
+              <div
+                style={{
+                  padding: '1rem',
+                  background: 'var(--surface-alt, #f8f9fa)',
+                  borderRadius: '8px',
+                  marginBottom: '1.5rem',
+                  textAlign: 'center',
+                }}
+              >
+                <p style={{ margin: 0, fontSize: '0.9rem' }}>
+                  Your password was reset using your authenticator app.
+                </p>
+              </div>
+            )}
 
             <button onClick={() => navigate('/login')} className="auth-submit-btn">
               <i className="fas fa-sign-in-alt"></i>
@@ -178,11 +232,35 @@ export function RecoveryPage() {
               <img src="/logo_full.png" alt="Home Registry" className="auth-logo-img" />
             </div>
             <h1 className="auth-title">Account Recovery</h1>
-            <p className="auth-subtitle">Use a recovery code to reset your password</p>
+            <p className="auth-subtitle">Reset your password using a recovery method</p>
+          </div>
+
+          {/* Recovery method toggle */}
+          <div className="recovery-method-toggle">
+            <button
+              type="button"
+              className={`recovery-method-btn ${method === 'code' ? 'active' : ''}`}
+              onClick={() => handleMethodChange('code')}
+              aria-label="Switch to recovery code method"
+              aria-pressed={method === 'code'}
+            >
+              <i className="fas fa-key"></i>
+              Recovery Code
+            </button>
+            <button
+              type="button"
+              className={`recovery-method-btn ${method === 'totp' ? 'active' : ''}`}
+              onClick={() => handleMethodChange('totp')}
+              aria-label="Switch to authenticator app method"
+              aria-pressed={method === 'totp'}
+            >
+              <i className="fas fa-mobile-alt"></i>
+              Authenticator App
+            </button>
           </div>
 
           {error && (
-            <div className="auth-error">
+            <div className="auth-error" role="alert">
               <i className="fas fa-exclamation-circle"></i>
               <span>{error}</span>
             </div>
@@ -206,22 +284,45 @@ export function RecoveryPage() {
               />
             </div>
 
-            <div className="form-group">
-              <label htmlFor="recoveryCode">
-                <i className="fas fa-key"></i>
-                Recovery Code
-              </label>
-              <input
-                type="text"
-                id="recoveryCode"
-                name="recoveryCode"
-                value={formData.recoveryCode}
-                onChange={handleRecoveryCodeChange}
-                placeholder="XXXX-XXXX-XXXX"
-                style={{ fontFamily: 'monospace', letterSpacing: '0.1em' }}
-                autoComplete="off"
-              />
-            </div>
+            {method === 'code' && (
+              <div className="form-group">
+                <label htmlFor="recoveryCode">
+                  <i className="fas fa-key"></i>
+                  Recovery Code
+                </label>
+                <input
+                  type="text"
+                  id="recoveryCode"
+                  name="recoveryCode"
+                  value={formData.recoveryCode}
+                  onChange={handleRecoveryCodeChange}
+                  placeholder="XXXX-XXXX-XXXX"
+                  style={{ fontFamily: 'monospace', letterSpacing: '0.1em' }}
+                  autoComplete="off"
+                />
+              </div>
+            )}
+
+            {method === 'totp' && (
+              <div className="form-group">
+                <label htmlFor="totpCode">
+                  <i className="fas fa-shield-alt"></i>
+                  Authenticator Code
+                </label>
+                <input
+                  type="text"
+                  id="totpCode"
+                  name="totpCode"
+                  value={formData.totpCode}
+                  onChange={handleTotpCodeChange}
+                  placeholder="000000"
+                  style={{ fontFamily: 'monospace', letterSpacing: '0.3em', textAlign: 'center' }}
+                  autoComplete="one-time-code"
+                  inputMode="numeric"
+                  maxLength={6}
+                />
+              </div>
+            )}
 
             <div className="form-group">
               <label htmlFor="newPassword">

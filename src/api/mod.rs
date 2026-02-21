@@ -1,5 +1,6 @@
 pub mod auth;
 pub mod backup;
+pub mod totp;
 
 use crate::db::DatabaseService;
 use crate::models::{
@@ -1682,6 +1683,14 @@ pub fn api_scope() -> Scope {
         .service(auth::admin_create_user)
         .service(auth::admin_update_user)
         .service(auth::admin_delete_user)
+        // TOTP authenticator routes
+        .service(totp::totp_setup)
+        .service(totp::totp_verify_setup)
+        .service(totp::totp_verify)
+        .service(totp::totp_recover)
+        .service(totp::totp_update_mode)
+        .service(totp::totp_disable)
+        .service(totp::totp_status)
         // Inventory routes
         .service(get_inventories)
         .service(create_inventory)

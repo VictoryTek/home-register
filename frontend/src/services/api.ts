@@ -22,6 +22,7 @@ import type {
   SetupStatusResponse,
   LoginRequest,
   LoginResponse,
+  LoginApiResponse,
   InitialSetupRequest,
   UpdateProfileRequest,
   ChangePasswordRequest,
@@ -43,6 +44,11 @@ import type {
   RecoveryCodesResponse,
   RecoveryCodesStatus,
   RecoveryCodeUsedResponse,
+  // TOTP types
+  TotpStatusResponse,
+  TotpSetupResponse,
+  TotpVerifySetupResponse,
+  TotpMode,
   // Report types
   InventoryReportParams,
   InventoryReportData,
@@ -528,13 +534,13 @@ export const authApi = {
   },
 
   // Login
-  async login(data: LoginRequest): Promise<ApiResponse<LoginResponse>> {
+  async login(data: LoginRequest): Promise<ApiResponse<LoginApiResponse>> {
     const response = await fetchWithRetry(`${API_BASE}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    return handleResponse<LoginResponse>(response);
+    return handleResponse<LoginApiResponse>(response);
   },
 
   // Register new user (after initial setup)
@@ -823,6 +829,89 @@ export const authApi = {
       }),
     });
     return handleResponse<RecoveryCodeUsedResponse>(response);
+  },
+
+  // ==================== TOTP Authenticator ====================
+
+  // Get TOTP status for current user
+  async getTotpStatus(): Promise<ApiResponse<TotpStatusResponse>> {
+    const response = await fetchWithRetry(`${API_BASE}/auth/totp/status`, {
+      headers: getHeaders(),
+    });
+    return handleResponse<TotpStatusResponse>(response);
+  },
+
+  // Initiate TOTP setup (generate secret + QR code)
+  async setupTotp(): Promise<ApiResponse<TotpSetupResponse>> {
+    const response = await fetchWithRetry(`${API_BASE}/auth/totp/setup`, {
+      method: 'POST',
+      headers: getHeaders(),
+    });
+    return handleResponse<TotpSetupResponse>(response);
+  },
+
+  // Verify first TOTP code to enable TOTP
+  async verifyTotpSetup(
+    code: string,
+    mode: TotpMode
+  ): Promise<ApiResponse<TotpVerifySetupResponse>> {
+    const response = await fetchWithRetry(`${API_BASE}/auth/totp/verify-setup`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ code, mode }),
+    });
+    return handleResponse<TotpVerifySetupResponse>(response);
+  },
+
+  // Verify TOTP during login (uses partial_token)
+  async verifyTotp(partialToken: string, code: string): Promise<ApiResponse<LoginResponse>> {
+    const response = await fetchWithRetry(`${API_BASE}/auth/totp/verify`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${partialToken}`,
+      },
+      body: JSON.stringify({ code }),
+    });
+    return handleResponse<LoginResponse>(response);
+  },
+
+  // Recover account using TOTP code (no auth required)
+  async recoverWithTotp(
+    username: string,
+    totpCode: string,
+    newPassword: string
+  ): Promise<ApiResponse<{ message: string }>> {
+    const response = await fetchWithRetry(`${API_BASE}/auth/totp/recover`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username,
+        totp_code: totpCode,
+        new_password: newPassword,
+      }),
+    });
+    return handleResponse<{ message: string }>(response);
+  },
+
+  // Change TOTP mode
+  async changeTotpMode(mode: TotpMode): Promise<ApiResponse<{ mode: string }>> {
+    const response = await fetchWithRetry(`${API_BASE}/auth/totp/mode`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ mode }),
+    });
+    return handleResponse<{ mode: string }>(response);
+  },
+
+  // Disable TOTP (requires password confirmation)
+  async disableTotp(password: string): Promise<ApiResponse<void>> {
+    const response = await fetchWithRetry(`${API_BASE}/auth/totp`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+      body: JSON.stringify({ password }),
+    });
+    return handleResponse<undefined>(response);
   },
 };
 

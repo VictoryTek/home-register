@@ -4,7 +4,7 @@
 
 # Home Registry
   <p><em>Universal Home Inventory Management System</em></p>
-  <p><strong>Version 0.1.0-beta.2</strong></p>
+  <p><strong>Version 0.1.0-beta.3</strong></p>
 
 Inspired by HomeBox project, which I used for years. When it was no longer maintained, I thought I would attempt to build a successor to that project.
 
@@ -212,3 +212,37 @@ The application supports the following configuration through environment variabl
 - **RATE_LIMIT_BURST**: Allows temporary spikes above the RPS limit. With `BURST: 200`, the server can handle short bursts of 200 requests before enforcing the RPS limit.
 - **Use Case**: Protects your server from being overwhelmed by aggressive API clients, accidental infinite loops, or potential DoS attacks.
 - **Production Recommendation**: Start with `RPS: 100` and `BURST: 200`, then adjust based on your usage patterns and server capacity.
+
+## Production Deployment
+
+For production deployments with HTTPS, reverse proxy, monitoring, and high availability, see our comprehensive deployment guides:
+
+📚 **[Complete Deployment Documentation](docs/deployment/)**
+
+### Quick Links
+
+- **[⚡ Quick Start (15 minutes)](docs/deployment/quickstart.md)** - Deploy with HTTPS in <15 minutes using Caddy
+- **[🔒 Security Hardening](docs/deployment/security-hardening.md)** - Production security checklist
+- **[🗄️ Database Production Guide](docs/deployment/database-production.md)** - PostgreSQL tuning, backups, replication
+- **[📊 Monitoring & Logging](docs/deployment/monitoring-logging.md)** - Prometheus, Grafana, Loki setup
+- **[🔄 High Availability](docs/deployment/high-availability.md)** - Multi-instance deployment patterns
+
+### Reverse Proxy Options
+
+- **[Nginx](docs/deployment/reverse-proxy-nginx.md)** - Enterprise reverse proxy with manual SSL
+- **[Caddy](docs/deployment/reverse-proxy-caddy.md)** - Automatic HTTPS (recommended for quick setup)
+- **[Traefik](docs/deployment/reverse-proxy-traefik.md)** - Docker-native with service discovery
+
+### Configuration Examples
+
+Production-ready configuration files are available in [docs/examples/](docs/examples/):
+- [docker-compose-production.yml](docs/examples/docker-compose-production.yml) - Complete production setup
+- [nginx.conf](docs/examples/nginx.conf) - Nginx reverse proxy configuration
+- [Caddyfile](docs/examples/Caddyfile) - Caddy automatic HTTPS configuration
+- [backup.sh](docs/examples/backup.sh) - Automated backup script
+- [restore.sh](docs/examples/restore.sh) - Database restore script
+
+### Need Help?
+
+- See [Troubleshooting Guide](docs/deployment/troubleshooting.md) for common issues
+- Review [Deployment Overview](docs/deployment/) for architecture guidance

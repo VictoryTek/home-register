@@ -1,5 +1,11 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import type { User, UserSettings, SetupStatusResponse, DismissedWarranties } from '@/types';
+import type {
+  User,
+  UserSettings,
+  SetupStatusResponse,
+  DismissedWarranties,
+  LoginTotpRequiredResponse,
+} from '@/types';
 import { authApi } from '@/services/api';
 
 // Storage keys - similar to Humidor
@@ -13,7 +19,16 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   needsSetup: boolean | null;
-  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  totpRequired: LoginTotpRequiredResponse | null;
+  login: (
+    username: string,
+    password: string
+  ) => Promise<{ success: boolean; error?: string; totpRequired?: boolean }>;
+  completeTotpLogin: (
+    partialToken: string,
+    code: string
+  ) => Promise<{ success: boolean; error?: string }>;
+  clearTotpRequired: () => void;
   logout: () => void;
   checkSetupStatus: () => Promise<SetupStatusResponse | null>;
   refreshUser: () => Promise<void>;
@@ -32,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [needsSetup, setNeedsSetup] = useState<boolean | null>(null);
+  const [totpRequired, setTotpRequired] = useState<LoginTotpRequiredResponse | null>(null);
 
   // Check for existing auth on mount
   useEffect(() => {
@@ -89,11 +105,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(
-    async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    async (
+      username: string,
+      password: string
+    ): Promise<{ success: boolean; error?: string; totpRequired?: boolean }> => {
       try {
         const result = await authApi.login({ username, password });
 
         if (result.success && result.data) {
+          // Check if TOTP verification is required
+          // The backend returns either LoginResponse or LoginTotpRequiredResponse
+          // TypeScript narrows via the 'requires_totp' discriminant property
+          if ('requires_totp' in result.data) {
+            // TOTP required - store the response for the login page to use
+            setTotpRequired(result.data);
+            return { success: true, totpRequired: true };
+          }
+
           const { token: newToken, user: newUser } = result.data;
 
           // Store auth data
@@ -103,6 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setToken(newToken);
           setUser(newUser);
           setNeedsSetup(false);
+          setTotpRequired(null);
 
           // Fetch user settings
           const settingsResult = await authApi.getSettings(newToken);
@@ -121,6 +150,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     []
   );
+
+  const completeTotpLogin = useCallback(
+    async (partialToken: string, code: string): Promise<{ success: boolean; error?: string }> => {
+      try {
+        const result = await authApi.verifyTotp(partialToken, code);
+
+        if (result.success && result.data) {
+          const { token: newToken, user: newUser } = result.data;
+
+          // Store auth data
+          localStorage.setItem(TOKEN_KEY, newToken);
+          localStorage.setItem(USER_KEY, JSON.stringify(newUser));
+
+          setToken(newToken);
+          setUser(newUser);
+          setNeedsSetup(false);
+          setTotpRequired(null);
+
+          // Fetch user settings
+          const settingsResult = await authApi.getSettings(newToken);
+          if (settingsResult.success && settingsResult.data) {
+            setSettings(settingsResult.data);
+          }
+
+          return { success: true };
+        } else {
+          return { success: false, error: result.error ?? 'Invalid TOTP code' };
+        }
+      } catch (error) {
+        console.error('TOTP verification error:', error);
+        return { success: false, error: 'Network error. Please try again.' };
+      }
+    },
+    []
+  );
+
+  const clearTotpRequired = useCallback(() => {
+    setTotpRequired(null);
+  }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
@@ -252,7 +320,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         isAuthenticated: !!token && !!user,
         needsSetup,
+        totpRequired,
         login,
+        completeTotpLogin,
+        clearTotpRequired,
         logout,
         checkSetupStatus,
         refreshUser,

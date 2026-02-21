@@ -463,6 +463,64 @@ export type DismissedWarranties = Record<
   }
 >;
 
+// ==================== TOTP Authenticator Types ====================
+
+export interface TotpStatusResponse {
+  is_enabled: boolean;
+  mode?: TotpMode | null;
+  last_used_at?: string | null;
+  created_at?: string | null;
+}
+
+export type TotpMode = '2fa_only' | 'recovery_only' | 'both';
+
+export interface TotpSetupResponse {
+  secret: string;
+  otpauth_uri: string;
+  qr_code_data_uri: string;
+  issuer: string;
+  algorithm: string;
+  digits: number;
+  period: number;
+}
+
+export interface TotpVerifySetupRequest {
+  code: string;
+  mode: TotpMode;
+}
+
+export interface TotpVerifySetupResponse {
+  enabled: boolean;
+  mode: TotpMode;
+}
+
+export interface TotpVerifyRequest {
+  code: string;
+}
+
+export interface TotpRecoveryRequest {
+  username: string;
+  totp_code: string;
+  new_password: string;
+}
+
+export interface TotpModeRequest {
+  mode: TotpMode;
+}
+
+export interface TotpDisableRequest {
+  password: string;
+}
+
+export interface LoginTotpRequiredResponse {
+  requires_totp: boolean;
+  partial_token: string;
+  user: User;
+}
+
+// Discriminated union for login API response (normal login vs TOTP-required)
+export type LoginApiResponse = LoginResponse | LoginTotpRequiredResponse;
+
 // ==================== Backup & Restore Types ====================
 
 export interface BackupInfo {

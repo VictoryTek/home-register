@@ -1,0 +1,259 @@
+version: '3.8'
+
+# Home Registry - Production Docker Compose Configuration
+# 
+# This configuration uses pre-built images from GHCR and includes:
+# - Caddy reverse proxy with automatic HTTPS (Let's Encrypt)
+# - Home Registry application
+# - PostgreSQL 17 database with health checks
+# - Automated backups
+# - Uptime monitoring (optional)
+#
+# Quick Start:
+#   1. Copy this file to your server as docker-compose.yml
+#   2. Create .env file with POSTGRES_PASSWORD, JWT_SECRET, DOMAIN
+#   3. Run: docker compose up -d
+#   4. Access via HTTPS at your domain
+
+services:
+  # ============================================================
+  # Caddy - Reverse Proxy with Automatic HTTPS
+  # ============================================================
+  caddy:
+    image: caddy:2-alpine
+    container_name: home-registry-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"  # HTTP/3 support
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - DOMAIN=${DOMAIN}
+      - ACME_EMAIL=${LETSENCRYPT_EMAIL}
+    networks:
+      - frontend
+    depends_on:
+      - app
+
+  # ============================================================
+  # Home Registry Application
+  # ============================================================
+  app:
+    image: ghcr.io/victorytek/home-registry:latest
+    container_name: home-registry-app
+    restart: unless-stopped
+    pull_policy: always  # Always pull latest version
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Database connection (required)
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@db:5432/home_inventory
+      
+      # Server configuration
+      HOST: 0.0.0.0
+      PORT: 8210
+      
+      # JWT authentication
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_TOKEN_LIFETIME_HOURS: ${JWT_TOKEN_LIFETIME_HOURS:-24}
+      
+      # Rate limiting
+      RATE_LIMIT_RPS: ${RATE_LIMIT_RPS:-200}
+      RATE_LIMIT_BURST: ${RATE_LIMIT_BURST:-400}
+      
+      # Logging
+      RUST_LOG: ${RUST_LOG:-info}
+    volumes:
+      - appdata:/app/data       # Application data (JWT secrets, etc.)
+      - backups:/app/backups    # Database backups
+      - uploads:/app/uploads    # User-uploaded images
+    networks:
+      - frontend
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8210/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # ============================================================
+  # PostgreSQL 17 Database
+  # ============================================================
+  db:
+    image: postgres:17-alpine
+    container_name: home-registry-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: home_inventory
+      
+      # Performance tuning (adjust based on your server RAM)
+      # For 8GB RAM server:
+      POSTGRES_SHARED_BUFFERS: ${POSTGRES_SHARED_BUFFERS:-2GB}
+      POSTGRES_EFFECTIVE_CACHE_SIZE: ${POSTGRES_EFFECTIVE_CACHE_SIZE:-6GB}
+      POSTGRES_WORK_MEM: ${POSTGRES_WORK_MEM:-20MB}
+      POSTGRES_MAINTENANCE_WORK_MEM: ${POSTGRES_MAINTENANCE_WORK_MEM:-512MB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Optional: Mount custom postgresql.conf
+      # - ./postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+    # Security: Do NOT expose port 5432 to the internet
+    # Only accessible via backend network
+
+  # ============================================================
+  # Uptime Kuma - Optional Uptime Monitoring
+  # ============================================================
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: home-registry-uptime
+    restart: unless-stopped
+    volumes:
+      - uptime_kuma_data:/app/data
+    networks:
+      - frontend
+    # Access via: http://your-server-ip:3001
+    # Or configure Caddy reverse proxy for subdomain
+    # Commented out by default - uncomment to enable
+    # ports:
+    #   - "3001:3001"
+
+# ============================================================
+# Networks
+# ============================================================
+networks:
+  frontend:
+    driver: bridge
+    # Public-facing services (Caddy, Uptime Kuma)
+  
+  backend:
+    driver: bridge
+    internal: true
+    # Internal-only services (Database)
+    # Cannot access external network for security
+
+# ============================================================
+# Volumes
+# ============================================================
+volumes:
+  caddy_data:
+    driver: local
+    # Caddy certificates and configuration
+  
+  caddy_config:
+    driver: local
+  
+  pgdata:
+    driver: local
+    # PostgreSQL data directory
+    # ⚠️ Critical: Back up regularly!
+  
+  appdata:
+    driver: local
+    # Application data (JWT secrets, etc.)
+    # Persists across container restarts
+  
+  backups:
+    driver: local
+    # Database backups stored here
+    # Configure backup.sh script for automation
+  
+  uploads:
+    driver: local
+    # User-uploaded images and files
+    # Consider using S3 or NFS for HA deployments
+  
+  uptime_kuma_data:
+    driver: local
+    # Uptime Kuma monitoring data
+
+# ============================================================
+# Configuration Notes
+# ============================================================
+#
+# 1. Environment Variables (.env file):
+#    Required:
+#    - POSTGRES_PASSWORD: Strong password (16+ chars)
+#    - JWT_SECRET: Random secret (32+ chars, use: openssl rand -base64 32)
+#    - DOMAIN: Your domain name (e.g., home-registry.example.com)
+#    - LETSENCRYPT_EMAIL: Email for certificate notifications
+#
+#    Optional:
+#    - RUST_LOG: Logging level (info, debug, warn, error)
+#    - RATE_LIMIT_RPS: Requests per second (default: 200)
+#    - RATE_LIMIT_BURST: Burst capacity (default: 400)
+#    - JWT_TOKEN_LIFETIME_HOURS: Token expiration (default: 24)
+#
+# 2. DNS Configuration:
+#    - Point your domain's A record to your server's IP
+#    - Wait for propagation (up to 48 hours, usually <10 minutes)
+#
+# 3. Firewall Configuration:
+#    - Allow ports 80/tcp and 443/tcp
+#    - Block port 5432 from external access
+#
+# 4. Backup Configuration:
+#    - Download and configure backup.sh script
+#    - Schedule with cron: 0 2 * * * /path/to/backup.sh
+#    - Test restore procedure regularly
+#
+# 5. Monitoring:
+#    - Uncomment uptime-kuma service for built-in monitoring
+#    - Configure external monitoring (Healthchecks.io, UptimeRobot, etc.)
+#
+# 6. Updates:
+#    - Run: docker compose pull && docker compose up -d
+#    - Database migrations run automatically on startup
+#    - Always backup before updates!
+#
+# 7. High Availability:
+#    - Scale app service: deploy.replicas: 3
+#    - Configure PostgreSQL replication
+#    - Use NFS or S3 for shared uploads volume
+#    - See: docs/deployment/high-availability.md
+#
+# 8. Security Hardening:
+#    - Review security-hardening.md guide
+#    - Enable fail2ban for brute-force protection
+#    - Regularly scan for vulnerabilities: trivy image
+#    - Keep system and Docker updated
+#
+# ============================================================
+# Support & Documentation
+# ============================================================
+#
+# Full documentation: https://github.com/victorytek/home-registry/docs/deployment/
+# Troubleshooting: docs/deployment/troubleshooting.md
+# Security: docs/deployment/security-hardening.md
+# GitHub Issues: https://github.com/victorytek/home-registry/issues
+#
+# ============================================================

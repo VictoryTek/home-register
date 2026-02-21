@@ -11,17 +11,18 @@ use rand::Rng;
 use uuid::Uuid;
 
 use crate::auth::{
-    extract_token, generate_token, hash_password, validate_password, validate_username,
-    verify_password, verify_token, AuthContext,
+    extract_token, generate_partial_token, generate_token, hash_password, validate_password,
+    validate_username, verify_password, verify_token, AuthContext,
 };
 use crate::db::DatabaseService;
 use crate::models::{
     AdminCreateUserRequest, AdminUpdateUserRequest, ApiResponse, ChangePasswordRequest,
     ConfirmRecoveryCodesRequest, CreateInventoryShareRequest, CreateUserAccessGrantRequest,
-    ErrorResponse, InitialSetupRequest, LoginRequest, LoginResponse, PermissionSource,
-    RecoveryCodeUsedResponse, RecoveryCodesResponse, RecoveryCodesStatus, SetupStatusResponse,
-    TransferOwnershipRequest, TransferOwnershipResponse, UpdateInventoryShareRequest,
-    UpdateProfileRequest, UpdateUserSettingsRequest, UseRecoveryCodeRequest, UserResponse,
+    ErrorResponse, InitialSetupRequest, LoginRequest, LoginResponse, LoginTotpRequiredResponse,
+    PermissionSource, RecoveryCodeUsedResponse, RecoveryCodesResponse, RecoveryCodesStatus,
+    SetupStatusResponse, TransferOwnershipRequest, TransferOwnershipResponse,
+    UpdateInventoryShareRequest, UpdateProfileRequest, UpdateUserSettingsRequest,
+    UseRecoveryCodeRequest, UserResponse,
 };
 
 // ==================== Helper Functions ====================
@@ -49,6 +50,15 @@ pub async fn get_auth_context_from_request(
             }));
         },
     };
+
+    // Reject partial TOTP tokens — they can only be used for TOTP verification
+    if claims.totp_pending {
+        return Err(HttpResponse::Unauthorized().json(ErrorResponse {
+            success: false,
+            error: "TOTP verification required".to_string(),
+            message: Some("Please complete two-factor authentication".to_string()),
+        }));
+    }
 
     let Ok(auth_ctx) = AuthContext::from_claims(&claims) else {
         return Err(HttpResponse::Unauthorized().json(ErrorResponse {
@@ -307,7 +317,45 @@ pub async fn login(pool: web::Data<Pool>, req: web::Json<LoginRequest>) -> Resul
         }));
     }
 
-    // Generate token
+    // Check if user has TOTP enabled with a mode that requires login verification
+    let totp_settings = db_service.get_totp_settings(user.id).await.ok().flatten();
+
+    if let Some(ref settings) = totp_settings {
+        if settings.is_enabled && settings.is_verified {
+            let mode: Result<crate::models::TotpMode, _> = settings.totp_mode.parse();
+            if let Ok(mode) = mode {
+                if mode.requires_login_totp() {
+                    // Generate a partial token (5-min, totp_pending=true)
+                    let partial_token = match generate_partial_token(&user) {
+                        Ok(t) => t,
+                        Err(e) => {
+                            error!("Error generating partial token: {}", e);
+                            return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                                success: false,
+                                error: "Failed to generate token".to_string(),
+                                message: None,
+                            }));
+                        },
+                    };
+
+                    info!("User {} requires TOTP verification", user.username);
+
+                    return Ok(HttpResponse::Ok().json(ApiResponse {
+                        success: true,
+                        data: Some(LoginTotpRequiredResponse {
+                            requires_totp: true,
+                            partial_token,
+                            user: user.into(),
+                        }),
+                        message: Some("TOTP verification required".to_string()),
+                        error: None,
+                    }));
+                }
+            }
+        }
+    }
+
+    // Generate token (normal login - no TOTP or recovery_only mode)
     let token = match generate_token(&user) {
         Ok(t) => t,
         Err(e) => {
@@ -928,6 +976,46 @@ pub async fn admin_update_user(
                 }));
             }
         }
+    }
+
+    // Admin password reset — handled separately from metadata update
+    if let Some(ref password) = body.password {
+        if let Err(msg) = validate_password(password) {
+            return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+                success: false,
+                error: msg.to_string(),
+                message: Some("Invalid password".to_string()),
+            }));
+        }
+
+        let password_hash = match hash_password(password.clone()).await {
+            Ok(h) => h,
+            Err(e) => {
+                error!("Error hashing password: {}", e);
+                return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                    success: false,
+                    error: "Failed to process password".to_string(),
+                    message: None,
+                }));
+            },
+        };
+
+        if let Err(e) = db_service
+            .update_user_password(user_id, &password_hash)
+            .await
+        {
+            error!("Error updating user password: {}", e);
+            return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: format!("Failed to update password: {e}"),
+                message: None,
+            }));
+        }
+
+        info!(
+            "Admin {} reset password for user {}",
+            auth_ctx.username, user_id
+        );
     }
 
     match db_service

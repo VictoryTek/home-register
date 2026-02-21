@@ -312,3 +312,411 @@
     max-width: none;
   }
 }
+
+/* ==================== TOTP Settings Component ==================== */
+.totp-settings-container {
+  padding: 0.5rem 0;
+}
+
+/* Status badges */
+.totp-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-lg);
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.totp-status-enabled {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success-color);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.totp-status-disabled {
+  background: rgba(100, 116, 139, 0.1);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.totp-info-text {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.totp-last-used {
+  color: var(--text-tertiary);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+/* Setup flow */
+.totp-setup-flow {
+  padding: 0.5rem 0;
+}
+
+.totp-setup-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.totp-setup-title i {
+  color: var(--accent-color);
+}
+
+.totp-setup-description {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+/* QR code */
+.totp-qr-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.totp-qr-image {
+  width: 220px;
+  height: 220px;
+  image-rendering: pixelated;
+}
+
+/* Manual entry section */
+.totp-manual-entry {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.totp-manual-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-size: 0.875rem;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: color 0.2s ease;
+}
+
+.totp-manual-toggle:hover {
+  color: var(--primary-light);
+}
+
+.totp-secret-display {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.totp-secret-code {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  padding: 0.75rem 1rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  user-select: all;
+  word-break: break-all;
+}
+
+.totp-copy-btn {
+  flex-shrink: 0;
+}
+
+/* Verify form */
+.totp-verify-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.totp-code-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.totp-code-input-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.totp-code-input-group label i {
+  color: var(--accent-color);
+  font-size: 0.85rem;
+}
+
+.totp-code-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  font-size: 1.5rem;
+  font-family: monospace;
+  letter-spacing: 0.3em;
+  text-align: center;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.totp-code-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+/* Mode selection */
+.totp-mode-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.totp-mode-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.totp-mode-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.totp-mode-option:hover {
+  border-color: var(--primary-color);
+  background: var(--bg-tertiary);
+}
+
+.totp-mode-option.active {
+  border-color: var(--primary-color);
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.totp-mode-option input[type='radio'] {
+  margin-top: 0.2rem;
+  accent-color: var(--primary-color);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.totp-mode-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.totp-mode-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.totp-mode-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* Mode list for enabled state */
+.totp-mode-current {
+  margin: 1rem 0;
+}
+
+.totp-mode-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Setup actions */
+.totp-setup-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+.totp-disable-btn {
+  margin-top: 1.5rem;
+}
+
+/* Disable confirmation */
+.totp-disable-confirm {
+  padding: 0.5rem 0;
+}
+
+.totp-disable-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--danger-color);
+  margin-bottom: 0.75rem;
+}
+
+.totp-disable-warning {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 1.25rem;
+}
+
+.totp-disable-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.totp-password-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.totp-password-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.totp-password-group label i {
+  color: var(--accent-color);
+  font-size: 0.85rem;
+}
+
+.input-with-icon-settings {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-with-icon-settings input {
+  width: 100%;
+  padding: 0.75rem 3rem 0.75rem 1rem;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  font-family: inherit;
+}
+
+.input-with-icon-settings input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.password-toggle-settings {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.password-toggle-settings:hover {
+  color: var(--accent-color);
+}
+
+/* Success state */
+.totp-success {
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+.totp-success-icon {
+  font-size: 3rem;
+  color: var(--success-color);
+  margin-bottom: 1rem;
+}
+
+.totp-success h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.totp-success p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .totp-setup-actions {
+    flex-direction: column;
+  }
+
+  .totp-setup-actions .btn {
+    width: 100%;
+  }
+
+  .totp-qr-image {
+    width: 180px;
+    height: 180px;
+  }
+
+  .totp-secret-display {
+    flex-direction: column;
+  }
+}

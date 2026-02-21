@@ -4,6 +4,7 @@ import {
   UserManagement,
   AllAccessManagement,
   RecoveryCodesSection,
+  TotpSettings,
   BackupRestoreSection,
 } from '@/components';
 import { useApp } from '@/context/AppContext';
@@ -270,6 +271,24 @@ export function SettingsPage() {
             </div>
 
             <RecoveryCodesSection />
+          </section>
+
+          {/* Two-Factor Authentication */}
+          <section className="settings-section">
+            <div className="settings-section-header">
+              <div className="settings-section-icon">
+                <i className="fas fa-mobile-alt"></i>
+              </div>
+              <div>
+                <h2 className="settings-section-title">Two-Factor Authentication</h2>
+                <p className="settings-section-description">
+                  Add an extra layer of security with an authenticator app (Google Authenticator,
+                  Authy, etc.)
+                </p>
+              </div>
+            </div>
+
+            <TotpSettings />
           </section>
 
           {/* Backup & Restore (Admin Only) */}

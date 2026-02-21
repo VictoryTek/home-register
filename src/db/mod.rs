@@ -19,6 +19,8 @@ use crate::models::{
     PermissionLevel,
     PermissionSource,
     SetItemOrganizerValueRequest,
+    // TOTP models
+    TotpSettings,
     UpdateItemRequest,
     UpdateOrganizerOptionRequest,
     UpdateOrganizerTypeRequest,
@@ -2856,6 +2858,199 @@ impl DatabaseService {
 
         transaction.commit().await?;
         info!("Successfully imported all database tables from backup");
+        Ok(())
+    }
+
+    // ==================== TOTP Settings Operations ====================
+
+    /// Create TOTP settings for a user (during setup, before verification)
+    pub async fn create_totp_settings(
+        &self,
+        user_id: Uuid,
+        encrypted_secret: &str,
+    ) -> Result<TotpSettings, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        let row = client
+            .query_one(
+                "INSERT INTO user_totp_settings (user_id, totp_secret_encrypted)
+                 VALUES ($1, $2)
+                 ON CONFLICT (user_id) DO UPDATE SET
+                     totp_secret_encrypted = $2,
+                     is_enabled = false,
+                     is_verified = false,
+                     failed_attempts = 0,
+                     last_failed_at = NULL,
+                     updated_at = NOW()
+                 RETURNING id, user_id, totp_secret_encrypted, totp_mode, is_enabled,
+                           is_verified, created_at, updated_at, last_used_at,
+                           failed_attempts, last_failed_at",
+                &[&user_id, &encrypted_secret],
+            )
+            .await?;
+
+        Ok(TotpSettings {
+            id: row.get(0),
+            user_id: row.get(1),
+            totp_secret_encrypted: row.get(2),
+            totp_mode: row.get(3),
+            is_enabled: row.get(4),
+            is_verified: row.get(5),
+            created_at: row.get(6),
+            updated_at: row.get(7),
+            last_used_at: row.get(8),
+            failed_attempts: row.get(9),
+            last_failed_at: row.get(10),
+        })
+    }
+
+    /// Get TOTP settings for a user
+    pub async fn get_totp_settings(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Option<TotpSettings>, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        let rows = client
+            .query(
+                "SELECT id, user_id, totp_secret_encrypted, totp_mode, is_enabled,
+                        is_verified, created_at, updated_at, last_used_at,
+                        failed_attempts, last_failed_at
+                 FROM user_totp_settings WHERE user_id = $1",
+                &[&user_id],
+            )
+            .await?;
+
+        if let Some(row) = rows.first() {
+            Ok(Some(TotpSettings {
+                id: row.get(0),
+                user_id: row.get(1),
+                totp_secret_encrypted: row.get(2),
+                totp_mode: row.get(3),
+                is_enabled: row.get(4),
+                is_verified: row.get(5),
+                created_at: row.get(6),
+                updated_at: row.get(7),
+                last_used_at: row.get(8),
+                failed_attempts: row.get(9),
+                last_failed_at: row.get(10),
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Enable TOTP after successful verification (set enabled, verified, and mode)
+    pub async fn enable_totp(
+        &self,
+        user_id: Uuid,
+        mode: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        client
+            .execute(
+                "UPDATE user_totp_settings
+                 SET is_enabled = true, is_verified = true, totp_mode = $2,
+                     failed_attempts = 0, last_failed_at = NULL, updated_at = NOW()
+                 WHERE user_id = $1",
+                &[&user_id, &mode],
+            )
+            .await?;
+
+        Ok(())
+    }
+
+    /// Update TOTP mode
+    pub async fn update_totp_mode(
+        &self,
+        user_id: Uuid,
+        mode: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        client
+            .execute(
+                "UPDATE user_totp_settings SET totp_mode = $2, updated_at = NOW()
+                 WHERE user_id = $1 AND is_enabled = true",
+                &[&user_id, &mode],
+            )
+            .await?;
+
+        Ok(())
+    }
+
+    /// Update TOTP last used timestamp
+    pub async fn update_totp_last_used(
+        &self,
+        user_id: Uuid,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        client
+            .execute(
+                "UPDATE user_totp_settings SET last_used_at = NOW(), updated_at = NOW()
+                 WHERE user_id = $1",
+                &[&user_id],
+            )
+            .await?;
+
+        Ok(())
+    }
+
+    /// Delete TOTP settings (disable TOTP)
+    pub async fn delete_totp_settings(
+        &self,
+        user_id: Uuid,
+    ) -> Result<bool, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        let rows_affected = client
+            .execute(
+                "DELETE FROM user_totp_settings WHERE user_id = $1",
+                &[&user_id],
+            )
+            .await?;
+
+        Ok(rows_affected > 0)
+    }
+
+    /// Increment failed TOTP attempts and record timestamp
+    pub async fn increment_totp_failed_attempts(
+        &self,
+        user_id: Uuid,
+    ) -> Result<i32, Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        let row = client
+            .query_one(
+                "UPDATE user_totp_settings
+                 SET failed_attempts = failed_attempts + 1, last_failed_at = NOW()
+                 WHERE user_id = $1
+                 RETURNING failed_attempts",
+                &[&user_id],
+            )
+            .await?;
+
+        Ok(row.get(0))
+    }
+
+    /// Reset failed TOTP attempts after successful verification
+    pub async fn reset_totp_failed_attempts(
+        &self,
+        user_id: Uuid,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let client = self.pool.get().await?;
+
+        client
+            .execute(
+                "UPDATE user_totp_settings
+                 SET failed_attempts = 0, last_failed_at = NULL
+                 WHERE user_id = $1",
+                &[&user_id],
+            )
+            .await?;
+
         Ok(())
     }
 }

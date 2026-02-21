@@ -27,7 +27,7 @@ package:
 source:
   # Metadata to include about the scanned source
   name: "home-registry"
-  version: "0.1.0-beta.2"
+  version: "0.1.0-beta.3"
   
 # Exclude paths from scanning
 exclude:

@@ -1,0 +1,242 @@
+# ===============================================================
+# Caddyfile - Production Configuration for Home Registry
+# ===============================================================
+#
+# This Caddyfile provides:
+# - Automatic HTTPS with Let's Encrypt
+# - HTTP/2 and HTTP/3 support
+# - Security headers
+# - Compression
+# - Health check routing
+# - Static asset caching
+#
+# Usage:
+#   1. Copy this file to your deployment directory
+#   2. Update your-domain.com to your actual domain
+#   3. Update admin@example.com to your email
+#   4. Mount in docker-compose.yml:
+#      volumes:
+#        - ./Caddyfile:/etc/caddy/Caddyfile:ro
+#
+
+{
+    # Global Options
+    email admin@example.com  # For Let's Encrypt certificate notifications
+    
+    # Optional: Use staging environment for testing
+    # acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+    
+    # Admin API (useful for debugging, disable in production)
+    # admin off
+}
+
+# ===============================================================
+# Main Site Configuration
+# ===============================================================
+home-registry.example.com {
+    
+    # ============================================================
+    # Encoding (Compression)
+    # ============================================================
+    encode gzip zstd
+    
+    # ============================================================
+    # Security Headers
+    # ============================================================
+    header {
+        # HTTP Strict Transport Security (2 years)
+        Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+        
+        # XSS Protection
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        X-XSS-Protection "1; mode=block"
+        
+        # Referrer Policy
+        Referrer-Policy "strict-origin-when-cross-origin"
+        
+        # Content Security Policy (adjust if using CDNs)
+        # Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
+        
+        # Hide server information
+        -Server
+    }
+    
+    # ============================================================
+    # Request Logging
+    # ============================================================
+    log {
+        output file /var/log/caddy/home-registry-access.log {
+            roll_size 100mb
+            roll_keep 10
+            roll_keep_for 720h  # 30 days
+        }
+        format json {
+            time_format "iso8601"
+            message_key "message"
+        }
+    }
+    
+    # ============================================================
+    # Health Check Endpoint (No Caching)
+    # ============================================================
+    handle /health {
+        reverse_proxy app:8210 {
+            health_uri /health
+            health_interval 30s
+            health_timeout 5s
+            health_status 200
+        }
+    }
+    
+    # ============================================================
+    # Static Assets (Long-term Caching)
+    # ============================================================
+    @assets {
+        path /assets/*
+    }
+    handle @assets {
+        header Cache-Control "public, max-age=31536000, immutable"
+        reverse_proxy app:8210
+    }
+    
+    # ============================================================
+    # Uploaded Images (Moderate Caching)
+    # ============================================================
+    @uploads {
+        path /uploads/*
+    }
+    handle @uploads {
+        header Cache-Control "public, max-age=604800"  # 7 days
+        reverse_proxy app:8210
+    }
+    
+    # ============================================================
+    # API Endpoints (No Caching)
+    # ============================================================
+    @api {
+        path /api/*
+    }
+    handle @api {
+        header Cache-Control "no-cache, no-store, must-revalidate"
+        reverse_proxy app:8210 {
+            # Load balancing (uncomment for multiple instances)
+            # lb_policy least_conn
+            # to app1:8210
+            # to app2:8210
+            # to app3:8210
+            
+            # Health check
+            health_uri /health
+            health_interval 30s
+            health_timeout 5s
+            health_status 200
+            
+            # Fail timeout
+            fail_duration 30s
+            max_fails 3
+        }
+    }
+    
+    # ============================================================
+    # Default Handler (All Other Requests)
+    # ============================================================
+    reverse_proxy app:8210 {
+        # Headers
+        header_up Host {upstream_hostport}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        
+        # Health check
+        health_uri /health
+        health_interval 30s
+        health_timeout 5s
+        health_status 200
+        
+        # Timeouts
+        transport http {
+            dial_timeout 60s
+            response_header_timeout 60s
+            read_buffer_size 4096
+        }
+    }
+}
+
+# ===============================================================
+# Optional: Admin Dashboard on Subdomain
+# ===============================================================
+# admin.home-registry.example.com {
+#     basicauth {
+#         admin $2a$14$Zkx19XLiW6VYouLHR5NmfOFU0z2GTNmpkT/5qqR7hx7wHAiKAhWni
+#         # Generate with: caddy hash-password
+#     }
+#     
+#     reverse_proxy app:8210
+# }
+
+# ===============================================================
+# Optional: Uptime Kuma on Subdomain
+# ===============================================================
+# uptime.home-registry.example.com {
+#     reverse_proxy uptime-kuma:3001
+# }
+
+# ===============================================================
+# Configuration Notes
+# ===============================================================
+#
+# 1. Domain Setup:
+#    - Replace home-registry.example.com with your actual domain
+#    - Ensure DNS A record points to your server IP
+#    - Allow ports 80/443 in your firewall
+#
+# 2. Let's Encrypt:
+#    - Certificates obtained automatically
+#    - Auto-renewal every 60 days
+#    - Stored in /data/caddy directory (Docker volume)
+#    - Rate limit: 50 certificates/week per domain
+#
+# 3. Testing:
+#    - Use staging environment for testing (uncomment in global options)
+#    - Staging certs won't be trusted by browsers (expected)
+#    - Switch to production once configuration is correct
+#
+# 4. Load Balancing:
+#    - Uncomment lb_policy and additional "to" directives
+#    - Requires multiple app instances (Docker replicas or separate servers)
+#    - Health checks ensure traffic only goes to healthy instances
+#
+# 5. Logging:
+#    - Access logs in JSON format
+#    - Automatic rotation (100MB max per file)
+#    - Keeps 10 files for 30 days
+#    - View logs: docker compose logs caddy
+#
+# 6. Security:
+#    - HSTS enabled (browsers remember to use HTTPS)
+#    - XSS protection headers
+#    - Frame denial (prevent clickjacking)
+#    - Rate limiting not built-in (use Nginx or application-level)
+#
+# 7. Performance:
+#    - Gzip and Zstd compression enabled
+#    - Static assets cached for 1 year
+#    - Uploads cached for 7 days
+#    - API responses not cached
+#
+# 8. Troubleshooting:
+#    - View Caddy logs: docker compose logs -f caddy
+#    - Validate config: caddy validate --config /etc/caddy/Caddyfile
+#    - Test HTTPS: curl -I https://your-domain.com
+#    - SSL test: https://www.ssllabs.com/ssltest/
+#
+# ===============================================================
+# Support & Documentation
+# ===============================================================
+#
+# Caddy Documentation: https://caddyserver.com/docs/
+# Home Registry Docs: docs/deployment/reverse-proxy-caddy.md
+# Troubleshooting: docs/deployment/troubleshooting.md
+#
+# ===============================================================
