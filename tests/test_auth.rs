@@ -163,6 +163,10 @@ async fn test_user_registration_valid() {
     // Initialize JWT secret for token generation
     home_registry::auth::get_or_init_jwt_secret();
 
+    // Create initial admin user (required for registration endpoint)
+    let admin_username = common::test_username("admin_init");
+    common::create_admin_user(&pool, &admin_username).await;
+
     let app = test::init_service(
         App::new()
             .app_data(web::Data::new(pool.clone()))
@@ -189,6 +193,7 @@ async fn test_user_registration_valid() {
 
     // Cleanup
     common::delete_test_user(&pool, &username).await.ok();
+    common::delete_test_user(&pool, &admin_username).await.ok();
 }
 
 #[actix_web::test]
@@ -197,6 +202,10 @@ async fn test_user_registration_duplicate_username() {
 
     // Initialize JWT secret for token generation
     home_registry::auth::get_or_init_jwt_secret();
+
+    // Create initial admin user (required for registration endpoint)
+    let admin_username = common::test_username("admin_init");
+    common::create_admin_user(&pool, &admin_username).await;
 
     let app = test::init_service(
         App::new()
@@ -227,6 +236,7 @@ async fn test_user_registration_duplicate_username() {
 
     // Cleanup
     common::delete_test_user(&pool, &username).await.ok();
+    common::delete_test_user(&pool, &admin_username).await.ok();
 }
 
 #[actix_web::test]
@@ -235,6 +245,10 @@ async fn test_user_registration_weak_password() {
 
     // Initialize JWT secret for token generation
     home_registry::auth::get_or_init_jwt_secret();
+
+    // Create initial admin user (required for registration endpoint)
+    let admin_username = common::test_username("admin_init");
+    common::create_admin_user(&pool, &admin_username).await;
 
     let app = test::init_service(
         App::new()
@@ -258,6 +272,9 @@ async fn test_user_registration_weak_password() {
 
     let resp = test::call_service(&app, req).await;
     assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+
+    // Cleanup
+    common::delete_test_user(&pool, &admin_username).await.ok();
 }
 
 #[actix_web::test]
