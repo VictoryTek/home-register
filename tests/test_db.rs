@@ -853,8 +853,8 @@ async fn test_create_inventory_with_empty_name() {
     // Should succeed at DB level (validation should be in API layer)
     let result = db.create_inventory(request, user.id).await;
     // This tests that DB doesn't crash, validation is API responsibility
-    if result.is_ok() {
-        common::delete_test_inventory(&pool, result.unwrap().id.unwrap())
+    if let Ok(inventory) = result {
+        common::delete_test_inventory(&pool, inventory.id.unwrap())
             .await
             .ok();
     }
