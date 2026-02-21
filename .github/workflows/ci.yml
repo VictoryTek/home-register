@@ -41,7 +41,7 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: password
           POSTGRES_DB: home_inventory_test
-          POSTGRES_HOST_AUTH_METHOD: md5
+          POSTGRES_HOST_AUTH_METHOD: trust
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 10s
@@ -94,7 +94,7 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: password
           POSTGRES_DB: home_inventory_test
-          POSTGRES_HOST_AUTH_METHOD: md5
+          POSTGRES_HOST_AUTH_METHOD: trust
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 10s
