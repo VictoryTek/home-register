@@ -72,6 +72,13 @@ jobs:
       - name: Build
         run: cargo build --all-features
 
+      - name: Apply database migrations
+        run: |
+          for migration in migrations/V*.sql; do
+            echo "Applying migration: $migration"
+            psql "$DATABASE_URL" -f "$migration"
+          done
+
       - name: Test
         run: cargo test --all-features
 
@@ -121,6 +128,13 @@ jobs:
         uses: taiki-e/install-action@v2
         with:
           tool: cargo-tarpaulin
+
+      - name: Apply database migrations
+        run: |
+          for migration in migrations/V*.sql; do
+            echo "Applying migration: $migration"
+            psql "$DATABASE_URL" -f "$migration"
+          done
 
       - name: Run coverage
         # TODO: Increase threshold as test coverage improves (current: 0.49%)
