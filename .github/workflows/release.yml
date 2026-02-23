@@ -22,6 +22,11 @@ on:
         description: 'Version to release (e.g., 0.1.0-beta.1)'
         required: true
         type: string
+      is_prerelease:
+        description: 'Mark this release as a pre-release (default: false for stable)'
+        required: false
+        type: boolean
+        default: false
       include_arm64:
         description: 'Build ARM64 image (adds ~20 min build time)'
         required: false
@@ -186,7 +191,10 @@ jobs:
             
             ### 📋 What's Changed
             See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
-          prerelease: ${{ contains(needs.build-and-push.outputs.version, 'beta') || contains(needs.build-and-push.outputs.version, 'rc') }}
+          # Smart pre-release detection:
+          # - Manual triggers: Use is_prerelease input (default: false for stable)
+          # - Automatic triggers: Infer from version string (beta/rc)
+          prerelease: ${{ inputs.is_prerelease == 'true' || (github.event_name != 'workflow_dispatch' && (contains(needs.build-and-push.outputs.version, 'beta') || contains(needs.build-and-push.outputs.version, 'rc'))) }}
           files: |
             artifacts/sbom.spdx.json
             docker-compose.prod.yml
