@@ -3,6 +3,14 @@
 
 $ErrorActionPreference = "Stop"
 
+# CRITICAL: Ensure we're running from the project root directory
+# All Rust commands (cargo fmt, clippy, deny, test) require Cargo.toml at the root
+# Without this, cargo deny will fail if script is run from subdirectories like frontend/
+$scriptPath = Split-Path -Parent $PSCommandPath
+$projectRoot = Split-Path -Parent $scriptPath
+Set-Location $projectRoot
+Write-Host "Working directory: $projectRoot" -ForegroundColor Cyan
+
 # Minimum coverage threshold
 $MIN_COVERAGE = 80
 
@@ -76,24 +84,21 @@ try {
 
 Write-Section "RUST: Unit and Integration Tests (cargo test)"
 
-# Set DATABASE_URL for integration tests if not already set
-if (-not $env:DATABASE_URL) {
-    $env:DATABASE_URL = "postgres://postgres:password@localhost:5432/home_inventory"
-    Write-Host "Set DATABASE_URL for integration tests: $env:DATABASE_URL" -ForegroundColor Cyan
+# Setup test database before running tests
+Write-Host "Setting up test database..." -ForegroundColor Cyan
+try {
+    & "$projectRoot\scripts\setup-test-db.ps1"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error-Exit "Test database setup failed"
+    }
+    Write-Success "Test database ready"
+} catch {
+    Write-Error-Exit "Test database setup failed: $_"
 }
 
-# Check if database is accessible
-try {
-    $dbCheck = docker compose ps db --format json | ConvertFrom-Json
-    if ($dbCheck.State -ne "running") {
-        Write-Warning-Message "Database container is not running"
-        Write-Warning-Message "Start with: docker compose up -d"
-        Write-Error-Exit "Cannot run integration tests without database"
-    }
-} catch {
-    Write-Warning-Message "Could not check database status"
-    Write-Warning-Message "Ensure database is running: docker compose up -d"
-}
+# Set DATABASE_URL for integration tests to point to test database
+$env:DATABASE_URL = "postgres://postgres:password@localhost:5432/home_inventory_test"
+Write-Host "Set DATABASE_URL for integration tests: $env:DATABASE_URL" -ForegroundColor Cyan
 
 try {
     # Run all tests including ignored ones (integration tests)

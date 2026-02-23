@@ -1,4 +1,12 @@
-import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  ScrollRestoration,
+  useLocation,
+  useNavigate,
+  Navigate,
+} from 'react-router-dom';
 import { AppProvider, useApp } from '@/context/AppContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { Sidebar, Toast, InstructionsModal } from '@/components';
@@ -155,6 +163,13 @@ function AppContent() {
 
   return (
     <>
+      {/* ScrollRestoration: Automatically scrolls to top on navigation, restores position on back/forward */}
+      <ScrollRestoration
+        getKey={(location) => {
+          // Use pathname as key to identify unique scroll positions
+          return location.pathname;
+        }}
+      />
       <Sidebar
         currentPage={getCurrentPage()}
         onNavigate={handleNavigate}

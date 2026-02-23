@@ -62,18 +62,14 @@ success "Dependency checks passed"
 
 section "RUST: Unit & Integration Tests (cargo test)"
 
-# Set DATABASE_URL for integration tests if not already set
-if [ -z "$DATABASE_URL" ]; then
-    export DATABASE_URL="postgres://postgres:password@localhost:5432/home_inventory"
-    echo -e "${CYAN}Set DATABASE_URL for integration tests: $DATABASE_URL${NC}"
-fi
+# Setup test database before running tests
+echo "Setting up test database..."
+bash "$(dirname "$0")/setup-test-db.sh" || error "Test database setup failed"
+success "Test database ready"
 
-# Check if database is accessible
-if ! docker compose ps db --format json | grep -q '"State":"running"'; then
-    warning "Database container is not running"
-    warning "Start with: docker compose up -d"
-    error "Cannot run integration tests without database"
-fi
+# Set DATABASE_URL for integration tests to point to test database
+export DATABASE_URL="postgres://postgres:password@localhost:5432/home_inventory_test"
+echo "Set DATABASE_URL for integration tests: $DATABASE_URL"
 
 # Run all tests including ignored ones (integration tests)
 cargo test -- --include-ignored || error "Tests failed"

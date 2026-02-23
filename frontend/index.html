@@ -16,7 +16,13 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     
     <!-- Viewport and Responsive Meta -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Enhanced viewport meta tag: Prevents iOS Safari zoom on input focus and double-tap -->
+    <!-- maximum-scale=1.0, minimum-scale=1.0, user-scalable=no: Disables zoom for native app-like experience -->
+    <!-- viewport-fit=cover: Extends content into safe areas on notched devices (iPhone X+) -->
+    <meta 
+      name="viewport" 
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
     
     <!-- Theme Color (supports light and dark modes) -->
     <meta name="theme-color" content="#3b82f6" />

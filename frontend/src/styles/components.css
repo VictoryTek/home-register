@@ -1,3 +1,28 @@
+/* Mobile Viewport Fixes: Prevent iOS Safari auto-zoom on input focus */
+/* iOS Safari auto-zooms when input elements have font-size < 16px */
+/* Setting minimum 16px prevents this behavior while maintaining usability */
+input[type='text'],
+input[type='email'],
+input[type='password'],
+input[type='number'],
+input[type='search'],
+input[type='tel'],
+input[type='url'],
+input[type='date'],
+textarea,
+select {
+  font-size: 16px; /* iOS requires minimum 16px to prevent auto-zoom */
+}
+
+/* Ensure touch targets meet iOS Human Interface Guidelines minimum */
+button,
+a,
+input,
+select,
+textarea {
+  min-height: 44px; /* iOS HIG minimum touch target size */
+}
+
 /* Empty State */
 .empty-state {
   text-align: center;
