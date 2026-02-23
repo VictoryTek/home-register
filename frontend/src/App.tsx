@@ -1,12 +1,5 @@
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  ScrollRestoration,
-  useLocation,
-  useNavigate,
-  Navigate,
-} from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { AppProvider, useApp } from '@/context/AppContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { Sidebar, Toast, InstructionsModal } from '@/components';
@@ -94,6 +87,11 @@ function AppContent() {
     }
   };
 
+  // Scroll to top on route change (replaces ScrollRestoration which requires Data Router API)
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   // Show loading screen while checking auth
   if (isLoading) {
     return <LoadingScreen />;
@@ -163,13 +161,6 @@ function AppContent() {
 
   return (
     <>
-      {/* ScrollRestoration: Automatically scrolls to top on navigation, restores position on back/forward */}
-      <ScrollRestoration
-        getKey={(location) => {
-          // Use pathname as key to identify unique scroll positions
-          return location.pathname;
-        }}
-      />
       <Sidebar
         currentPage={getCurrentPage()}
         onNavigate={handleNavigate}
