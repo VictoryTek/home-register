@@ -1,0 +1,34 @@
+{
+  "effortLevel": "medium",
+  "permissions": {
+    "allow": [
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(cargo fmt -- --check:*)",
+      "Bash(cargo clippy --all-targets --all-features -- -D warnings:*)",
+      "Bash(cargo deny check:*)",
+      "Bash(cargo check --all-targets --all-features:*)",
+      "Bash(cargo build --all-features:*)",
+      "Bash(cargo test --test test_models:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run format:check:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run ci:*)"
+    ],
+    "deny": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git stash:*)",
+      "Bash(cargo preflight:*)",
+      "Bash(cargo test -- --include-ignored:*)",
+      "Bash(docker build:*)",
+      "Bash(trivy:*)",
+      "Bash(syft:*)",
+      "Bash(cargo tarpaulin:*)",
+      "Bash(rm -rf:*)"
+    ]
+  }
+}
